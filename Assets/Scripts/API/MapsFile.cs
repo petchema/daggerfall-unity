@@ -1,4 +1,4 @@
-﻿// Project:         Daggerfall Tools For Unity
+// Project:         Daggerfall Tools For Unity
 // Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
@@ -695,8 +695,107 @@ namespace DaggerfallConnect.Arena2
             dfLocation.RegionIndex = region;
             dfLocation.LocationIndex = location;
 
+            // TEMP: Experimental smaller dungeons
+            // This is just to feel out the process of allowing runtime to change dungeons by injecting new block layouts in a way compatible with world and quest systems.
+            // There is a whole raft of issues around this to resolve (persistence, automap cache, quest system, load order - just to name a few).
+            if (dfLocation.HasDungeon &&
+                DaggerfallWorkshop.DaggerfallUnity.Settings.ExperimentalSmallerDungeons &&
+                !DaggerfallWorkshop.DaggerfallDungeon.IsMainStoryDungeon(dfLocation.MapTableData.MapId))
+            {
+                GenerateSmallerDungeon(ref dfLocation);
+            }
+
             return dfLocation;
         }
+
+        #region ExperimentalSmallerDungeons
+
+        // Generates a smaller dungeon by overwriting the block layout
+        // Creates a single interior block surrounded by 4 border blocks (smallest viable dungeon)
+        // Should not be called for main story dungeons
+        // Will filter out dungeons that are already below a threshold size
+        void GenerateSmallerDungeon(ref DFLocation dfLocation)
+        {
+            const int threshold = 6;
+
+            // Ignore small dungeons under threshold - this will exclude already small crypts and the like
+            if (dfLocation.Dungeon.Blocks == null || dfLocation.Dungeon.Blocks.Length < threshold)
+                return;
+
+            //UnityEngine.Debug.LogFormat("Generating smaller dungeon for {0}/{1}", dfLocation.RegionName, dfLocation.Name);
+
+            // Just some random stuff for later:
+            // * If restoring a dungeon save after enabling smaller dungeons then player should be ported outside (or to exit marker)
+            // * Quests assigned to a dungeon will probably break/crash as marker layout different in smaller dungeon, must handle this
+            // * Need to ensure automap cache is cleared when changing dungeon size
+            // * Need to account for dungeon water level per block when adding W blocks
+            // * Dungeon theme (e.g. human stronghold vs. scorpion's nest) should probably weight block selection somehow
+
+            // Seed random generation with map ID so we get the same result each time
+            DaggerfallWorkshop.DFRandom.Seed = (uint)dfLocation.MapTableData.MapId;
+
+            // Generate new dungeon layout with smallest viable dungeon (1x normal block surrounded by 4x border blocks)
+            DFLocation.DungeonBlock[] layout = new DFLocation.DungeonBlock[5];
+            layout[0] = GenerateRDBBlock(BlockTypes.N, 0, 0, true);     // Central starting block
+            layout[1] = GenerateRDBBlock(BlockTypes.B, 0, -1);          // North border block
+            layout[2] = GenerateRDBBlock(BlockTypes.B, -1, 0);          // West border block
+            layout[3] = GenerateRDBBlock(BlockTypes.B, 1, 0);           // East border block
+            layout[4] = GenerateRDBBlock(BlockTypes.B, 0, 1);           // South border block
+
+            // Inject new block array into location
+            dfLocation.Dungeon.Blocks = layout;
+        }
+
+        enum BlockTypes
+        {
+            B,
+            N,
+        }
+
+        int GetRandomBlockIndex(BlockTypes type)
+        {
+            switch(type)
+            {
+                case BlockTypes.B:
+                    return 15;
+                case BlockTypes.N:
+                    return 93;
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>
+        /// Generate a dungeon block.
+        /// </summary>
+        /// <param name="type">Block type.</param>
+        /// <param name="x">X block tile position.</param>
+        /// <param name="z">Z block tile position.</param>
+        /// <param name="startingBlock">True for starting block (must only be one).</param>
+        /// <param name="index">Index of block within type, use -1 for random.</param>
+        /// <param name="waterLevel">Water level in block, use 10000 for no water.</param>
+        /// <returns></returns>
+        DFLocation.DungeonBlock GenerateRDBBlock(BlockTypes type, sbyte x, sbyte z, bool startingBlock = false, int index = -1, int waterLevel = 10000)
+        {
+            DFLocation.DungeonBlock block = new DFLocation.DungeonBlock();
+
+            // Random index
+            if (index == -1)
+                index = DaggerfallWorkshop.DFRandom.random_range(0, GetRandomBlockIndex(type));
+
+            // Compose block
+            // Can ignore BlockNumberStartIndexBitfield, BlockNumber, BlockIndex as these are only set during read
+            block.X = x;
+            block.Z = z;
+            block.IsStartingBlock = startingBlock;
+            block.BlockName = String.Format("{0}{1:0000000}.RDB", type.ToString(), index);
+            block.WaterLevel = (short)waterLevel;
+            block.CastleBlock = false;
+
+            return block;
+        }
+
+        #endregion
 
         /// <summary>
         /// Gets DFLocation representation of a location.

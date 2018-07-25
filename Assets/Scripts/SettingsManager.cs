@@ -140,6 +140,7 @@ namespace DaggerfallWorkshop
         public bool MeshAndTextureReplacement { get; set; }
         public bool CompressModdedTextures { get; set; }
         public bool NearDeathWarning { get; set; }
+        public bool ExperimentalSmallerDungeons { get; set; }
 
         #endregion
 
@@ -225,6 +226,7 @@ namespace DaggerfallWorkshop
             MeshAndTextureReplacement = GetBool(sectionEnhancements, "MeshAndTextureReplacement");
             CompressModdedTextures = GetBool(sectionEnhancements, "CompressModdedTextures");
             NearDeathWarning = GetBool(sectionEnhancements, "NearDeathWarning");
+            ExperimentalSmallerDungeons = GetBool(sectionEnhancements, "ExperimentalSmallerDungeons");
         }
 
         /// <summary>
@@ -303,6 +305,7 @@ namespace DaggerfallWorkshop
             SetBool(sectionEnhancements, "MeshAndTextureReplacement", MeshAndTextureReplacement);
             SetBool(sectionEnhancements, "CompressModdedTextures", CompressModdedTextures);
             SetBool(sectionEnhancements, "NearDeathWarning", NearDeathWarning);
+            SetBool(sectionEnhancements, "ExperimentalSmallerDungeons", ExperimentalSmallerDungeons);
 
             // Write settings to persistent file
             WriteSettingsFile();
