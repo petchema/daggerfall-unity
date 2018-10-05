@@ -36,6 +36,9 @@ namespace DaggerfallWorkshop.Game.Entity
         [SerializeField] int Speed;
         [SerializeField] int Luck;
 
+	// Bonus points not used during last level up
+	[SerializeField] public int Unassigned { get; set; }
+
         // Mods are temporary changes to stat values from effects
         // Default is 0 - effects can raise/lower mod values during their lifecycle
         // This is designed so that effects are never operating on permanent stat values
@@ -89,6 +92,7 @@ namespace DaggerfallWorkshop.Game.Entity
             Personality = defaultValue;
             Speed = defaultValue;
             Luck = defaultValue;
+	    Unassigned = 0;
             Array.Clear(mods, 0, Count);
         }
 
@@ -107,6 +111,7 @@ namespace DaggerfallWorkshop.Game.Entity
             Personality = other.Personality;
             Speed = other.Speed;
             Luck = other.Luck;
+	    Unassigned = other.Unassigned;
         }
 
         /// <summary>

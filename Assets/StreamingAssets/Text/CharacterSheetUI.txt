@@ -1,0 +1,5 @@
+- Text database for character sheet UI
+
+schema: *key,text
+
+unassignedPoints,           You have unassigned bonus points, continue? (They will be saved for next level up)

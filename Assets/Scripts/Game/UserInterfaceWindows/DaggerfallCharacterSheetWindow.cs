@@ -27,12 +27,15 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
     public class DaggerfallCharacterSheetWindow : DaggerfallPopupWindow
     {
         #region Fields
+
+	const string textDatabase = "characterSheetUI";
         const string nativeImgName = "INFO00I0.IMG";
         private const int noAffiliationsMsgId = 19;
 
         StatsRollout statsRollout;
 
         bool leveling = false;
+	bool acceptUnassigned = false;
 
         const int minBonusPool = 4;        // The minimum number of free points to allocate on level up
         const int maxBonusPool = 6;        // The maximum number of free points to allocate on level up
@@ -398,7 +401,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                 this.statsRollout.StartingStats = PlayerEntity.Stats.Clone();
                 this.statsRollout.WorkingStats = PlayerEntity.Stats.Clone();
-                this.statsRollout.BonusPool = bonusPool;
+                this.statsRollout.BonusPool = bonusPool + PlayerEntity.Stats.Unassigned;
 
                 PlayerEntity.ReadyToLevelUp = false;
             }
@@ -444,20 +447,30 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             if (statsRollout.BonusPool > 0)
             {
-                DaggerfallMessageBox messageBox = new DaggerfallMessageBox(uiManager, this);
-                messageBox.SetText(HardStrings.mustDistributeBonusPoints);
-                messageBox.ClickAnywhereToClose = true;
+	        acceptUnassigned = false;
+                DaggerfallMessageBox messageBox = new DaggerfallMessageBox(uiManager, DaggerfallMessageBox.CommonMessageBoxButtons.YesNo, TextManager.Instance.GetText(textDatabase, "unassignedPoints"),  this);
+		messageBox.OnButtonClick += ConfirmUnassignBox_OnButtonClick;
+		messageBox.ClickAnywhereToClose = false;
+		messageBox.AllowCancel = false;
                 messageBox.Show();
-                return false;
+		if (!acceptUnassigned)
+		    return false;
             }
-            else
-            {
-                leveling = false;
-                PlayerEntity.Stats = statsRollout.WorkingStats;
-                NativePanel.Components.Remove(statsRollout);
-                return true;
-            }
+	    leveling = false;
+            PlayerEntity.Stats = statsRollout.WorkingStats;
+	    PlayerEntity.Stats.Unassigned = statsRollout.BonusPool;
+            NativePanel.Components.Remove(statsRollout);
+            return true;
         }
+
+	private void ConfirmUnassignBox_OnButtonClick(DaggerfallMessageBox sender, DaggerfallMessageBox.MessageBoxButtons messageBoxButton)
+	{
+		sender.CloseWindow();
+		if (messageBoxButton == DaggerfallMessageBox.MessageBoxButtons.Yes)
+		{
+			acceptUnassigned = true;
+		}
+	}
 
         #endregion
 
