@@ -18,6 +18,7 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using DaggerfallConnect;
 using DaggerfallConnect.Utility;
 using DaggerfallConnect.Arena2;
@@ -52,7 +53,10 @@ namespace DaggerfallWorkshop
         // Just using a simple animation speed for simple billboard anims
         // You can adjust this or extend as needed
         const int animalFps = 5;
-        const int lightFps = 20;
+        const int lightFps = 12;
+        const int flameFps = 20;
+
+        static int[] flameRecords = new int[] { 0, 1, 6, 16, 17, 18, 19, 20 };
 
         public BillboardSummary Summary
         {
@@ -132,7 +136,11 @@ namespace DaggerfallWorkshop
             {
                 float speed = FramesPerSecond;
                 if (summary.Archive == Utility.TextureReader.AnimalsTextureArchive) speed = animalFps;
-                else if (summary.Archive == Utility.TextureReader.LightsTextureArchive) speed = lightFps;
+                else if (summary.Archive == Utility.TextureReader.LightsTextureArchive)
+                    if (flameRecords.Contains(summary.Record))
+                        speed = flameFps;
+                    else
+                        speed = lightFps;
                 if (meshFilter != null)
                 {
                     summary.CurrentFrame++;
