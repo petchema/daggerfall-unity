@@ -409,7 +409,11 @@ namespace DaggerfallWorkshop.Game
                                     DaggerfallUI.SetMidScreenText(HardStrings.youAreTooFarAway);
                                     break;
                                 }
-                                GameManager.Instance.TalkManager.TalkToMobileNPC(mobileNpc);
+                                // mobile NPCs don't talk to armed players, like in Arena
+                                if (GameManager.Instance.WeaponManager.Sheathed)
+                                {
+                                    GameManager.Instance.TalkManager.TalkToMobileNPC(mobileNpc);
+                                }
                                 break;
                             case PlayerActivateModes.Steal:
                                 if (!mobileNpc.PickpocketByPlayerAttempted)
