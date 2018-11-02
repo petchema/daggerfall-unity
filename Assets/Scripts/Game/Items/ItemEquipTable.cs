@@ -131,11 +131,20 @@ namespace DaggerfallWorkshop.Game.Items
                     UnequipItem(EquipSlots.RightHand, unequippedList);
             }
 
-            // Unequip any previous item
             if (!IsSlotOpen(slot) && !alwaysEquip)
                 return null;
-            else
-                UnequipItem(slot, unequippedList);
+
+            // If more than one item selected, pick one to equip
+            if (item.IsAStack())
+            {
+                item = GameManager.Instance.PlayerEntity.Items.SplitStack(item, 1);
+                // May fail if the stack does not come from player's items
+                if (item == null)
+                    return null;
+            }
+
+            // Unequip any previous item
+            UnequipItem(slot, unequippedList);
 
             // Equip item to slot
             item.EquipSlot = slot;

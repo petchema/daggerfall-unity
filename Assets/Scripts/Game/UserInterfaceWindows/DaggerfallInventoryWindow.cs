@@ -1220,9 +1220,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 }
                 return;
             }
-            // If more than one item selected, equip only one
-            if (item.IsAStack())
-                item = playerEntity.Items.SplitStack(item, 1);
 
             // Try to equip the item, and update armour values accordingly
             List<DaggerfallUnityItem> unequippedList = playerEntity.ItemEquipTable.EquipItem(item);
