@@ -526,7 +526,11 @@ namespace DaggerfallWorkshop.Game
                 case DaggerfallUIMessages.dfuiOpenTransportWindow:
                     if (GameManager.Instance.IsPlayerInside)
                     {
-                        AddHUDText(HardStrings.cannotChangeTransportationIndoors);
+                        if (GameManager.Instance.TransportManager.TransportMode == TransportModes.Cart ||
+                            GameManager.Instance.TransportManager.TransportMode == TransportModes.Horse)
+                            GameManager.Instance.TransportManager.TransportMode = TransportModes.Foot;
+                        else
+                           AddHUDText(HardStrings.cannotChangeTransportationIndoors);
                     }
                     else
                     {
