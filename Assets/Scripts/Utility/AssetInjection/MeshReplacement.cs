@@ -107,8 +107,16 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             // Assign a random rotation
             if (go.GetComponent<FaceWall>() == null)
             {
-                Random.InitState((int)position.x);
-                go.transform.Rotate(0, Random.Range(0f, 360f), 0);
+                Random.State savedRandomState = UnityEngine.Random.state;
+                try
+                {
+                    Random.InitState((int)position.x);
+                    go.transform.Rotate(0, Random.Range(0f, 360f), 0);
+                }
+                finally
+                {
+                    UnityEngine.Random.state = savedRandomState;
+                }
             }
 
             // Add NPC trigger collider

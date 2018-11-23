@@ -512,40 +512,48 @@ namespace DaggerfallWorkshop.Utility
             GameObject randomEnemiesNode = new GameObject("Random Enemies");
             randomEnemiesNode.transform.parent = go.transform;
 
-            // Seed random generator
-            UnityEngine.Random.InitState(seed);
-
-            bool alternateRandomEnemySelection = DaggerfallUnity.Settings.AlternateRandomEnemySelection;
-
-            if (!alternateRandomEnemySelection) // Classic enemy selection
+            UnityEngine.Random.State savedRandomState = UnityEngine.Random.state;
+            try
             {
-                // Set up enemy lists used by classic
-                DFRandom.srand(GameManager.Instance.PlayerGPS.CurrentLocation.Dungeon.RecordElement.Header.LocationId);
-                MobileTypes[] DungeonWaterEnemiesToPlace = new MobileTypes[256];
-                MobileTypes[] DungeonNonWaterEnemiesToPlace = new MobileTypes[256];
+                // Seed random generator
+                UnityEngine.Random.InitState(seed);
 
-                for (int i = 0; i < 256; ++i)
-                    DungeonNonWaterEnemiesToPlace[i] = ChooseRandomEnemyType(RandomEncounters.EncounterTables[(int)dungeonType]);
-                for (int i = 0; i < 256; ++i)
-                    DungeonWaterEnemiesToPlace[i] = ChooseRandomEnemyType(RandomEncounters.EncounterTables[19]);
+                bool alternateRandomEnemySelection = DaggerfallUnity.Settings.AlternateRandomEnemySelection;
 
-                // Iterate editor flats for enemies
-                for (int i = 0; i < editorObjects.Length; i++)
+                if (!alternateRandomEnemySelection) // Classic enemy selection
                 {
-                    // Add random enemy objects
-                    if (editorObjects[i].Resources.FlatResource.TextureRecord == randomMonsterFlatIndex)
-                        AddRandomRDBEnemyClassic(editorObjects[i], dungeonType, monsterPower, monsterVariance, randomEnemiesNode.transform, ref blockData, startMarkers, serialize, DungeonWaterEnemiesToPlace, DungeonNonWaterEnemiesToPlace);
+                    // Set up enemy lists used by classic
+                    DFRandom.srand(GameManager.Instance.PlayerGPS.CurrentLocation.Dungeon.RecordElement.Header.LocationId);
+                    MobileTypes[] DungeonWaterEnemiesToPlace = new MobileTypes[256];
+                    MobileTypes[] DungeonNonWaterEnemiesToPlace = new MobileTypes[256];
+
+                    for (int i = 0; i < 256; ++i)
+                        DungeonNonWaterEnemiesToPlace[i] = ChooseRandomEnemyType(RandomEncounters.EncounterTables[(int)dungeonType]);
+                    for (int i = 0; i < 256; ++i)
+                        DungeonWaterEnemiesToPlace[i] = ChooseRandomEnemyType(RandomEncounters.EncounterTables[19]);
+
+                    // Iterate editor flats for enemies
+                    for (int i = 0; i < editorObjects.Length; i++)
+                    {
+                        // Add random enemy objects
+                        if (editorObjects[i].Resources.FlatResource.TextureRecord == randomMonsterFlatIndex)
+                            AddRandomRDBEnemyClassic(editorObjects[i], dungeonType, monsterPower, monsterVariance, randomEnemiesNode.transform, ref blockData, startMarkers, serialize, DungeonWaterEnemiesToPlace, DungeonNonWaterEnemiesToPlace);
+                    }
+                }
+                else // Alternate enemy selection (more randomized)
+                {
+                    // Iterate editor flats for enemies
+                    for (int i = 0; i < editorObjects.Length; i++)
+                    {
+                        // Add random enemy objects
+                        if (editorObjects[i].Resources.FlatResource.TextureRecord == randomMonsterFlatIndex)
+                            AddRandomRDBEnemy(editorObjects[i], dungeonType, monsterPower, monsterVariance, randomEnemiesNode.transform, ref blockData, startMarkers, serialize);
+                    }
                 }
             }
-            else // Alternate enemy selection (more randomized)
+            finally
             {
-                // Iterate editor flats for enemies
-                for (int i = 0; i < editorObjects.Length; i++)
-                {
-                    // Add random enemy objects
-                    if (editorObjects[i].Resources.FlatResource.TextureRecord == randomMonsterFlatIndex)
-                        AddRandomRDBEnemy(editorObjects[i], dungeonType, monsterPower, monsterVariance, randomEnemiesNode.transform, ref blockData, startMarkers, serialize);
-                }
+                UnityEngine.Random.state = savedRandomState;
             }
         }
 
