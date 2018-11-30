@@ -23,28 +23,35 @@ namespace DaggerfallWorkshop.Game.UserInterface
     public class PopupText : Panel
     {
         const float textSpacing = 1;
-        const float defaultDisplayTime = 2.5f;
         const int maxRows = 7;
-        // Slight throttling
-        const float scrollDelay = 0.08f;
+
+        // What delay to apply when some messages are waiting to be displayed
+        const float minDisplayTime = 0.5f;
+
+        // Display time when none specified
+        private float AutoDisplayTime(string text)
+        {
+            return Mathf.Max(1f, 0.5f + text.Length / 30f);
+        }
 
         private class Message
         {
             public readonly TextLabel text;
             public readonly float displayTime;
-            public float? expirationTimer;
 
             public Message(TextLabel text, float displayTime)
             {
                 this.text = text;
                 this.displayTime = displayTime;
-                expirationTimer = null;
             }
         }
 
         LinkedList<Message> textRows = new LinkedList<Message>();
         float timer = 0;
-        float nextScrollTimer = 0;
+        // Positive if some scrolling has been scheduled
+        float nextScrollTimer = -1f;
+        // How many messages must be scrolled quickly
+        private int fastScrollMessages = 0;
 
         public PopupText()
             : base()
@@ -57,24 +64,31 @@ namespace DaggerfallWorkshop.Game.UserInterface
         {
             base.Update();
 
-            if (textRows.Count > 0)
+            if (textRows.Count > 0 && nextScrollTimer >= 0f)
             {
                 timer += Time.deltaTime;
+                // Remove items from front of list
                 if (timer >= nextScrollTimer)
                 {
-                    // Remove items from front of list
-                    if (timer >= textRows.First.Value.expirationTimer)
-                    {
-                        textRows.RemoveFirst();
-                    }
-                    if (textRows.Count > 0)
-                        nextScrollTimer += scrollDelay;
-                    else
-                    {
+                    textRows.RemoveFirst();
+                    if (fastScrollMessages > 0)
+                        fastScrollMessages--;
+
+                    nextScrollTimer = -1f;
+                    if (textRows.Count == 0)
                         timer = 0f;
-                        nextScrollTimer = 0f;
-                    }
                 }
+            }
+        }
+
+        private void SetFastScrollMessages(int number)
+        {
+            if (number > fastScrollMessages)
+            {
+                fastScrollMessages = number;
+                // Quicken current message if needed
+                if (fastScrollMessages > 0 && nextScrollTimer > timer + minDisplayTime)
+                    nextScrollTimer = timer + minDisplayTime;
             }
         }
 
@@ -96,30 +110,39 @@ namespace DaggerfallWorkshop.Game.UserInterface
                     label.Draw();
                     y += label.TextHeight + textSpacing;
                 }
-                if (enumerator.Current.expirationTimer == null)
-                {
-                    // Start counting when text is first shown
-                    enumerator.Current.expirationTimer = timer + enumerator.Current.displayTime;
-                }
                 if (++count > maxCount)
                     break;
+            }
+            if (textRows.Count > 0 && nextScrollTimer < 0f)
+            {
+                // Schedule scrolling when display just happened
+                float computedDelay = fastScrollMessages > 0 ? minDisplayTime : textRows.First.Value.displayTime;
+                nextScrollTimer = timer + computedDelay;
             }
         }
 
         public void AddText(string text)
         {
-            AddText(text, defaultDisplayTime);
+            AddText(text, AutoDisplayTime(text));
         }
 
         /// <summary>
         /// Adds text with custom delay.
-        /// Delay affects this item only. Subsequent text items can override delay.
-        /// Delay will return to default after time elapsed.
+        /// Delay affects this item only.
         /// </summary>
         /// <param name="text">Text to display.</param>
         /// <param name="delayInSeconds">Time in seconds before removing text.</param>
         public void AddText(string text, float delayInSeconds)
         {
+            AddTextInternal(text, delayInSeconds);
+            if (textRows.Count > maxRows)
+                SetFastScrollMessages(textRows.Count - maxRows);
+        }
+
+        private void AddTextInternal(string text, float delayInSeconds)
+        {
+            // HACK: "override delays, caller doesn't know what it's doing"
+            delayInSeconds = AutoDisplayTime(text);
             TextLabel label = DaggerfallUI.AddTextLabel(DaggerfallUI.DefaultFont, Vector2.zero, text);
             label.HorizontalAlignment = HorizontalAlignment.Center;
             label.Parent = Parent;
@@ -136,10 +159,14 @@ namespace DaggerfallWorkshop.Game.UserInterface
             string[] lines = TextFile.GetTokenLines(tokens);
             if (lines != null && lines.Length > 0)
             {
-                foreach(string line in lines)
+                int rowsCountBefore = textRows.Count;
+                foreach (string line in lines)
                 {
-                    AddText(line, delayInSeconds);
+                    AddTextInternal(line, delayInSeconds);
                 }
+                // Never fast scroll text just added
+                if (textRows.Count > maxRows)
+                    SetFastScrollMessages(Mathf.Min(rowsCountBefore, textRows.Count - maxRows));
             }
         }
     }
