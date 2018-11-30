@@ -23,12 +23,28 @@ namespace DaggerfallWorkshop.Game.UserInterface
     public class PopupText : Panel
     {
         const float textSpacing = 1;
-        const float popDelay = 1.0f;
+        const float defaultDisplayTime = 2.5f;
         const int maxRows = 7;
+        // Slight throttling
+        const float scrollDelay = 0.08f;
 
-        LinkedList<TextLabel> textRows = new LinkedList<TextLabel>();
+        private class Message
+        {
+            public readonly TextLabel text;
+            public readonly float displayTime;
+            public float? expirationTimer;
+
+            public Message(TextLabel text, float displayTime)
+            {
+                this.text = text;
+                this.displayTime = displayTime;
+                expirationTimer = null;
+            }
+        }
+
+        LinkedList<Message> textRows = new LinkedList<Message>();
         float timer = 0;
-        float nextPopDelay = popDelay;
+        float nextScrollTimer = 0;
 
         public PopupText()
             : base()
@@ -41,16 +57,24 @@ namespace DaggerfallWorkshop.Game.UserInterface
         {
             base.Update();
 
-            // Remove item from front of list
-            timer += Time.deltaTime;
-            if (timer > nextPopDelay)
+            if (textRows.Count > 0)
             {
-                timer = 0;
-                if (textRows.Count > 0)
-                    textRows.RemoveFirst();
-
-                // Reset pop delay to default
-                nextPopDelay = popDelay;
+                timer += Time.deltaTime;
+                if (timer >= nextScrollTimer)
+                {
+                    // Remove items from front of list
+                    if (timer >= textRows.First.Value.expirationTimer)
+                    {
+                        textRows.RemoveFirst();
+                    }
+                    if (textRows.Count > 0)
+                        nextScrollTimer += scrollDelay;
+                    else
+                    {
+                        timer = 0f;
+                        nextScrollTimer = 0f;
+                    }
+                }
             }
         }
 
@@ -62,15 +86,20 @@ namespace DaggerfallWorkshop.Game.UserInterface
             int count = 0;
             float y = 4;
             int maxCount = (textRows.Count > maxRows) ? maxRows : textRows.Count;
-            IEnumerator enumerator = textRows.GetEnumerator();
+            LinkedList<Message>.Enumerator enumerator = textRows.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                TextLabel label = enumerator.Current as TextLabel;
+                TextLabel label = enumerator.Current.text;
                 if (label != null)
                 {
                     label.Position = new Vector2(0, y);
                     label.Draw();
                     y += label.TextHeight + textSpacing;
+                }
+                if (enumerator.Current.expirationTimer == null)
+                {
+                    // Start counting when text is first shown
+                    enumerator.Current.expirationTimer = timer + enumerator.Current.displayTime;
                 }
                 if (++count > maxCount)
                     break;
@@ -79,11 +108,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
 
         public void AddText(string text)
         {
-            TextLabel label = DaggerfallUI.AddTextLabel(DaggerfallUI.DefaultFont, Vector2.zero, text);
-            label.HorizontalAlignment = HorizontalAlignment.Center;
-            label.Parent = Parent;
-            textRows.AddLast(label);
-            timer = 0;
+            AddText(text, defaultDisplayTime);
         }
 
         /// <summary>
@@ -95,8 +120,10 @@ namespace DaggerfallWorkshop.Game.UserInterface
         /// <param name="delayInSeconds">Time in seconds before removing text.</param>
         public void AddText(string text, float delayInSeconds)
         {
-            AddText(text);
-            nextPopDelay = delayInSeconds;
+            TextLabel label = DaggerfallUI.AddTextLabel(DaggerfallUI.DefaultFont, Vector2.zero, text);
+            label.HorizontalAlignment = HorizontalAlignment.Center;
+            label.Parent = Parent;
+            textRows.AddLast(new Message(label, delayInSeconds));
         }
 
         /// <summary>
