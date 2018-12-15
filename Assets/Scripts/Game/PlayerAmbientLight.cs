@@ -29,13 +29,10 @@ namespace DaggerfallWorkshop.Game
         public Color DungeonAmbientLight = new Color(0.12f, 0.12f, 0.12f);
         public Color CastleAmbientLight = new Color(0.58f, 0.58f, 0.58f);
         public Color SpecialAreaLight = new Color(0.58f, 0.58f, 0.58f);
-        public float FadeDuration = 3f;
-        public float FadeStep = 0.1f;
 
         PlayerEnterExit playerEnterExit;
         SunlightManager sunlightManager;
         Color targetAmbientLight;
-        bool fadeRunning;
 
         void Start()
         {
@@ -46,8 +43,8 @@ namespace DaggerfallWorkshop.Game
 
         void Update()
         {
-            if (UnityEngine.RenderSettings.ambientLight != targetAmbientLight && !fadeRunning)
-                StartCoroutine(ChangeAmbientLight());
+            if (UnityEngine.RenderSettings.ambientLight != targetAmbientLight)
+                UnityEngine.RenderSettings.ambientLight = targetAmbientLight;
         }
 
         // Polls PlayerEnterExit a few times each second to detect if player environment has changed
@@ -80,24 +77,6 @@ namespace DaggerfallWorkshop.Game
 
                 yield return new WaitForSeconds(pollSpeed);
             }
-        }
-
-        IEnumerator ChangeAmbientLight()
-        {
-            fadeRunning = true;
-
-            float progress = 0;
-            float increment = FadeStep / FadeDuration;
-            Color startColor = UnityEngine.RenderSettings.ambientLight;
-            while (progress < 1)
-            {
-                UnityEngine.RenderSettings.ambientLight = Color.Lerp(startColor, targetAmbientLight, progress);
-                progress += increment;
-                yield return new WaitForSeconds(FadeStep);
-            }
-
-            UnityEngine.RenderSettings.ambientLight = targetAmbientLight;
-            fadeRunning = false;
         }
 
         Color CalcDaytimeAmbientLight()
