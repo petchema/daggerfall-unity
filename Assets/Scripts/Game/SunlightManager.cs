@@ -22,7 +22,7 @@ namespace DaggerfallWorkshop.Game
     public class SunlightManager : MonoBehaviour
     {
         public const float defaultScaleFactor = 1;
-
+        private const float lightBonus = 0.05f;             // Extended light before dawn and after dusk
         public float Angle = -90f;                          // Sunlight direction throughout day
         [Range(0, 1)]
         public float ScaleFactor = defaultScaleFactor;      // Scale all lights by this amount
@@ -109,9 +109,9 @@ namespace DaggerfallWorkshop.Game
 
             // Set light intensity
             if (lerp < 0.5f)
-                daylightScale = lerp * 2f;
+                daylightScale = (lerp + lightBonus) / (0.5f + lightBonus);
             else
-                daylightScale = 1f - ((lerp - 0.5f) * 2f);
+                daylightScale = (1f + lightBonus - lerp) / (0.5f + lightBonus);
 
             // Set sun direction and scale
             if (myLight.enabled)
