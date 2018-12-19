@@ -22,6 +22,7 @@ using DaggerfallConnect.Utility;
 using DaggerfallWorkshop.Game;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Utility;
+using System.Linq;
 
 namespace DaggerfallWorkshop
 {
@@ -81,7 +82,7 @@ namespace DaggerfallWorkshop
 
         // List of loose objects, such as locations or loot containers
         // These objects are not recycled and will created/destroyed as needed
-        List<LooseObjectDesc> looseObjectsList = new List<LooseObjectDesc>();
+        Dictionary<Tuple<int, int>, List<LooseObjectDesc>> looseObjectsList = new Dictionary<Tuple<int, int>, List<LooseObjectDesc>>();
 
         // Compensation for floating origin
         Vector3 worldCompensation = Vector3.zero;
@@ -107,6 +108,7 @@ namespace DaggerfallWorkshop
 
         private int? travelStartX = null;
         private int? travelStartZ = null;
+        private float debugTimer = 0f;
 
         #endregion
 
@@ -205,8 +207,6 @@ namespace DaggerfallWorkshop
         struct LooseObjectDesc
         {
             public GameObject gameObject;
-            public int mapPixelX;
-            public int mapPixelY;
             public bool statefulObj;
         }
 
@@ -232,6 +232,51 @@ namespace DaggerfallWorkshop
             // Cannot proceed until ready and player is set
             if (!ReadyCheck())
                 return;
+
+            if (Time.realtimeSinceStartup > debugTimer + 1f)
+            {
+                if (looseObjectsList.Count > 0)
+                {
+                    int minX = MapPixelX - TerrainDistance, maxX = MapPixelX + TerrainDistance;
+                    int minY = MapPixelY - TerrainDistance, maxY = MapPixelY + TerrainDistance;
+                    foreach (Tuple<int, int> key in looseObjectsList.Keys)
+                    {
+                        // Debug.Log(String.Format("({0},{1}) => {2}", key.First, key.Second, looseObjectsList[key].Count));
+                        if (looseObjectsList[key].Count > 0)
+                        {
+                            if (key.First < minX)
+                                minX = key.First;
+                            if (key.First > maxX)
+                                maxX = key.First;
+                            if (key.Second < minY)
+                                minY = key.Second;
+                            if (key.Second > maxY)
+                                maxY = key.Second;
+                        }
+                    }
+                    Debug.Log(String.Format("({0},{1}) - ({2},{3})", minX, minY, maxX, maxY));
+                    Debug.Log(Enumerable.Range(minX, maxX - minX + 1).Select((x, i) => x.ToString()).Aggregate("\t", (a, b) => a + "\t" + b));
+                    for (int y = minY; y <= maxY; y++)
+                    {
+                        Debug.Log(String.Format("{0}\t{1}", y, Enumerable.Range(minX, maxX - minX + 1)
+                        .Select((x, i) =>
+                        {
+                            Tuple<int, int> key = Tuple<int, int>.Make(x, y);
+                            List<LooseObjectDesc> bucket = null;
+                            int count = looseObjectsList.TryGetValue(key, out bucket) ? bucket.Count : 0;
+                            if (count > 0)
+                                return count.ToString();
+                            else if (IsInRange(x, y))
+                                return "*";
+                            else
+                                return "-";
+                        }).Aggregate("", (a, b) => a + "\t" + b)));
+                    }
+                }
+                else
+                    Debug.Log("No looseObjects");
+                debugTimer = Time.realtimeSinceStartup;
+            }
 
             // Handle moving to new map pixel or first-time init
             DFPosition curMapPixel = LocalPlayerGPS.CurrentMapPixel;
@@ -396,7 +441,7 @@ namespace DaggerfallWorkshop
         /// <summary>
         /// Offset world compensation for floating origin.
         /// </summary>
-        /// <param name="change">Amount to offset world compensation.</param>
+        /// <param name="offset">Amount to offset world compensation.</param>
         /// <param name="offsetLastPlayerPos">Optionally update last known player position so GPS does not change.</param>
         public void OffsetWorldCompensation(Vector3 offset, bool offsetLastPlayerPos = true)
         {
@@ -450,11 +495,18 @@ namespace DaggerfallWorkshop
             LooseObjectDesc desc = new LooseObjectDesc();
             desc.gameObject = gameObject;
             if (mapPixelX == -1)
-                desc.mapPixelX = MapPixelX;
+                mapPixelX = MapPixelX;
             if (mapPixelY == -1)
-                desc.mapPixelY = MapPixelY;
+                mapPixelY = MapPixelY;
             desc.statefulObj = statefulObj;
-            looseObjectsList.Add(desc);
+            Tuple<int, int> key = Tuple<int, int>.Make(mapPixelX, mapPixelY);
+            List<LooseObjectDesc> bucket;
+            if (!looseObjectsList.TryGetValue(key, out bucket))
+            {
+                bucket = new List<LooseObjectDesc>();
+                looseObjectsList.Add(key, bucket);
+            }
+            bucket.Add(desc);
 
             // Change object parent
             if (setParent)
@@ -463,7 +515,11 @@ namespace DaggerfallWorkshop
 
         public void ClearStatefulLooseObjects()
         {
-            looseObjectsList.RemoveAll(x => x.statefulObj);
+            foreach (List<LooseObjectDesc> bucket in looseObjectsList.Values)
+            {
+                bucket.RemoveAll(x => x.statefulObj);
+            }
+            looseObjectsList.Clear();
         }
 
         /// <summary>
@@ -509,15 +565,20 @@ namespace DaggerfallWorkshop
         /// <returns>DaggerfallLocation component if player inside location map pixel, otherwise null.</returns>
         private DaggerfallLocation GetPlayerLocationObject()
         {
+
             // Look for location at current map pixel coords inside loose object list
-            for (int i = 0; i < looseObjectsList.Count; i++)
+            Tuple<int, int> key = Tuple<int, int>.Make(MapPixelX, MapPixelY);
+            List<LooseObjectDesc> bucket;
+            if (looseObjectsList.TryGetValue(key, out bucket))
             {
-                LooseObjectDesc desc = looseObjectsList[i];
-                if (!desc.statefulObj && desc.gameObject && desc.mapPixelX == MapPixelX && desc.mapPixelY == MapPixelY)
+                foreach (LooseObjectDesc desc in bucket)
                 {
-                    DaggerfallLocation location = desc.gameObject.GetComponent<DaggerfallLocation>();
-                    if (location)
-                        return location;
+                    if (!desc.statefulObj && desc.gameObject)
+                    {
+                        DaggerfallLocation location = desc.gameObject.GetComponent<DaggerfallLocation>();
+                        if (location)
+                            return location;
+                    }
                 }
             }
 
@@ -691,10 +752,15 @@ namespace DaggerfallWorkshop
                     // Add location to loose object list
                     LooseObjectDesc looseObject = new LooseObjectDesc();
                     looseObject.gameObject = locationObject;
-                    looseObject.mapPixelX = terrainArray[index].mapPixelX;
-                    looseObject.mapPixelY = terrainArray[index].mapPixelY;
                     looseObject.statefulObj = false;
-                    looseObjectsList.Add(looseObject);
+                    Tuple<int, int> key = Tuple<int, int>.Make(terrainArray[index].mapPixelX, terrainArray[index].mapPixelY);
+                    List<LooseObjectDesc> bucket;
+                    if (!looseObjectsList.TryGetValue(key, out bucket))
+                    {
+                        bucket = new List<LooseObjectDesc>();
+                        looseObjectsList.Add(key, bucket);
+                    }
+                    bucket.Add(looseObject);
 
                     // Create billboard batch game objects for this location
                     // Streaming world always batches for performance, regardless of options
@@ -930,6 +996,7 @@ namespace DaggerfallWorkshop
         // Remove managed child objects
         private void ClearStreamingWorld()
         {
+            Debug.Log("ClearStreamingWorld");
             // Collect everything
             CollectTerrains(true);
             CollectLooseObjects(true);
@@ -977,19 +1044,32 @@ namespace DaggerfallWorkshop
         // Destroy any loose objects outside of range
         private void CollectLooseObjects(bool collectAll = false)
         {
-            // Walk list backward to RemoveAt doesn't shift unprocessed items
-            for (int i = looseObjectsList.Count; i-- > 0; )
+            int countBefore = 0;
+            int countAfter = 0;
+            List<Tuple<int, int>> dropKeys = new List<Tuple<int, int>>(10);
+            foreach (KeyValuePair<Tuple<int, int>, List<LooseObjectDesc>> kv in looseObjectsList)
             {
-                if (!IsInRange(looseObjectsList[i].mapPixelX, looseObjectsList[i].mapPixelY) || collectAll)
+                countBefore += kv.Value.Count;
+                if (!IsInRange(kv.Key.First, kv.Key.Second) || collectAll)
                 {
-                    if (looseObjectsList[i].gameObject != null)
+                    foreach (LooseObjectDesc desc in kv.Value)
                     {
-                        looseObjectsList[i].gameObject.SetActive(false);
-                        StartCoroutine(DestroyGameObjectIterative(looseObjectsList[i].gameObject));
+                        if (desc.gameObject != null)
+                        {
+                            desc.gameObject.SetActive(false);
+                            StartCoroutine(DestroyGameObjectIterative(desc.gameObject));
+                        }
                     }
-                    looseObjectsList.RemoveAt(i);
+                    dropKeys.Add(kv.Key);
                 }
+                else
+                    countAfter += kv.Value.Count;
             }
+            foreach (Tuple<int, int> key in dropKeys)
+            {
+                looseObjectsList.Remove(key);
+            }
+            Debug.Log(String.Format("CollectLooseObjects({0}): {1} -> {2}", collectAll, countBefore, countAfter));
         }
 
         // Iteratively destroys game object as unity seems bad at doing this when just destroying parent
