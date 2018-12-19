@@ -441,7 +441,7 @@ namespace DaggerfallWorkshop
         /// <summary>
         /// Offset world compensation for floating origin.
         /// </summary>
-        /// <param name="offset">Amount to offset world compensation.</param>
+        /// <param name="change">Amount to offset world compensation.</param>
         /// <param name="offsetLastPlayerPos">Optionally update last known player position so GPS does not change.</param>
         public void OffsetWorldCompensation(Vector3 offset, bool offsetLastPlayerPos = true)
         {
@@ -519,7 +519,6 @@ namespace DaggerfallWorkshop
             {
                 bucket.RemoveAll(x => x.statefulObj);
             }
-            looseObjectsList.Clear();
         }
 
         /// <summary>
