@@ -269,28 +269,28 @@ namespace DaggerfallWorkshop.Game
             // Set presets based on weather type
             if (IsRaining && !IsStorming)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.Rain;
+                WeatherEffects.Presets = AmbientSoundPresets.Rain;
                 return;
             }
             else if (IsRaining && IsStorming)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.Storm;
+                WeatherEffects.Presets = AmbientSoundPresets.Storm;
                 return;
             }
 
             // Set presets based on time of day
             if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsDay)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.SunnyDay;
+                WeatherEffects.Presets = AmbientSoundPresets.SunnyDay;
                 return;
             }
             else if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ClearNight;
+                WeatherEffects.Presets = AmbientSoundPresets.ClearNight;
                 return;
             }
 
-            WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.None;
+            WeatherEffects.Presets = AmbientSoundPresets.None;
         }
 
         void PollWeatherChanges()
