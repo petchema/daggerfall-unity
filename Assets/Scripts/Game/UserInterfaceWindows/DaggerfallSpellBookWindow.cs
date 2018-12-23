@@ -533,16 +533,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         public MacroDataSource GetMacroDataSource()
         {
-            return new TradeMacroDataSource(this);
+            return new SpellbookMacroDataSource(this);
         }
 
         /// <summary>
-        /// MacroDataSource context sensitive methods for trade window.
+        /// MacroDataSource context sensitive methods for spellbook window.
         /// </summary>
-        private class TradeMacroDataSource : MacroDataSource
+        private class SpellbookMacroDataSource : MacroDataSource
         {
             private DaggerfallSpellBookWindow parent;
-            public TradeMacroDataSource(DaggerfallSpellBookWindow spellBookWindow)
+            public SpellbookMacroDataSource(DaggerfallSpellBookWindow spellBookWindow)
             {
                 this.parent = spellBookWindow;
             }
@@ -634,12 +634,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void UpArrowButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
-            spellsListBox.SelectedIndex--;
+            spellsListBox.SelectPrevious();
         }
 
         private void DownArrowButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
-            spellsListBox.SelectedIndex++;
+            spellsListBox.SelectNext();
         }
 
         void DeleteButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)

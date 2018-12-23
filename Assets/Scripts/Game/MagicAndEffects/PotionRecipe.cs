@@ -1,4 +1,4 @@
-﻿// Project:         Daggerfall Tools For Unity
+// Project:         Daggerfall Tools For Unity
 // Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
@@ -9,6 +9,7 @@
 // Notes:
 //
 
+using System;
 using System.Collections.Generic;
 using DaggerfallConnect.FallExe;
 
@@ -21,32 +22,60 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
     /// </summary>
     public class PotionRecipe : IEqualityComparer<PotionRecipe.Ingredient[]>
     {
+        // Classic potion recipe mapping to DFU recipe keys:
+        //  Stamina, Orc Strength, Healing, Waterwalking, Restore Power, Resist Fire, Resist Frost, Resist Shock, Cure Disease, Slow Falling,
+        //  Water Breathing, Heal True, Levitation, Resist Poison, Free Action, Cure Poison, Chameleon Form, Shadow Form, Invisibility, Purification
+        public static readonly int[] classicRecipeKeys = { 221871, 239524, 4975678, 5017404, 5188896, 111516185, 4826108, 216843, 224588, 220192,
+                                                           240081, 4937012, 228890, 221117, 4870452, 5361377, 112080144, 4842851, 4815872, 2031019196 };
+
+        public static readonly string UnknownPowers = "Unknown Powers";
+
         #region Fields
 
-        EffectSettings settings;
         Ingredient[] ingredients = null;
+        int textureRecord = 11;
 
         #endregion
 
         #region Properties
 
         /// <summary>
-        /// Gets or sets effect settings for this recipe.
+        /// The display name of this potion recipe.
         /// </summary>
-        public EffectSettings Settings
+        public string DisplayName { get; set; }
+
+        /// <summary>
+        /// The price of this potion recipe.
+        /// </summary>
+        public int Price { get; set; }
+
+        /// <summary>
+        /// The texture record from archive 205 to use for this potion, default = 11.
+        /// </summary>
+        public int TextureRecord
         {
-            get { return settings; }
-            set { settings = value; }
+            get { return textureRecord; }
+            set { textureRecord = value; }
         }
 
         /// <summary>
-        /// Gets or sets potion recipe ingredients.
+        /// Gets or sets effect settings for this recipe.
+        /// </summary>
+        public EffectSettings Settings { get; set; }
+
+        /// <summary>
+        /// Gets or sets potion recipe ingredients. Ingredients must be sorted by id.
         /// </summary>
         public Ingredient[] Ingredients
         {
             get { return ingredients; }
             set { ingredients = value; }
         }
+
+        /// <summary>
+        /// Retrieves a list of secondary effect keys.
+        /// </summary>
+        public List<string> SecondaryEffects { get; private set; }
 
         #endregion
 
@@ -57,28 +86,53 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         /// </summary>
         public PotionRecipe()
         {
-            settings = BaseEntityEffect.DefaultEffectSettings();
+            Settings = BaseEntityEffect.DefaultEffectSettings();
         }
 
         /// <summary>
         /// Ingredient[] array constructor.
         /// </summary>
+        /// <param name="displayName">Potion name to use for this recipe.</param>
+        /// <param name="price">Value of potion in gp.</param>
         /// <param name="settings">Settings for this potion recipe.</param>
         /// <param name="ingredients">Ingredient array.</param>
-        public PotionRecipe(EffectSettings settings, params Ingredient[] ingredients)
+        public PotionRecipe(string displayName, int price, EffectSettings settings, params Ingredient[] ingredients)
         {
-            this.settings = settings;
+            DisplayName = displayName;
+            Price = price;
+            this.Settings = settings;
+            Array.Sort(ingredients);
             this.ingredients = ingredients;
+        }
+
+        /// <summary>
+        /// Ingredient[] array constructor - for finding and comparisons.
+        /// </summary>
+        /// <param name="ids">Ingredient ids list.</param>
+        public PotionRecipe(List<int> ids)
+        {
+            ids.Sort();
+            if (ids != null && ids.Count > 0)
+            {
+                ingredients = new Ingredient[ids.Count];
+                for (int i = 0; i < ids.Count; i++)
+                    ingredients[i].id = ids[i];
+            }
         }
 
         /// <summary>
         /// int[] array of item template IDs constructor.
         /// </summary>
+        /// <param name="displayName">Potion name to use for this recipe.</param>
+        /// <param name="price">Value of potion in gp.</param>
         /// <param name="settings">Settings for this potion recipe.</param>
         /// <param name="ids">Array of item template IDs.</param>
-        public PotionRecipe(EffectSettings settings, params int[] ids)
+        public PotionRecipe(string displayName, int price, EffectSettings settings, params int[] ids)
         {
-            this.settings = settings;
+            DisplayName = displayName;
+            Price = price;
+            this.Settings = settings;
+            Array.Sort(ids);
             if (ids != null && ids.Length > 0)
             {
                 ingredients = new Ingredient[ids.Length];
@@ -166,6 +220,17 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         public bool HasRecipe()
         {
             return (ingredients != null && ingredients.Length > 0);
+        }
+
+        /// <summary>
+        /// Adds secondary effects to this potion recipe.
+        /// </summary>
+        /// <param name="effectKey">The EffectKey of the effect to add.</param>
+        public void AddSecondaryEffect(string effectKey)
+        {
+            if (SecondaryEffects == null)
+                SecondaryEffects = new List<string>();
+            SecondaryEffects.Add(effectKey);
         }
 
         /// <summary>

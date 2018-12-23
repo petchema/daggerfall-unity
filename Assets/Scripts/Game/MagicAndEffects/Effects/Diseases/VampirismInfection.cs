@@ -117,12 +117,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 
         private void DeployFullBlownVampirism()
         {
+            const int deathIsNotEternalTextID = 401;
+
             // Cancel rest window if sleeping
             if (DaggerfallUI.Instance.UserInterfaceManager.TopWindow is DaggerfallRestWindow)
                 (DaggerfallUI.Instance.UserInterfaceManager.TopWindow as DaggerfallRestWindow).CloseWindow();
 
-            // Raise game time to early the following evening
-            float raiseTime = (DaggerfallDateTime.DuskHour + 1 - DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.Hour) * 3600;
+            // Raise game time to an evening two weeks later
+            float raiseTime = (2 * DaggerfallDateTime.SecondsPerWeek) + (DaggerfallDateTime.DuskHour + 1 - DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.Hour) * 3600;
             DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.RaiseTime(raiseTime);
 
             // Transfer player to a random cemetery
@@ -137,12 +139,19 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 true,
                 false);
 
+            // Assign vampire spells to spellbook
+            GameManager.Instance.PlayerEntity.AssignPlayerVampireSpells(InfectionVampireClan);
+
             // Fade in from black
             DaggerfallUI.Instance.FadeBehaviour.FadeHUDFromBlack(1.0f);
 
             // Start permanent vampirism effect stage two
             EntityEffectBundle bundle = GameManager.Instance.PlayerEffectManager.CreateVampirismCurse();
             GameManager.Instance.PlayerEffectManager.AssignBundle(bundle);
+
+            // Display popup
+            DaggerfallMessageBox mb = DaggerfallUI.MessageBox(deathIsNotEternalTextID);
+            mb.Show();
         }
 
         DFLocation GetRandomCemetery()

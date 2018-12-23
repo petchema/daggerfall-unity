@@ -1,4 +1,4 @@
-﻿// Project:         Daggerfall Tools For Unity
+// Project:         Daggerfall Tools For Unity
 // Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
@@ -20,6 +20,8 @@ namespace DaggerfallWorkshop.Game.Entity
     /// </summary>
     public class RaceTemplate
     {
+        protected const string textDatabase = "Races";
+
         public int ID;                                          // A unique id for this race. Default race IDs match colour picker index on TAMRIEL2.IMG
         public string Name;                                     // Name of this race in singular, e.g. "Dark Elf"
         public int DescriptionID;                               // TEXT.RSC ID text to display on race selection
@@ -35,14 +37,38 @@ namespace DaggerfallWorkshop.Game.Entity
         public string PaperDollHeadsMale;                       // CIF filename of male head selection
         public string PaperDollHeadsFemale;                     // CIF filename of female head selection
 
-        public bool CompoundRace;                               // True when a base race is present for character, e.g. vampire/werecreature
-        public string TransformedPaperDollBackground;           // IMG filename of paper doll background when werecreature transformed
-
         public DFCareer.EffectFlags ResistanceFlags;            // Racial resistances
         public DFCareer.EffectFlags ImmunityFlags;              // Racial immunity
         public DFCareer.EffectFlags LowToleranceFlags;          // Racial low tolerance
         public DFCareer.EffectFlags CriticalWeaknessFlags;      // Racial critical weakness
         public DFCareer.SpecialAbilityFlags SpecialAbilities;   // Racial special abilities
+
+        /// <summary>
+        /// Clones this race template.
+        /// </summary>
+        /// <returns>Cloned RaceTemplate reference.</returns>
+        public RaceTemplate Clone()
+        {
+            RaceTemplate clone = new RaceTemplate();
+            clone.ID = ID;
+            clone.Name = Name;
+            clone.DescriptionID = DescriptionID;
+            clone.ClipID = ClipID;
+            clone.PaperDollBackground = PaperDollBackground;
+            clone.PaperDollBodyMaleUnclothed = PaperDollBodyMaleUnclothed;
+            clone.PaperDollBodyMaleClothed = PaperDollBodyMaleClothed;
+            clone.PaperDollBodyFemaleUnclothed = PaperDollBodyFemaleUnclothed;
+            clone.PaperDollBodyFemaleClothed = PaperDollBodyFemaleClothed;
+            clone.PaperDollHeadsMale = PaperDollHeadsMale;
+            clone.PaperDollHeadsFemale = PaperDollHeadsFemale;
+            clone.ResistanceFlags = ResistanceFlags;
+            clone.ImmunityFlags = ImmunityFlags;
+            clone.LowToleranceFlags = LowToleranceFlags;
+            clone.CriticalWeaknessFlags = CriticalWeaknessFlags;
+            clone.SpecialAbilities = SpecialAbilities;
+
+            return clone;
+        }
 
         /// <summary>
         /// Populates a race dictionary with standard RaceTemplate definitions.
@@ -62,9 +88,6 @@ namespace DaggerfallWorkshop.Game.Entity
             WoodElf woodElf = new WoodElf();
             Khajiit khajiit = new Khajiit();
             Argonian argonian = new Argonian();
-            //Vampire vampire = new Vampire();          // TODO: Uncomment later when paper doll and morphology support completed
-            //Werewolf werewolf = new Werewolf();
-            //Wereboar wereboar = new Wereboar();
 
             // Populate dictionary
             raceDict.Add(breton.ID, breton);
@@ -75,9 +98,6 @@ namespace DaggerfallWorkshop.Game.Entity
             raceDict.Add(woodElf.ID, woodElf);
             raceDict.Add(khajiit.ID, khajiit);
             raceDict.Add(argonian.ID, argonian);
-            //raceDict.Add(vampire.ID, vampire);      // TODO: Uncomment later when paper doll and morphology support completed
-            //raceDict.Add(werewolf.ID, werewolf);
-            //raceDict.Add(wereboar.ID, wereboar);
 
             return raceDict;
         }
@@ -90,7 +110,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public Breton()
         {
             ID = (int)Races.Breton;
-            Name = "Breton";
+            Name = TextManager.Instance.GetText(textDatabase, "breton");
             DescriptionID = 2003;
             ClipID = 209;
 
@@ -111,7 +131,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public Redguard()
         {
             ID = (int)Races.Redguard;
-            Name = "Redguard";
+            Name = TextManager.Instance.GetText(textDatabase, "redguard");
             DescriptionID = 2002;
             ClipID = 210;
 
@@ -132,7 +152,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public Nord()
         {
             ID = (int)Races.Nord;
-            Name = "Nord";
+            Name = TextManager.Instance.GetText(textDatabase, "nord");
             DescriptionID = 2000;
             ClipID = 211;
 
@@ -155,7 +175,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public DarkElf()
         {
             ID = (int)Races.DarkElf;
-            Name = "Dark Elf";
+            Name = TextManager.Instance.GetText(textDatabase, "darkElf");
             DescriptionID = 2007;
             ClipID = 212;
 
@@ -176,7 +196,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public HighElf()
         {
             ID = (int)Races.HighElf;
-            Name = "High Elf";
+            Name = TextManager.Instance.GetText(textDatabase, "highElf");
             DescriptionID = 2006;
             ClipID = 213;
 
@@ -199,7 +219,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public WoodElf()
         {
             ID = (int)Races.WoodElf;
-            Name = "Wood Elf";
+            Name = TextManager.Instance.GetText(textDatabase, "woodElf");
             DescriptionID = 2005;
             ClipID = 214;
 
@@ -220,7 +240,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public Khajiit()
         {
             ID = (int)Races.Khajiit;
-            Name = "Khajiit";
+            Name = TextManager.Instance.GetText(textDatabase, "khajiit");
             DescriptionID = 2001;
             ClipID = 215;
 
@@ -241,7 +261,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public Argonian()
         {
             ID = (int)Races.Argonian;
-            Name = "Argonian";
+            Name = TextManager.Instance.GetText(textDatabase, "argonian");
             DescriptionID = 2004;
             ClipID = 216;
 
@@ -254,62 +274,6 @@ namespace DaggerfallWorkshop.Game.Entity
 
             PaperDollHeadsMale = "FACE07I0.CIF";
             PaperDollHeadsFemale = "FACE17I0.CIF";
-        }
-    }
-
-    public class Vampire : RaceTemplate
-    {
-        public Vampire()
-        {
-            ID = (int)Races.Vampire;
-            Name = "Vampire";
-            DescriptionID = 0;
-            ClipID = 0;
-
-            PaperDollBackground = "SCBG08I0.IMG";
-
-            // TODO:
-            //  * Paper doll body to match base race
-            //  * Vampire heads in VAMP00I0.CIF need special handling
-            //  * Seems to be 1 head per base race - indices 0-7 female, 8-15 male
-
-            CompoundRace = true;
-        }
-    }
-
-    public class Werewolf : RaceTemplate
-    {
-        public Werewolf()
-        {
-            ID = (int)Races.Werewolf;
-            Name = "Werewolf";
-            DescriptionID = 0;
-            ClipID = 0;
-
-            // TODO:
-            //  * Paper doll setup to match base race when not transformed
-            //  * Otherwise draw transformed background only without usual paper doll
-
-            CompoundRace = true;
-            TransformedPaperDollBackground = "WOLF00I0.IMG";
-        }
-    }
-
-    public class Wereboar : RaceTemplate
-    {
-        public Wereboar()
-        {
-            ID = (int)Races.Wereboar;
-            Name = "Wereboar";
-            DescriptionID = 0;
-            ClipID = 0;
-
-            // TODO:
-            //  * Paper doll setup to match base race when not transformed
-            //  * Otherwise draw transformed background only without usual paper doll
-
-            CompoundRace = true;
-            TransformedPaperDollBackground = "BOAR00I0.IMG";
         }
     }
 

@@ -11,14 +11,11 @@
 
 using UnityEngine;
 using System;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using DaggerfallConnect;
 using DaggerfallConnect.Arena2;
 using DaggerfallConnect.Utility;
 using DaggerfallConnect.Save;
-using DaggerfallWorkshop;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Player;
 using DaggerfallWorkshop.Game.Entity;
@@ -26,6 +23,7 @@ using DaggerfallWorkshop.Game.Serialization;
 using DaggerfallWorkshop.Game.UserInterfaceWindows;
 using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Game.MagicAndEffects;
+using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
@@ -575,6 +573,9 @@ namespace DaggerfallWorkshop.Game.Utility
             var bankRecords = saveTree.FindRecord(RecordTypes.BankAccount);
             Banking.DaggerfallBankManager.ReadNativeBankData(bankRecords);
 
+            // Ship ownership
+            Banking.DaggerfallBankManager.AssignShipToPlayer(saveVars.PlayerOwnedShip);
+
             // Get regional data.
             playerEntity.RegionData = saveVars.RegionData;
 
@@ -611,6 +612,25 @@ namespace DaggerfallWorkshop.Game.Utility
 
             // Validate spellbook item
             DaggerfallUnity.Instance.ItemHelper.ValidateSpellbookItem(playerEntity);
+
+            // Restore vampirism if classic character was a vampire
+            if (characterDocument.classicTransformedRace == Races.Vampire)
+            {
+                // Restore effect
+                Debug.Log("Restoring vampirism to classic character.");
+                EntityEffectBundle bundle = GameManager.Instance.PlayerEffectManager.CreateVampirismCurse();
+                GameManager.Instance.PlayerEffectManager.AssignBundle(bundle);
+
+                // Assign correct clan from classic save
+                VampirismEffect vampireEffect = (VampirismEffect)GameManager.Instance.PlayerEffectManager.FindIncumbentEffect<VampirismEffect>();
+                if (vampireEffect != null)
+                {
+                    Debug.LogFormat("Setting vampire clan to {0}", (VampireClans)characterDocument.vampireClan);
+                    vampireEffect.VampireClan = (VampireClans)characterDocument.vampireClan;
+                }
+            }
+
+            // TODO: Restore lycanthropy if classic character was a werewolf/wereboar
 
             // Start game
             DaggerfallUI.Instance.PopToHUD();

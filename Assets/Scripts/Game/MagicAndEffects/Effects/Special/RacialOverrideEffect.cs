@@ -9,6 +9,9 @@
 // Notes:
 //
 
+using UnityEngine;
+using DaggerfallWorkshop.Game.Entity;
+
 namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 {
     /// <summary>
@@ -20,7 +23,15 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
     /// </summary>
     public abstract class RacialOverrideEffect : IncumbentEffect
     {
+        #region Fields
+
+        protected const string racesTextDatabase = "Races";
+
         int forcedRoundsRemaining = 1;
+
+        #endregion
+
+        #region Overrides
 
         // Always present at least one round remaining so effect system does not remove
         public override int RoundsRemaining
@@ -43,5 +54,30 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         {
             return;
         }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Gets custom head ImageData for this override.
+        /// Return false to just use standard head.
+        /// </summary>
+        public virtual bool GetCustomHeadImageData(PlayerEntity entity, out ImageData imageDataOut)
+        {
+            imageDataOut = new ImageData();
+            return false;
+        }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets custom race exposed by this override
+        /// </summary>
+        public abstract RaceTemplate CustomRace { get; }
+
+        #endregion
     }
 }

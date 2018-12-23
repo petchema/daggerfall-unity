@@ -16,6 +16,7 @@ using DaggerfallConnect.Arena2;
 using DaggerfallConnect.Utility;
 using DaggerfallWorkshop.Game.Player;
 using DaggerfallWorkshop.Game.Entity;
+using DaggerfallWorkshop;
 
 namespace DaggerfallConnect.Save
 {
@@ -54,7 +55,12 @@ namespace DaggerfallConnect.Save
             CharacterDocument doc = new CharacterDocument();
             Dictionary<int, RaceTemplate> raceDict = RaceTemplate.GetRaceDictionary();
 
-            doc.raceTemplate = raceDict[(int)parsedData.race + 1];
+            // Strip back classic changes for vampire or lycanthrope as this is handled by effect system in DFU
+            // If player is not transformed then this will simply return parsedData.race + 1
+            Races classicTransformedRace;
+            Races liveRace = StripTransformedRace(out classicTransformedRace);
+
+            doc.raceTemplate = raceDict[(int)liveRace];
             doc.gender = parsedData.gender;
             doc.career = parsedData.career;
             doc.name = parsedData.characterName;
@@ -78,15 +84,72 @@ namespace DaggerfallConnect.Save
             doc.minMetalToHit = parsedData.minMetalToHit;
             doc.armorValues = parsedData.armorValues;
             doc.timeToBecomeVampireOrWerebeast = parsedData.timeToBecomeVampireOrWerebeast;
+            doc.hasStartedInitialVampireQuest = parsedData.hasStartedInitialVampireQuest;
+            doc.lastTimeVampireNeedToKillSatiated = parsedData.lastTimeVampireNeedToKillSatiated;
             doc.lastTimePlayerAteOrDrankAtTavern = parsedData.lastTimePlayerAteOrDrankAtTavern;
             doc.lastTimePlayerBoughtTraining = parsedData.lastTimePlayerBoughtTraining;
             doc.timeForThievesGuildLetter = parsedData.timeForThievesGuildLetter;
             doc.timeForDarkBrotherhoodLetter = parsedData.timeForDarkBrotherhoodLetter;
+            doc.vampireClan = parsedData.vampireClan;
             doc.darkBrotherhoodRequirementTally = parsedData.darkBrotherhoodRequirementTally;
             doc.thievesGuildRequirementTally = parsedData.thievesGuildRequirementTally;
             doc.biographyReactionMod = parsedData.biographyReactionMod;
+            doc.classicTransformedRace = classicTransformedRace;
 
             return doc;
+        }
+
+        Races StripTransformedRace(out Races classicTransformedRace)
+        {
+            // Restore original character race if vampire or lycanthrope
+            // Racial overrides are handled by the effect system in DFU rather than entirely hardcoded, but still need to handle importing from classic
+            Races liveRace = parsedData.race + 1;
+            classicTransformedRace = Races.None;
+            if (liveRace == Races.Vampire || liveRace == Races.Werewolf || liveRace == Races.Wereboar)
+            {
+                classicTransformedRace = liveRace;
+                liveRace = parsedData.race2 + 1;
+            }
+
+            // Remove vampire bonuses to stats and skills
+            if (classicTransformedRace == Races.Vampire)
+            {
+                // Remove +20 bonus to stats
+                parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Strength, parsedData.currentStats.PermanentStrength - 20);
+                parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Willpower, parsedData.currentStats.PermanentWillpower - 20);
+                parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Agility, parsedData.currentStats.PermanentAgility - 20);
+                parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Endurance, parsedData.currentStats.PermanentEndurance - 20);
+                parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Personality, parsedData.currentStats.PermanentPersonality - 20);
+                parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Speed, parsedData.currentStats.PermanentSpeed - 20);
+                parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Luck, parsedData.currentStats.PermanentLuck - 20);
+                if ((VampireClans)parsedData.vampireClan == VampireClans.Anthotis)
+                    parsedData.currentStats.SetPermanentStatValue(DFCareer.Stats.Intelligence, parsedData.currentStats.PermanentIntelligence - 20);
+
+                // Remove +30 bonus to vampire skills
+                parsedData.skills.SetPermanentSkillValue(DFCareer.Skills.Jumping, (short)(parsedData.skills.GetPermanentSkillValue(DFCareer.Skills.Jumping) - 30));
+                parsedData.skills.SetPermanentSkillValue(DFCareer.Skills.Running, (short)(parsedData.skills.GetPermanentSkillValue(DFCareer.Skills.Running) - 30));
+                parsedData.skills.SetPermanentSkillValue(DFCareer.Skills.Stealth, (short)(parsedData.skills.GetPermanentSkillValue(DFCareer.Skills.Stealth) - 30));
+                parsedData.skills.SetPermanentSkillValue(DFCareer.Skills.CriticalStrike, (short)(parsedData.skills.GetPermanentSkillValue(DFCareer.Skills.CriticalStrike) - 30));
+                parsedData.skills.SetPermanentSkillValue(DFCareer.Skills.Climbing, (short)(parsedData.skills.GetPermanentSkillValue(DFCareer.Skills.Climbing) - 30));
+                parsedData.skills.SetPermanentSkillValue(DFCareer.Skills.HandToHand, (short)(parsedData.skills.GetPermanentSkillValue(DFCareer.Skills.HandToHand) - 30));
+
+                // Remove vampire advantages/disadvantages
+                // NOTES:
+                //  * This will also strip similar advantages/disadvantages selected at character creation time
+                //  * Need a way to differentiate base vs. transformed specials so they can be restored to pre-transform state only
+                //  * DFU does not deliver most of these effects via the career template anyway, rather uses effect system
+                //  * Custom effect mods have no way of showing specials on History popup either
+                //  * Will need to find a solution to help unify specials popup output with modern effect system while supporting classic
+                parsedData.career.DamageFromSunlight = false;
+                parsedData.career.DamageFromSunlight = false;
+                parsedData.career.DamageFromHolyPlaces = false;
+                parsedData.career.Paralysis = DFCareer.Tolerance.Normal;
+                parsedData.career.Disease = DFCareer.Tolerance.Normal;
+            }
+
+            // TODO: Remove werewolf/wereboar bonuses to stats and skills and instantiate racial override effect
+
+            return liveRace;
         }
 
         #region Readers
@@ -169,8 +232,11 @@ namespace DaggerfallConnect.Save
             parsedData.race2 = ReadRace(reader);
             parsedData.timeToBecomeVampireOrWerebeast = reader.ReadUInt32();
 
+            reader.BaseStream.Position = 0x1f8;
+            parsedData.hasStartedInitialVampireQuest = reader.ReadByte();
+
             reader.BaseStream.Position = 0x1fd;
-            parsedData.timeStamp = reader.ReadUInt32();
+            parsedData.lastTimeVampireNeedToKillSatiated = reader.ReadUInt32();
 
             reader.BaseStream.Position = 0x205;
             parsedData.lastTimePlayerAteOrDrankAtTavern = reader.ReadUInt32();
@@ -180,6 +246,7 @@ namespace DaggerfallConnect.Save
             parsedData.timeForThievesGuildLetter = reader.ReadUInt32();
             parsedData.timeForDarkBrotherhoodLetter = reader.ReadUInt32();
             parsedData.shieldEffectAmount = reader.ReadUInt32();
+            parsedData.vampireClan = reader.ReadByte();
 
             reader.BaseStream.Position = 0x21f;
             parsedData.darkBrotherhoodRequirementTally = reader.ReadByte();
@@ -350,8 +417,9 @@ namespace DaggerfallConnect.Save
             public Int16 attackDamageMin5;
             public Int16 attackDamageMax5;*/
             public Races race2; // Stores character's original race for when returning from being a vampire, werewolf or wereboar
-            public UInt32 timeToBecomeVampireOrWerebeast; // Should equal three days after infection.
-            public UInt32 timeStamp; // Time of last kill by vampires and werewolves?
+            public UInt32 timeToBecomeVampireOrWerebeast; // Three days after infection.
+            public Byte hasStartedInitialVampireQuest;
+            public UInt32 lastTimeVampireNeedToKillSatiated;
             public UInt32 lastTimePlayerCastLycanthropy;
             public UInt32 lastTimePlayerAteOrDrankAtTavern;
             public UInt32 lastTimePlayerBoughtTraining;
@@ -359,7 +427,7 @@ namespace DaggerfallConnect.Save
             public UInt32 timeForDarkBrotherhoodLetter;
             public UInt32 shieldEffectAmount;
             public Byte vampireClan;
-            public Byte effectStrength; // Used for Open and Shade effects at least.
+            public Byte effectStrength; // Used for Open effect at least.
             public Byte darkBrotherhoodRequirementTally;
             public Byte thievesGuildRequirementTally;
             public SByte biographyReactionMod;

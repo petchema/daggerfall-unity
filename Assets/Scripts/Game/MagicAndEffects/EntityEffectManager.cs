@@ -74,6 +74,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         float refreshModsTimer = 0;
         const float refreshModsDelay = 0.2f;
 
+        RacialOverrideEffect racialOverrideEffect;
+        PassiveSpecialsEffect passiveSpecialsEffect;
+
         #endregion
 
         #region Properties
@@ -174,14 +177,15 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
 
         private void Update()
         {
-            // Do nothing if no peer entity
-            if (!entityBehaviour)
+            // Do nothing if no peer entity, game not in play, or load in progress
+            if (!entityBehaviour || !GameManager.Instance.IsPlayingGame() || SaveLoadManager.Instance.LoadInProgress)
                 return;
 
             // Remove any bundles pending deletion
             RemovePendingBundles();
 
             // Run any per-frame constant effects
+            entityBehaviour.Entity.ClearConstantEffects();
             DoConstantEffects();
 
             // Refresh mods more frequently than magic rounds, but not too frequently
@@ -197,12 +201,16 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             {
                 WipeAllBundles();
                 wipeAllBundles = false;
+                return;
             }
 
             // Player can cast a spell, recast last spell, or abort current spell
             // Handling input here is similar to handling weapon input in WeaponManager
             if (IsPlayerEntity)
             {
+                // Player must always have passive specials effect
+                PassiveSpecialsCheck();
+
                 // Fire instant cast spells
                 if (readySpell != null && instantCast)
                 {
@@ -221,7 +229,10 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 if (InputManager.Instance.ActionStarted(InputManager.Actions.RecastSpell) && lastSpell != null &&
                     !GameManager.Instance.PlayerSpellCasting.IsPlayingAnim)
                 {
-                    SetReadySpell(lastSpell);
+                    if (GameManager.Instance.PlayerEntity.Items.Contains(ItemGroups.MiscItems, (int)MiscItems.Spellbook))
+                        SetReadySpell(lastSpell);
+                    else
+                        DaggerfallUI.AddHUDText(TextManager.Instance.GetText(textDatabase, "noSpellbook"));
                     return;
                 }
 
@@ -464,6 +475,10 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 // Add effect
                 instancedBundle.liveEffects.Add(effect);
 
+                // Cache racial override effect
+                if (effect is RacialOverrideEffect)
+                    racialOverrideEffect = (RacialOverrideEffect)effect;
+
                 // At this point effect is ready and gets initial magic round
                 effect.MagicRound();
             }
@@ -493,6 +508,17 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets current racial override effect if one is present.
+        /// Racial override is a special case effect that is cached when started/resumed on entity.
+        /// Can still search using FindIncumbentEffect<RacialOverrideEffect>(), but this method will be more efficient.
+        /// </summary>
+        /// <returns>RacialOverrideEffect or null.</returns>
+        public RacialOverrideEffect GetRacialOverrideEffect()
+        {
+            return racialOverrideEffect;
         }
 
         /// <summary>
@@ -559,6 +585,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         {
             instancedBundles.Clear();
             RaiseOnRemoveBundle(null);
+            racialOverrideEffect = null;
+            passiveSpecialsEffect = null;
         }
 
         /// <summary>
@@ -635,6 +663,55 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
 
         #endregion
 
+        #region Potions
+
+        public void DrinkPotion(DaggerfallUnityItem item)
+        {
+            // Item must be a valid potion.
+            if (item == null || item.PotionRecipeKey == 0)
+                return;
+
+            // Get potion recipe and main effect. (most potions only have one effect)
+            EntityEffectBroker effectBroker = GameManager.Instance.EntityEffectBroker;
+            PotionRecipe potionRecipe = effectBroker.GetPotionRecipe(item.PotionRecipeKey);
+            IEntityEffect potionEffect = effectBroker.GetPotionRecipeEffect(potionRecipe);
+
+            // Get any secondary effects and generate the effect entry array. (a single settings struct is shared between the effects)
+            EffectEntry[] potionEffects;
+            List<string> secondaryEffects = potionRecipe.SecondaryEffects;
+            if (secondaryEffects != null)
+            {
+                potionEffects = new EffectEntry[secondaryEffects.Count + 1];
+                potionEffects[0] = new EffectEntry(potionEffect.Key, potionRecipe.Settings);
+                for (int i = 0; i < secondaryEffects.Count; i++)
+                {
+                    IEntityEffect effect = effectBroker.GetEffectTemplate(secondaryEffects[i]);
+                    potionEffects[i+1] = new EffectEntry(effect.Key, potionRecipe.Settings);
+                }
+            }
+            else
+            {
+                potionEffects = new EffectEntry[] { new EffectEntry(potionEffect.Key, potionRecipe.Settings) };
+            }
+            // Create the effect bundle settings.
+            EffectBundleSettings bundleSettings = new EffectBundleSettings()
+            {
+                Version = EntityEffectBroker.CurrentSpellVersion,
+                BundleType = BundleTypes.Potion,
+                TargetType = TargetTypes.CasterOnly,
+                Effects = potionEffects,
+            };
+            // Assign effect bundle.
+            EntityEffectBundle bundle = new EntityEffectBundle(bundleSettings, entityBehaviour);
+            AssignBundle(bundle);
+
+            // Play cast sound on drink for player only.
+            if (IsPlayerEntity)
+                PlayCastSound(entityBehaviour, GetCastSoundID(ElementTypes.Magic));
+        }
+
+        #endregion
+
         #region Magic Items
 
         /// <summary>
@@ -705,7 +782,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         /// Offers item to effect manager when used by player in inventory.
         /// </summary>
         /// <param name="item">Item just used.</param>
-        public void UseItem(DaggerfallUnityItem item)
+        /// <param name="collection">Collection containing item.</param>
+        public void UseItem(DaggerfallUnityItem item, ItemCollection collection = null)
         {
             // Item must have enchancements
             if (item == null || !item.IsEnchanted)
@@ -733,8 +811,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                         EntityEffectBundle bundle = new EntityEffectBundle(bundleSettings, entityBehaviour);
                         SetReadySpell(bundle, true);
 
-                        // TODO: Apply durability loss to used item on use
+                        // Apply durability loss to used item on use
                         // http://en.uesp.net/wiki/Daggerfall:Magical_Items#Durability_of_Magical_Items
+                        item.currentCondition -= 10;
+                        if (item.currentCondition <= 0 && collection != null)
+                        {
+                            item.ItemBreaks(GameManager.Instance.PlayerEntity);
+                            collection.RemoveItem(item);
+                        }
                     }
 
                     break;
@@ -1198,7 +1282,13 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         void RemoveBundle(LiveEffectBundle bundle)
         {
             foreach (IEntityEffect effect in bundle.liveEffects)
+            {
                 effect.End();
+
+                // Remove racial override cache
+                if (effect is RacialOverrideEffect)
+                    racialOverrideEffect = null;
+            }
 
             instancedBundles.Remove(bundle);
             RaiseOnRemoveBundle(bundle);
@@ -1372,6 +1462,27 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 if (effect != null)
                     GameManager.Instance.PlayerEntity.TallySkill((DFCareer.Skills)effect.Properties.MagicSkill, 1);
             }
+        }
+
+        void PassiveSpecialsCheck()
+        {
+            // Do nothing if effect already found
+            if (passiveSpecialsEffect != null)
+                return;
+
+            // Attempt to find effect
+            passiveSpecialsEffect = (PassiveSpecialsEffect)FindIncumbentEffect<PassiveSpecialsEffect>();
+            if (passiveSpecialsEffect != null)
+                return;
+
+            // Instantiate effect
+            EffectBundleSettings settings = new EffectBundleSettings()
+            {
+                Version = EntityEffectBroker.CurrentSpellVersion,
+                BundleType = BundleTypes.None,
+                Effects = new EffectEntry[] { new EffectEntry(PassiveSpecialsEffect.EffectKey) },
+            };
+            AssignBundle(new EntityEffectBundle(settings, entityBehaviour));
         }
 
         #endregion
@@ -1638,8 +1749,11 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                     effect.ParentBundle = instancedBundle;
                     effect.Resume(effectData, this, instancedBundle.caster);
                     effect.RestoreSaveData(effectData.effectSpecific);
-
                     instancedBundle.liveEffects.Add(effect);
+
+                    // Cache racial override effect
+                    if (effect is RacialOverrideEffect)
+                        racialOverrideEffect = (RacialOverrideEffect)effect;
                 }
 
                 instancedBundles.Add(instancedBundle);
