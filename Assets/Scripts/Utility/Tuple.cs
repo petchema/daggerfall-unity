@@ -8,7 +8,7 @@ namespace DaggerfallWorkshop.Utility
     /// <typeparam name="T1">First/left type</typeparam>
     /// <typeparam name="T2">Second/right type</typeparam>
     [Serializable]
-    public class Tuple<T1, T2> : IEquatable <Tuple<T1, T2>>
+    public class Tuple<T1, T2>
     {
         public T1 First;
         public T2 Second;
@@ -27,25 +27,6 @@ namespace DaggerfallWorkshop.Utility
         public override string ToString()
         {
             return string.Format("First: {0}, Second: {1}", First, Second);
-        }
-
-        public override int GetHashCode()
-        {
-            return First.GetHashCode() ^ Second.GetHashCode();
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj == null || GetType() != obj.GetType())
-            {
-                return false;
-            }
-            return Equals((Tuple<T1, T2>)obj);
-        }
-
-        public bool Equals(Tuple<T1, T2> other)
-        {
-            return other.First.Equals(First) && other.Second.Equals(Second);
         }
     }
 }
