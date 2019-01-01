@@ -974,18 +974,33 @@ namespace DaggerfallWorkshop
             looseObjects.RemoveBuckets((x, y, bucket) => {
                 bool remove = !IsInRange(x, y) || collectAll;
                 if (remove)
-                    foreach (LooseObjects.Desc desc in bucket)
-                    {
-                        if (desc.gameObject != null)
-                        {
-                            desc.gameObject.SetActive(false);
-                            StartCoroutine(DestroyGameObjectIterative(desc.gameObject));
-                        }
-                    }
+                    StartCoroutine(DestroyBucket(bucket));
                 return remove;
              });
             int countAfter = looseObjects.Count;
             Debug.Log(String.Format("CollectLooseObjects({0}): {1} -> {2}", collectAll, countBefore, countAfter));
+        }
+
+        private IEnumerator DestroyBucket(List<LooseObjects.Desc> bucket)
+        {
+            // quick hide stuff
+            foreach (LooseObjects.Desc desc in bucket)
+            {
+                if (desc.gameObject != null)
+                {
+                    desc.gameObject.SetActive(false);
+                }
+            }
+            // wait a bit, game is probably struggling to create new terrain, too
+            yield return new WaitForSeconds(5f);
+            // then start reclaiming
+            foreach (LooseObjects.Desc desc in bucket)
+            {
+                if (desc.gameObject != null)
+                {
+                    yield return DestroyGameObjectIterative(desc.gameObject);
+                }
+            }
         }
 
         // Iteratively destroys game object as unity seems bad at doing this when just destroying parent
@@ -994,12 +1009,12 @@ namespace DaggerfallWorkshop
             // Destroy all children iteratively
             foreach (Transform t in gameObject.transform)
             {
-                DestroyGameObjectIterative(t.gameObject);
-                yield return new WaitForEndOfFrame();
+                yield return DestroyGameObjectIterative(t.gameObject);
             }
 
             // Now destroy this object
             GameObject.Destroy(gameObject.transform.gameObject);
+            yield return null;
         }
 
         #endregion
