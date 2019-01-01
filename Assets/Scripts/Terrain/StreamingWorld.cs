@@ -884,6 +884,7 @@ namespace DaggerfallWorkshop
                     // If terrain out of range then recycle
                     if (!IsInRange(terrainArray[i].mapPixelX, terrainArray[i].mapPixelY))
                     {
+                        MarkTerrainInactive(i);
                         found = i;
                         break;
                     }
@@ -949,11 +950,7 @@ namespace DaggerfallWorkshop
                 // If terrain out of range then mark inactive for recycling
                 if (!IsInRange(terrainArray[i].mapPixelX, terrainArray[i].mapPixelY) || collectAll)
                 {
-                    // Mark terrain inactive
-                    terrainArray[i].terrainObject.name = "Pooled";
-                    terrainArray[i].active = false;
-                    terrainArray[i].terrainObject.SetActive(false);
-                    terrainArray[i].billboardBatchObject.SetActive(false);
+                    MarkTerrainInactive(i);
 
                     // If collecting all then ensure terrain is out of range
                     // This fixes a bug where continuously loading same location overflows terrain buffer
@@ -965,6 +962,14 @@ namespace DaggerfallWorkshop
                     }
                 }
             }
+        }
+
+        private void MarkTerrainInactive(int i)
+        {
+            terrainArray[i].terrainObject.name = "Pooled";
+            terrainArray[i].active = false;
+            terrainArray[i].terrainObject.SetActive(false);
+            terrainArray[i].billboardBatchObject.SetActive(false);
         }
 
         // Destroy any loose objects outside of range
@@ -983,7 +988,7 @@ namespace DaggerfallWorkshop
 
         private IEnumerator DestroyBucket(List<LooseObjects.Desc> bucket)
         {
-            // quick hide stuff
+            // quickly hide stuff
             foreach (LooseObjects.Desc desc in bucket)
             {
                 if (desc.gameObject != null)
@@ -991,7 +996,7 @@ namespace DaggerfallWorkshop
                     desc.gameObject.SetActive(false);
                 }
             }
-            // wait a bit, game is probably struggling to create new terrain, too
+            // wait a bit, game is probably struggling to create new terrain too
             yield return new WaitForSeconds(5f);
             // then start reclaiming
             foreach (LooseObjects.Desc desc in bucket)
