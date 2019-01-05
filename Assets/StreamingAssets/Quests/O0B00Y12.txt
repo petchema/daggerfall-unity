@@ -127,9 +127,9 @@ Person _questgiver_ group Questor male
 Person _contact2_ group Local_3.0 female
 
 
-Clock _qtime_ 00:00 0 flag 1 range 3 5
-Clock _S.01_ 1.00:00 2.18:40
-Clock _delay_ 01:00 0 flag 1 range 0 1
+ClassicClock _qtime_ time to _contact1_ then to _contact2_ flags 1
+ClassicClock _S.01_ 1.00:00 to 2.18:40 flags 1
+ClassicClock _delay_ 01:00 flags 1
 
 Foe _enemy_ is Assassin
 

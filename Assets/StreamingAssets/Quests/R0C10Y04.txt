@@ -120,7 +120,7 @@ Person _fakename_ group Local_4.0 female
 
 Place _mondung_ remote dungeon
 
-Clock _1stparton_ 00:00 0 flag 17 range 0 2
+ClassicClock _1stparton_ time to _mondung_ and back flags 1
 
 Foe _F.00_ is Sorceror
 Foe _battlemage_ is Battle_mage

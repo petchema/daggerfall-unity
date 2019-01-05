@@ -166,8 +166,8 @@ Person _necs_ named King_of_Worms atHome
 
 Place _scourgbarrow_ permanent ScourgBarrow1
 
-Clock _2ndgo_ 30.00:00 0 flag 1 range 0 1
-Clock _S.01_ 7.00:00 14.00:00
+ClassicClock _2ndgo_ 30.00:00 flags 1
+ClassicClock _S.01_ 7.00:00 to 14.00:00 flags 1
 
 
 --	Quest start-up:

@@ -159,7 +159,7 @@ Person _knight_ face 69 factiontype Knightly_Guard
 
 Place _mondung_ remote dungeon2
 
-Clock _queston_ 00:00 0 flag 17 range 0 2
+ClassicClock _queston_ time to _mondung_ and back flags 1
 
 Foe _F.00_ is Knight
 

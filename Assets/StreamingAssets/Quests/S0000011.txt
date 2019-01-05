@@ -333,9 +333,9 @@ Person KingOfWorms3 face 100 named King_of_Worms atHome
 Place _orsinium_ permanent OrsiniumCastle4
 Place _scourgbarrow_ permanent ScourgBarrow2
 
-Clock _S.01_ 6.00:01 0 flag 1 range 0 1
-Clock _S.11_ 7.00:00 10.00:00
-Clock _S.18_ 150.00:00 0 flag 1 range 0 1
+ClassicClock _S.01_ 6.00:01 flags 1
+ClassicClock _S.11_ 7.00:00 flags 1
+ClassicClock _S.18_ time to _scourgbarrow_ and back flags 1
 
 
 --	Quest start-up:

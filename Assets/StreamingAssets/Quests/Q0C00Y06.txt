@@ -119,7 +119,7 @@ Person _witch_ face 44 group Questor anyInfo 1011 rumors 1012
 
 Place __mondung_ remote dungeon8
 
-Clock _1stparton_ 00:00 0 flag 17 range 0 2
+ClassicClock _1stparton_ time to _mondung_ and back flags 1
 
 Foe _vamprival_ is Ancient_vampire
 

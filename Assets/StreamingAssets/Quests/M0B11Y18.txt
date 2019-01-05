@@ -341,13 +341,13 @@ Place _targethouse_ local house2
 Place _palace_ remote palace
 Place aide remote dungeon
 
-Clock _S.00_ 00:05 0 flag 1 range 0 1
-Clock _patsy_ 30.00:00 0 flag 1 range 0 1
-Clock _S.02_ 3.11:20 13.21:20
-Clock _S.03_ 00:35 0 flag 1 range 0 1
-Clock _S.05_ 02:00 0 flag 1 range 0 1
-Clock _gettraitor_ 30.00:00 0 flag 1 range 0 1
-Clock _S.35_ 00:01 0 flag 1 range 0 1
+ClassicClock _S.00_ 00:05 flags 1
+ClassicClock _patsy_ 30.00:00 flags 1
+ClassicClock _S.02_ 3.11:20 to 13.21:20 flags 1
+ClassicClock _S.03_ 00:35 flags 1
+ClassicClock _S.05_ 02:00 flags 1
+ClassicClock _gettraitor_ 30.00:00 flags 1
+ClassicClock _S.35_ 00:01 flags 1
 
 Foe _F.00_ is 3 Archer
 Foe _mages_ is 2 Mage

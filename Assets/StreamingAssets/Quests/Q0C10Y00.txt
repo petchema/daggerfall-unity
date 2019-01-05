@@ -133,7 +133,7 @@ Place _dungeon1_ remote dungeon6
 Place _dungeon2_ remote dungeon12
 Place _dungeon3_ remote dungeon10
 
-Clock _queston_ 6.22:40 10.10:00 flag 17 range 0 5
+ClassicClock _queston_ 6.22:40 to 10.10:00 plus time to _dungeon1_ then to _dungeon2_ and back flags 1
 
 Foe _F.00_ is Gargoyle
 Foe _wereboar_ is Wereboar

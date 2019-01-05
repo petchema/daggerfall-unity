@@ -163,9 +163,9 @@ Person _dummy_ face 209 group Resident1
 Place _target_ local house1 anyInfo 1011 rumors 1011
 Place _safehouse_ remote house3
 
-Clock _time_ 00:00 0 flag 1 range 0 2
-Clock _S.01_ 2.00:00 0 flag 1 range 0 1
-Clock _delay_ 01:00 0 flag 1 range 0 1
+ClassicClock _time_ time to _safehouse_ flags 1
+ClassicClock _S.01_ 2.00:00 flags 1
+ClassicClock _delay_ 01:00 flags 1
 
 Foe _guard_ is Rogue
 Foe _posse_ is 3 Archer

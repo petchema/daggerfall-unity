@@ -250,7 +250,7 @@ Place _sistershouse_ local house2
 Place _dungeon_ remote dungeon
 Place _inn_ local tavern
 
-Clock _S.00_ 30.00:00 0 flag 9 range 0 1
+ClassicClock _S.00_ 30.00:00 flags 9
 
 
 --	Quest start-up:

@@ -159,8 +159,8 @@ Person _competitor_ group Group_5.0 female
 
 Place _storehouse_ remote generalstore
 
-Clock _2storehouse_ 00:00 0 flag 17 range 0 2
-Clock _S.05_ 16:40 1.09:20
+ClassicClock _2storehouse_ time to _storehouse_ and back flags 1
+ClassicClock _S.05_ 16:40 to 1.09:20 flags 1
 
 Foe _F.00_ is 2 Warrior
 Foe _knight_ is Knight

@@ -124,7 +124,7 @@ Person _daedra_ face 1 factiontype Daedra
 Person _contact_ face 68 group Innkeeper
 
 
-Clock _queston_ 00:00 0 flag 17 range 1 2
+ClassicClock _queston_ time to _contact_ and back flags 1
 
 Foe _guard_ is Knight
 

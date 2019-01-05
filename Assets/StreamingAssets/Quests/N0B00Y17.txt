@@ -333,8 +333,8 @@ Place _scholardung_ remote dungeon
 Place _hintdung_ remote dungeon
 Place _itemdung_ remote dungeon
 
-Clock _time1_ 00:00 0 flag 17 range 0 5
-Clock _time2_ 00:00 0 flag 17 range 1 2
+ClassicClock _time1_ time to _hintdung_ then to _itemdung_ and back flags 1
+ClassicClock _time2_ time to _contact_ and back flags 1
 
 
 --	Quest start-up:

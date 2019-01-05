@@ -154,7 +154,7 @@ Person _mage_ face 105 faction The_Mages_Guild
 
 Place _mguild_ remote magery
 
-Clock _queston_ 00:00 0 flag 1 range 0 2
+ClassicClock _queston_ time to _mage_ flags 1
 
 Foe _vampire_ is Vampire
 Foe _werewolf_ is Werewolf

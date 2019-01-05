@@ -116,9 +116,9 @@ Person _qgfriend_ group Local_3.0 female
 
 Place _itemdung_ remote dungeon13
 
-Clock _1stparton_ 00:30 0 flag 2 range 2 5
-Clock _2ndparton_ 00:00 0 flag 2 range 1 2
-Clock _delay_ 00:30 0 flag 1 range 0 1
+ClassicClock _1stparton_ 00:30 plus time to _itemdung_ then to _qgfriend_ flags 2
+ClassicClock _2ndparton_ time to _qgfriend_ flags 2
+ClassicClock _delay_ 00:30 flags 1
 
 Foe _giant_ is Giant
 

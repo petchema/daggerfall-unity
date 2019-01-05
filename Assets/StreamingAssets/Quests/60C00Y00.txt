@@ -145,8 +145,8 @@ Person _qgfriend_ face 1 group Innkeeper anyInfo 1011 rumors 1014
 Place _mondung_ remote dungeon
 Place _contactdung_ remote dungeon
 
-Clock _1stparton_ 00:00 0 flag 1 range 2 5
-Clock _delay_ 01:00 0 flag 1 range 0 1
+ClassicClock _1stparton_ time to _mondung_ then to _qgfriend_ flags 1
+ClassicClock _delay_ 01:00 flags 1
 
 Foe _monster_ is Battle_mage
 

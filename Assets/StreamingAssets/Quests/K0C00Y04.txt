@@ -221,7 +221,7 @@ Person _competitor_ group Group_7.1 male
 
 Place _arena_ local house2
 
-Clock _queston_ 3.01:20 5.23:20
+ClassicClock _queston_ 3.01:20 to 5.23:20 flags 1
 
 Foe _duelist_ is Spellsword
 

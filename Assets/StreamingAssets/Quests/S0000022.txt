@@ -55,7 +55,7 @@ Item _spider_ lich_dust
 Person _medora_ named Medora atHome
 
 
-Clock _S.00_ 30.00:00 0 flag 1 range 0 1
+ClassicClock _S.00_ 20.20:00 flags 1
 
 
 --	Quest start-up:

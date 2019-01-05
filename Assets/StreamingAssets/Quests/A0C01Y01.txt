@@ -101,7 +101,7 @@ Person _qgiver_ face 1 group Questor
 
 Place _qgiverhome_ local house2
 
-Clock _S.00_ 1.03:00 0 flag 1 range 0 1
+ClassicClock _S.00_ 1.03:00 flags 1
 
 Foe _villains_ is 2 Assassin
 

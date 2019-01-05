@@ -154,7 +154,7 @@ Person _dummydaedra_ face 249 factiontype Daedra
 Place _mondung_ remote dungeon9
 Place aide remote dungeon
 
-Clock _queston_ 00:00 0 flag 17 range 0 2
+ClassicClock _queston_ time to _mondung_ and back flags 1
 
 Foe _daedra_ is Frost_daedra
 Foe _firedaedra_ is Fire_daedra

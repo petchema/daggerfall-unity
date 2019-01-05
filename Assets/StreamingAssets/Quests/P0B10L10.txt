@@ -144,7 +144,7 @@ Person _vamp_ factiontype Vampire_Clan male
 Person _vamp2_ factiontype Vampire_Clan female
 
 
-Clock _queston_ 00:00 0 flag 1 range 1 2
+ClassicClock _queston_ time to _vamp2_ flags 1
 
 Foe _mage_ is Mage
 

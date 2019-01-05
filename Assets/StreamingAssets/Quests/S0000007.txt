@@ -344,11 +344,11 @@ Place _tavern_ remote tavern
 Place _npc2_ local dungeon
 Place glenmorilCoven permanent BluffCoven
 
-Clock _2mondung_ 00:00 0 flag 17 range 0 2
-Clock _2ndparton_ 00:00 0 flag 17 range 0 2
-Clock _delay_ 02:12 1.00:17
-Clock _S.27_ 00:01 00:01
-Clock _S.32_ 00:02 00:02
+ClassicClock _2mondung_ time to _mondung_ and back flags 1
+Clock _2ndparton_ time to _tavern_ and back flags 1
+ClassicClock _delay_ 02:12 to 1.00:17
+ClassicClock _S.27_ 00:01
+ClassicClock _S.32_ 00:02
 
 Foe _brother_ is Werewolf
 Foe talisman is 2 Werewolf

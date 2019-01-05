@@ -111,7 +111,7 @@ Person _Akorithi_ named Queen_Akorithi atHome
 
 Place _wayrest_ permanent WayrestCastle
 
-Clock _2letter_ 7.00:00 14.00:00
+ClassicClock _2letter_ 7.00:00 to 14.00:00 flags 1
 
 
 --	Quest start-up:

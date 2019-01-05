@@ -189,7 +189,7 @@ Place _dungeon_ remote dungeon
 -- Added to allow joining while quest system is still being finished:
 Place _endbuilding_ remote random
 
-Clock _traveltime_ 90.00:01 0 flag 1 range 0 1
+ClassicClock _traveltime_ 90.00:01 flags 1
 
 Foe _F.00_ is Mage
 

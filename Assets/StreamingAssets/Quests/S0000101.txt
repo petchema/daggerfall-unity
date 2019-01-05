@@ -29,8 +29,8 @@ QBN:
 
 
 
-Clock _S.01_ 01:15 0 flag 1 range 0 1
-Clock _S.02_ 444.10:40 0 flag 1 range 0 1
+ClassicClock _S.01_ 01:15 flags 1
+ClassicClock _S.02_ 444.10:40 flags 1
 
 Foe _F.00_ is 3 Assassin
 

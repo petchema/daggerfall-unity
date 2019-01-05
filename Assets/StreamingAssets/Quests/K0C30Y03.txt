@@ -460,12 +460,12 @@ Place _mondung2_ remote dungeon
 Place _tavern_ remote tavern
 Place _house3_ local house2
 
-Clock _queston_ 30.00:00 0 flag 1 range 0 1
-Clock _S.03_ 1.09:20 2.03:40
-Clock _S.13_ 1.01:00 2.13:40
-Clock _S.26_ 1.09:20 2.02:00
-Clock _S.27_ 16:40 2.02:00 flag 9 range 0 0
-Clock _2letter_ 00:25 00:50
+ClassicClock _queston_ 20.21:40 flags 1
+ClassicClock _S.03_ 1.09:20 to 2.03:40 flags 1
+ClassicClock _S.13_ 1.01:00 to 2.13:40 flags 1
+ClassicClock _S.26_ 1.09:20 to 2.02:00 flags 1
+ClassicClock _S.27_ 16:40 to 2.02:00 flags 9
+ClassicClock _2letter_ 00:25 to 00:50
 
 Foe _warrior_ is Warrior
 Foe _F.01_ is Knight

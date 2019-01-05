@@ -92,7 +92,7 @@ Person _qgiver_ face 1 group Questor
 
 Place _house_ remote house2
 
-Clock _traveltime_ 00:00 0 flag 17 range 0 2
+ClassicClock _traveltime_ time to _house_ and back flags 1
 
 Foe _ghost_ is Ghost
 Foe _skeleton_ is Skeletal_warrior

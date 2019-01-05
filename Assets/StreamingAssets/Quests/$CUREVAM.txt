@@ -239,9 +239,9 @@ Person _hunter_ face 1 factiontype Knightly_Guard anyInfo 1011 rumors 1012
 Place _fatherdung_ remote dungeon8
 Place _wrongdung_ remote dungeon5
 
-Clock _S.10_ 1.00:00 2.22:00
-Clock _S.13_ 7.00:00 27.23:40
-Clock _huntstart_ 00:00 0 flag 1 range 3 5
+ClassicClock _S.10_ 1.00:00 to 2.22:00 flags 1
+ClassicClock _S.13_ 7.00:00 to 27.23:40 flags 1
+ClassicClock _huntstart_ time to _vamp1_ then to _vamp2_ flags 1
 
 Foe _bloodfather_ is Ancient_vampire
 Foe _vampire_ is Vampire

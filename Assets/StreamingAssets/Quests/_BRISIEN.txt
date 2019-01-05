@@ -233,10 +233,10 @@ Person ladyBrisienna face 1 named Lady_Brisienna anyInfo 1012 rumors 1013
 Place PiratesHold permanent PirateerHold1
 Place _dirtypit_ remote tavern
 
-Clock _invitepc_ 7.00:00 14.00:00
-Clock _remindpc_ 30.00:00 0 flag 1 range 0 1
-Clock _pcfailed_ 14.00:00 0 flag 1 range 0 1
-Clock _oneday_ 1.00:00 0 flag 1 range 0 1
+ClassicClock _invitepc_ 7.00:00 to 14.00:00 flags 1
+ClassicClock _remindpc_ 30.00:00 flags 1
+ClassicClock _pcfailed_ 14.00:00 flags 1
+ClassicClock _oneday_ 1.00:00 flags 1
 
 
 --	Quest start-up:

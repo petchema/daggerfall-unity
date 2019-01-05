@@ -112,9 +112,9 @@ Person _gortwog_ named Gortwog atHome
 Place _orsinium_ permanent OrsiniumCastle2
 Place _crypt_ remote dungeon0
 
-Clock _delay_ 00:02 0 flag 1 range 0 1
-Clock _S.01_ 00:02 0 flag 1 range 0 1
-Clock _S.06_ 30.00:00 0 flag 1 range 0 1
+ClassicClock _delay_ 00:02 flags 1
+ClassicClock _S.01_ 00:02 flags 1
+ClassicClock _S.06_ 30.00:00 flags 1
 
 Foe _mummy_ is Mummy
 

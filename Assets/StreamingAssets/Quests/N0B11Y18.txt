@@ -183,11 +183,11 @@ Person _qgiver_ group Questor male
 Place aide remote dungeon
 Place _rebelhouse_ remote house1
 
-Clock _qtime_ 00:00 0 flag 17 range 0 2
-Clock _S.04_ 00:01 00:05
-Clock _S.05_ 00:01 00:10
-Clock _S.06_ 00:01 00:14
-Clock _healer_ 00:02 00:18
+ClassicClock _qtime_ time to _rebelhouse_ and back flags 1
+ClassicClock _S.04_ 00:01 to 00:05 flags 1
+ClassicClock _S.05_ 00:01 to 00:10 flags 1
+ClassicClock _S.06_ 00:01 to 00:14 flags 1
+ClassicClock _healer_ 00:02 to 00:18 flags 1
 
 Foe _mage1_ is Mage
 Foe _mage2_ is Mage

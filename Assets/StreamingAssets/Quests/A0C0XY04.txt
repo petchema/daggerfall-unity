@@ -180,8 +180,8 @@ Person _dummydarkb_ face 49 faction The_Dark_Brotherhood
 Place _dungeon_ remote dungeon
 Place _meetingplace_ local apothecary
 
-Clock _extratime_ 00:30 0 flag 1 range 0 1
-Clock _totaltime_ 90.00:00 0 flag 17 range 0 2
+ClassicClock _extratime_ 00:30 flags 1
+ClassicClock _totaltime_ 90.00:00 plus time to _dungeon_ and back flags 1
 
 Foe _guardian_ is Daedra_seducer
 Foe _monster_ is Orc_shaman

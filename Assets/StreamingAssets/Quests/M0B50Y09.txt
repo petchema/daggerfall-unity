@@ -97,8 +97,8 @@ Person _qgiver_ group Questor male
 Place _dungeon_ remote dungeon
 Place _newdung_ remote dungeon8
 
-Clock _2dung_ 00:00 0 flag 17 range 0 2
-Clock _end_ 00:00
+ClassicClock _2dung_ time to _dungeon_ and back flags 1
+ClassicClock _end_ 00:00
 
 Foe _monster_ is Gargoyle
 

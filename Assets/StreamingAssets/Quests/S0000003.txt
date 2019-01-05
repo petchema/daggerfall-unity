@@ -149,7 +149,7 @@ Person _nulfaga_ named Nulfaga atHome
 
 Place _huntstart_ permanent Shedungent4
 
-Clock _2shedungent_ 00:00 0 flag 17 range 0 2
+ClassicClock _2shedungent_ time to _huntstart_ and back flags 1
 
 
 --	Quest start-up:

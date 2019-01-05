@@ -95,9 +95,9 @@ Place _dungeon_ remote dungeon
 Place _meetingplace_ local random
 Place _hidingplace_ local random
 
-Clock _escapetime_ 00:00 0 flag 1 range 0 5
-Clock _shortdelay_ 00:01 0 flag 1 range 0 1
-Clock _delay_ 00:10 00:30
+ClassicClock _escapetime_ time to _dungeon_ then to _hidingplace_ flags 1
+ClassicClock _shortdelay_ 00:01 flags 1
+ClassicClock _delay_ 00:10 to 00:30
 
 Foe _mtraitor_ is Mage
 

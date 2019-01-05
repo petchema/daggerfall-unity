@@ -195,8 +195,8 @@ Person _tg_ faction The_Thieves_Guild male
 Place _mondung_ remote dungeon
 Place _mondung2_ remote dungeon2
 
-Clock _queston1_ 00:00 0 flag 17 range 0 2
-Clock _S.05_ 08:20 3.11:20
+ClassicClock _queston1_ time to _mondung_ and back flags 1
+ClassicClock _S.05_ 08:20 to 3.11:20 flags 1
 
 Foe _cousin_ is Knight
 

@@ -144,7 +144,7 @@ Person _qgfriend_ group Local_3.0 female anyInfo 1011 rumors 1011
 
 Place _mondung_ remote dungeon
 
-Clock _1stparton_ 00:00 0 flag 17 range 0 2
+ClassicClock _1stparton_ time to _mondung_ and back flags 1
 
 Foe _vampire_ is Vampire
 Foe _wereboar_ is Wereboar

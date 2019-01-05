@@ -151,8 +151,8 @@ Person _npc2_ face 254 group Local_3.0
 Person _P.03_ faction The_Thieves_Guild female
 
 
-Clock _1stparton_ 00:00 0 flag 1 range 1 4
-Clock _2ndparton_ 00:00 0 flag 1 range 1 4
+ClassicClock _1stparton_ time to _npc1_ flags 1
+ClassicClock _2ndparton_ time to _npc2_ flags 1
 
 Foe _thief_ is Rogue
 

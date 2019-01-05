@@ -107,7 +107,7 @@ Person _qgiver_ group Questor male
 Place _dungeon_ remote dungeon
 Place _newdung_ remote dungeon
 
-Clock _2dung_ 00:00 0 flag 17 range 0 2
+ClassicClock _2dung_ time to _dungeon_ and back flags 1
 
 Foe _fire_ is Fire_atronach
 Foe _flesh_ is Flesh_atronach

@@ -342,8 +342,8 @@ Place glenmorilCoven permanent GlenmorilCoven
 Place _childhouse_ remote house2
 Place _hintdung_ remote dungeon11
 
-Clock _S.05_ 7.00:00 27.23:40
-Clock _huntstart_ 00:00 0 flag 1 range 3 5
+ClassicClock _S.05_ 7.00:00 to 27.23:40 flags 1
+ClassicClock _huntstart_ time to _priest_ then to _local_ flags 1
 
 Foe _F.00_ is Knight
 Foe _wereboar_ is Wereboar

@@ -142,8 +142,8 @@ Person _questgiver_ face 76 group Questor
 Person _contact_ face 80 group Local_3.0
 
 
-Clock _1stparton_ 00:00 0 flag 1 range 1 4
-Clock _2ndparton_ 00:00 0 flag 1 range 1 4
+ClassicClock _1stparton_ time to _contact_ flags 1
+ClassicClock _2ndparton_ time to _questgiver_ flags 1
 
 Foe _thief_ is Spellsword
 

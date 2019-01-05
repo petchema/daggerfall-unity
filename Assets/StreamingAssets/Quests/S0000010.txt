@@ -145,9 +145,9 @@ Place _llugwych_ permanent LlugwychCastle
 Place _agentplace_ remote house2
 Place _lysandustomb_ permanent LysandusTomb2
 
-Clock _S.04_ 6.23:20 0 flag 1 range 0 1
-Clock _S.10_ 30.00:00 0 flag 1 range 0 1
-Clock _itemindung_ 00:00 0 flag 17 range 0 2
+ClassicClock _S.04_ 6.23:20 flags 1
+ClassicClock _S.10_ 30.00:00 flags 1
+ClassicClock _itemindung_ time to _llugwych_ and back flags 1
 
 Foe _F.00_ is Wraith
 

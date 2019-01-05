@@ -84,7 +84,7 @@ Person _local_ face 207 group Resident2
 
 Place _dungeon_ remote dungeon
 
-Clock _2dung_ 00:00 0 flag 17 range 0 2
+ClassicClock _2dung_ time to _dungeon_ and back flags 1
 
 Foe _monster_ is Orc_warlord
 

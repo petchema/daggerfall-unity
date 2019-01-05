@@ -179,9 +179,9 @@ Person _mfriend_ group Local_4.0 female
 Place _mondung_ remote dungeon2
 Place _hideout_ remote dungeon6
 
-Clock _1stparton_ 00:00 0 flag 1 range 2 5
-Clock _delay_ 01:00 0 flag 1 range 0 1
-Clock _escapetime_ 00:00 0 flag 1 range 2 3
+ClassicClock _1stparton_ time to _mondung_ then to _qgfriend_ flags 1
+ClassicClock _delay_ 01:00 flags 1
+ClassicClock _escapetime_ time from _mondung_ to _mfriend_ flags 1
 
 Foe _monster_ is Spellsword
 

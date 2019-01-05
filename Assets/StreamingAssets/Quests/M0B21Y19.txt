@@ -204,9 +204,9 @@ Place _daughterhouse_ remote house4
 Place _safehouse_ remote house3
 Place aide remote dungeon
 
-Clock _qtime_ 00:00 0 flag 1 range 2 5
-Clock _S.03_ 10.00:00 20.20:00
-Clock _S.04_ 00:00 0 flag 1 range 0 5
+ClassicClock _qtime_ time to _victimhouse_ then to _darkb_ flags 1
+ClassicClock _S.03_ 10.00:00 to 20.20:00 flags 1
+ClassicClock _S.04_ time to _daughterhouse_ then to _safehouse_ flags 1
 
 Foe _enemy_ is Assassin
 Foe _F.01_ is Nightblade

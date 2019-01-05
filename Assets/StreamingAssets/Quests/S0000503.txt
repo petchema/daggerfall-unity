@@ -176,13 +176,13 @@ Place _itemdung_ remote dungeon
 Place _keydung_ remote dungeon
 Place _L.05_ remote dungeon
 
-Clock _S.00_ 62.12:00 97.05:20
-Clock _S.02_ 30.00:00 0 flag 1 range 0 1
-Clock _S.10_ 00:00 0 flag 1 range 0 2
-Clock _S.11_ 00:04 0 flag 1 range 0 1
-Clock _keytime_ 00:00 0 flag 1 range 0 5
-Clock _S.21_ 6.22:40 0 flag 1 range 0 1
-Clock _S.31_ 00:00 0 flag 17 range 0 2
+ClassicClock _S.00_ 62.12:00 to 97.05:20 flags 1
+ClassicClock _S.02_ 30.00:00 flags 1
+ClassicClock _S.10_ time to _magesguild_ flags 1
+ClassicClock _S.11_ 00:04 flags 1
+ClassicClock _keytime_ time to _keydung_ then to _tavern_ flags 1
+ClassicClock _S.21_ 6.22:40 flags 1
+ClassicClock _S.31_ time to _itemdung_ and back flags 1
 
 Foe _guards_ is 3 Mage
 Foe _guardian_ is Battle_mage

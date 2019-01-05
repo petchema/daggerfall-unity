@@ -163,7 +163,7 @@ Place _guildhall_ local random
 Place _mistresshome_ local house2
 Place _fakeplace_ local random
 
-Clock _S.00_ 7.00:00 0 flag 1 range 0 1
+ClassicClock _S.00_ 7.00:00 flags 1
 
 Foe _home_ is Thief
 Foe _F.01_ is Sorceror

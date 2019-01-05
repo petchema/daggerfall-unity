@@ -905,9 +905,9 @@ Place _noblehome_ remote house1
 Place _priesthome_ remote temple
 Place _thiefhome_ remote tavern
 
-Clock _2letter_ 00:25 00:50
-Clock _queston_ 00:00 0 flag 17 range 0 5
-Clock _delay_ 00:01 0 flag 1 range 0 1
+ClassicClock _2letter_ 00:25 to 00:50 flags 1
+ClassicClock _queston_ time to _thiefhouse_ then to _mondung_ and back flags 1
+ClassicClock _delay_ 00:01 flags 1
 
 Foe _guard_ is Warrior
 Foe _guard2_ is Knight

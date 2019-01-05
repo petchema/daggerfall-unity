@@ -112,7 +112,7 @@ Person _damsel_ face 2 group Group_6.0
 
 Place _mondung_ remote dungeon2
 
-Clock _1stparton_ 00:00 0 flag 18 range 0 2
+ClassicClock _1stparton_ time to _mondung_ and back flags 2
 
 Foe _monster1_ is Knight
 Foe _monster2_ is Warrior

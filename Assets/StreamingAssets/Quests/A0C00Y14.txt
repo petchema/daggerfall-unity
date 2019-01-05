@@ -174,8 +174,8 @@ Person _questgiver_ face 137 group Questor
 Person _pickuplocal_ face 232 group Local_3.0
 
 
-Clock _oneday_ 1.00:00 0 flag 1 range 0 1
-Clock _delay_ 01:00 0 flag 1 range 0 1
+ClassicClock _oneday_ 1.00:00 flags 1
+ClassicClock _delay_ 01:00 flags 1
 
 Foe _thief_ is Burglar
 

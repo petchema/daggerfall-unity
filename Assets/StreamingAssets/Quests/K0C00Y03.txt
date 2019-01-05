@@ -186,8 +186,8 @@ Person _contact2_ group Innkeeper female
 
 Place _conhouse_ remote house2
 
-Clock _2letter_ 03:20 06:40
-Clock _queston_ 00:00 0 flag 1 range 2 5
+ClassicClock _2letter_ 03:20 to 06:40 flags 1
+ClassicClock _queston_ time to _conhouse_ then to _contact2_ flags 1
 
 Foe _guard_ is Knight
 

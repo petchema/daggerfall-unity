@@ -121,7 +121,7 @@ Person _questgiver_ group Questor male anyInfo 1011
 Person _qgfriend_ group Local_3.0 female anyInfo 1012
 
 
-Clock _queston_ 00:00 0 flag 1 range 1 4
+ClassicClock _queston_ time to _qgfriend_ flags 1
 
 
 --	Quest start-up:

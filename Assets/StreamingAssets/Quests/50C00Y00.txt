@@ -139,8 +139,8 @@ Person questPerson face 1 factiontype Vampire_Clan
 
 Place _mondung_ remote dungeon
 
-Clock _1stparton_ 00:00 0 flag 1 range 1 5
-Clock _delay_ 01:00 0 flag 1 range 0 1
+ClassicClock _1stparton_ time to _qgfriend_ then to _mondung_ flags 1
+ClassicClock _delay_ 01:00 flags 1
 
 Foe _monster_ is Ancient_vampire
 

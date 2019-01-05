@@ -144,7 +144,7 @@ Person _spy_ face 1 group Local_3.0 anyInfo 1011
 
 Place _hidingplace_ remote random
 
-Clock _1stparton_ 00:00 0 flag 1 range 2 5
+ClassicClock _1stparton_ time to _hidingplace_ then to _questgiver_ flags 1
 
 Foe _F.00_ is Assassin
 

@@ -148,8 +148,8 @@ Person shopkeeper2 factiontype Temple female
 Place _itemplace_ remote temple
 Place _inn_ remote tavern
 
-Clock _1stparton_ 00:00 0 flag 1 range 0 5
-Clock _2ndparton_ 00:00 0 flag 1 range 2 3
+ClassicClock _1stparton_ time to _itemplace_ then to _inn_ flags 1
+ClassicClock _2ndparton_ time from _inn_ to _transporter_ flags 1
 
 Foe _F.00_ is Monk
 

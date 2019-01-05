@@ -128,7 +128,7 @@ Person _dummydarkb_ face 169 faction The_Dark_Brotherhood
 
 Place _dbguild_ remote house1
 
-Clock _timeforq_ 00:00 0 flag 17 range 1 4
+ClassicClock _timeforq_ time to _child_ and back flags 1
 
 Foe _darkb_ is Assassin
 

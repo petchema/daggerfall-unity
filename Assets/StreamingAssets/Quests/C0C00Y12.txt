@@ -140,7 +140,7 @@ Person _decoy_ face 92 group Local_3.1
 
 Place _thiefplace_ remote house2
 
-Clock _traveltime_ 00:00 0 flag 17 range 0 2
+ClassicClock _traveltime_ time to _thiefplace_ and back flags 1
 
 Foe _burglar_ is Burglar
 Foe _rogue_ is Rogue

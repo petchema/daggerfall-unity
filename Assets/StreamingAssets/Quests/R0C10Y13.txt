@@ -114,8 +114,8 @@ Person _contact_ face 1 group Local_3.0
 
 Place _palace_ remote palace
 
-Clock _queston_ 00:00 0 flag 1 range 0 2
-Clock _delay_ 00:20 0 flag 1 range 0 1
+ClassicClock _queston_ time to _palace_ flags 1
+ClassicClock _delay_ 00:20 flags 1
 
 
 --	Quest start-up:

@@ -163,7 +163,7 @@ Item _I.01_ letter used 1041
 
 
 
-Clock mainquestclock 00:00 0 flag 9 range 0 0
+ClassicClock mainquestclock 00:00 flags 9
 
 
 --	Quest start-up:

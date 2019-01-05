@@ -170,7 +170,7 @@ Person _mage_ face 1 group Spellcaster
 
 Place _shop_ local pawnshop
 
-Clock _qtime_ 2.00:00 0 flag 1 range 0 1
+ClassicClock _qtime_ 2.00:00 flags 1
 
 Foe _mage2_ is Battle_mage
 Foe _mage3_ is Sorceror

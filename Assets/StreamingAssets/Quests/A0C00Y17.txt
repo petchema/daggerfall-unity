@@ -162,8 +162,8 @@ Person _darkb_ faction The_Dark_Brotherhood female
 
 Place _destination_ remote random
 
-Clock _traveltime_ 00:00 0 flag 1 range 0 2
-Clock _extratime_ 03:00 0 flag 1 range 0 1
+ClassicClock _traveltime_ time to _destination_ flags 1
+ClassicClock _extratime_ 03:00 flags 1
 
 Foe _mages_ is 2 Mage
 Foe _F.01_ is 2 Thief

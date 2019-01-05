@@ -154,9 +154,9 @@ Person Castellian face 1 named Lord_Castellian anyInfo 1030
 
 Place _casfort_ remote house1
 
-Clock _S.04_ 04:00 01:40
-Clock _queston_ 00:00 0 flag 17 range 0 2
-Clock _S.16_ 1.00:00 0 flag 1 range 0 1
+ClassicClock _S.04_ 04:00 flags 1
+ClassicClock _queston_ time to _casfort_ and back flags 1
+ClassicClock _S.16_ 1.00:00 flags 1
 
 Foe _F.00_ is Daedra_seducer
 Foe _F.01_ is 2 Knight

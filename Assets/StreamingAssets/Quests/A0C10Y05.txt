@@ -161,7 +161,7 @@ Person _ruler_ factiontype Province female
 Place _betrothedhome_ remote house2
 Place _temple_ remote temple
 
-Clock _traveltime_ 00:00 0 flag 1 range 0 5
+ClassicClock _traveltime_ time to _betrothedhome_ then to _temple_ flags 1
 
 Foe _F.00_ is 3 Burglar
 Foe _F.01_ is 2 Warrior

@@ -114,7 +114,7 @@ Person _questgiver_ face 112 group Questor
 
 Place _itemdung_ remote dungeon1
 
-Clock _1stparton_ 00:00 0 flag 17 range 0 2
+ClassicClock _1stparton_ time to _itemdung_ and back flags 1
 
 
 --	Quest start-up:

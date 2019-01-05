@@ -144,7 +144,7 @@ Person _questgiver_ face 72 group Questor
 Person _contact_ face 80 group Group_5.0
 
 
-Clock _1stparton_ 00:00 0 flag 18 range 1 4
+ClassicClock _1stparton_ time to _contact_ and back flags 2
 
 Foe _guards_ is Warrior
 Foe _F.01_ is 2 Thief

@@ -123,9 +123,9 @@ QBN:
 Person _qgiver_ group Questor
 
 Place _mondung_ remote dungeon
-Place qGiverSpot remote dungeon
+Place _qGiverSpot_ remote dungeon
 
-Clock _queston_ 00:00 0 flag 17 range 0 2
+ClassicClock _queston_ time to _mondung_ and back flags 1
 
 Foe _priest_ is Monk
 
@@ -140,7 +140,7 @@ _bonk_ task:
 	injured _priest_ 
 	say 1011 
 	add foe _priest_ face 
-	place foe _priest_ at qGiverSpot 
+	place foe _priest_ at _qGiverSpot_ 
 
 _queston_ task:
 	end quest 

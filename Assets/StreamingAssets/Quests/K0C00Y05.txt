@@ -212,9 +212,9 @@ Person _child_ faction Children
 Place _mondung_ remote dungeon1
 Place _childlocale_ local house2
 
-Clock _queston_ 00:00 0 flag 17 range 0 5
-Clock _S.04_ 01:40 06:40
-Clock _delay_ 00:05 0 flag 1 range 0 1
+ClassicClock _queston_ time to _mondung_ then to _childlocale_ and back flags 1
+ClassicClock _S.04_ 01:40 to 06:40 flags 1
+ClassicClock _delay_ 00:05
 
 Foe _warrior_ is Knight
 

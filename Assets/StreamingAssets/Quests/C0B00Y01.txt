@@ -473,11 +473,11 @@ Place _mondung_ remote dungeon4
 Place _tavern_ remote tavern
 Place _prophouse_ remote tavern
 
-Clock _queston_ 26.09:20 0 flag 1 range 0 1
-Clock _S.04_ 2.02:00 20.20:00
-Clock _S.06_ 03:20 11:40
-Clock _S.14_ 2.02:00 20.20:00
-Clock _S.16_ 05:00 11:40
+ClassicClock _queston_ 26.09:20 flags 1
+ClassicClock _S.04_ 2.02:00 to 20.20:00 flags 1
+ClassicClock _S.06_ 03:20 to 11:40 flags 1
+ClassicClock _S.14_ 2.02:00 to 20.20:00 flags 1
+ClassicClock _S.16_ 05:00 to 11:40 flags 1
 
 Foe _fighter_ is Warrior
 

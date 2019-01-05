@@ -152,9 +152,9 @@ Place _dungeon_ remote dungeon
 Place _meetingplace_ local tavern
 Place _hidingplace_ remote house1
 
-Clock _escapetime_ 00:00 0 flag 1 range 0 5
-Clock _shortdelay_ 00:01 0 flag 1 range 0 1
-Clock _S.13_ 1.00:00 0 flag 1 range 0 1
+ClassicClock _escapetime_ time to _dungeon_ then to _hidingplace_ flags 1
+ClassicClock _shortdelay_ 00:01 flags 1
+ClassicClock _S.13_ 1.00:00 flags 1
 
 Foe _mmaster_ is Orc_shaman
 

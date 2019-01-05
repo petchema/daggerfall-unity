@@ -162,12 +162,13 @@ Item _map_ letter used 1030
 Person _questgiver_ group Questor male
 Person faction absent from data base!
 -- Person:    1 0 -1 0 13278 0 0.
+-- _contact_?
 
 Person _oblivion_ factiontype Daedra female anyInfo 1013 rumors 1014
 
 Place _skeffingcoven_ permanent SkeffingtonCoven
 
-Clock _queston_ 00:00 0 flag 1 range 3 5
+ClassicClock _queston_ time to _oblivion_ then to _contact_ flags 1
 
 Foe _firedaedra_ is Fire_daedra
 Foe _frostdaedra_ is Frost_daedra

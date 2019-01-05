@@ -100,7 +100,7 @@ Person _qgiver_ group Questor male
 Place _house_ remote random
 Place _newdung_ remote dungeon
 
-Clock _2dung_ 1.00:00 0 flag 17 range 0 2
+ClassicClock _2dung_ 1.00:00 plus time to _house_ and back flags 1
 
 Foe _monster_ is Sabretooth_tiger
 Foe _bear_ is Grizzley_bear

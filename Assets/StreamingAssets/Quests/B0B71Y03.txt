@@ -331,7 +331,7 @@ Place _dungeon1_ remote dungeon
 Place _palace_ remote palace
 Place _dungeon2_ remote dungeon
 
-Clock _finddaughter_ 00:00 0 flag 17 range 1 2
+ClassicClock _finddaughter_ time to _child_ and back flags 1
 
 Foe _F.00_ is 2 Knight
 Foe _battlemage_ is Battle_mage

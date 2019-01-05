@@ -119,7 +119,7 @@ Person _cleric_ face 105 factiontype Temple
 
 Place _mondung_ remote dungeon
 
-Clock _queston_ 00:00 0 flag 17 range 0 2
+ClassicClock _queston_ time to _mondung_ and back flags 1
 
 
 --	Quest start-up:

@@ -140,8 +140,8 @@ Person _questgiver_ face 72 group Questor
 Person _contact_ face 80 group Innkeeper
 
 
-Clock _1stparton_ 00:00 0 flag 18 range 1 4
-Clock _delay_ 00:05 00:05
+ClassicClock _1stparton_ time to _contact_ and back flags 2
+ClassicClock _delay_ 00:05
 
 Foe _guards_ is Knight
 

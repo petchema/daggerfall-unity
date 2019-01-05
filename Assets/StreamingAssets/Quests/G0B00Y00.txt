@@ -91,7 +91,7 @@ Person _qgiver_ group Questor male
 
 Place _mondun_ remote dungeon
 
-Clock _queston_ 00:00 0 flag 17 range 0 2
+ClassicClock _queston_ time to _mondun_ and back flags 1
 
 Foe _nightblade_ is Nightblade
 Foe _assassin_ is Assassin

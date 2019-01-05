@@ -166,8 +166,8 @@ Person _contact_ group Local_3.3 female
 Person Woodborne face 1 named Lord_Woodborne
 
 
-Clock _S.11_ 7.00:00 14.00:00
-Clock _S.14_ 2.00:00 0 flag 1 range 0 1
+ClassicClock _S.11_ 7.00:00 to 14.00:00 flags 1
+ClassicClock _S.14_ 2.00:00 flags 1
 
 Foe _F.00_ is Barbarian
 Foe _F.01_ is Knight

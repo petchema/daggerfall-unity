@@ -179,9 +179,9 @@ Person _giver_ face 4 group Questor
 
 Place _inn_ local tavern
 
-Clock _S.00_ 06:00 0 flag 1 range 0 1
-Clock _S.01_ 12:00 0 flag 1 range 0 1
-Clock _S.02_ 01:00 0 flag 1 range 0 1
+ClassicClock _S.00_ 06:00 flags 1
+ClassicClock _S.01_ 12:00 flags 1
+ClassicClock _S.02_ 01:00 flags 1
 
 Foe _F.00_ is Spellsword
 

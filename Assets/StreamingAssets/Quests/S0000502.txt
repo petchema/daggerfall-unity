@@ -135,10 +135,10 @@ Place _L.01_ permanent DirenniTower2
 Place _L.02_ permanent DirenniTower3
 Place aide remote dungeon
 
-Clock _S.00_ 31.06:00 93.18:00
-Clock _S.03_ 30.00:00 0 flag 1 range 0 1
-Clock _towertime_ 31.06:00 0 flag 1 range 0 1
-Clock _S.18_ 00:01 0 flag 1 range 0 1
+ClassicClock _S.00_ 31.06:00 to 93.18:00 flags 1
+ClassicClock _S.03_ 30.00:00 flags 1
+ClassicClock _towertime_ 31.06:00 flags 1
+ClassicClock _S.18_ 00:01 flags 1
 
 Foe _atronach_ is Iron_atronach
 Foe _guardian_ is Fire_daedra

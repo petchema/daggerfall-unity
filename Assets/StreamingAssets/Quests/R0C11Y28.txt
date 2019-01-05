@@ -407,9 +407,9 @@ Place _hookerhouse_ local tavern
 Place _ripperhouse_ local house1
 Place _widowhouse_ local temple
 
-Clock _1stparton_ 00:30 03:00
-Clock _2ndparton_ 00:30 06:00
-Clock _total_ 3.00:00 0 flag 1 range 0 1
+ClassicClock _1stparton_ 00:30 to 03:00 flags 1
+ClassicClock _2ndparton_ 00:30 to 06:00 flags 1
+ClassicClock _total_ 3.00:00 flags 1
 
 Foe _murder_ is Vampire
 

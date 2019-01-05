@@ -317,7 +317,7 @@ Place _ukcrypt_ remote dungeon11 anyInfo 1015 rumors 1016
 Place _dirennitower_ permanent DirenniTowerEntry
 Place _agentplace_ remote tavern
 
-Clock _S.13_ 3.00:00 7.00:00
+ClassicClock _S.13_ 3.00:00 to 7.00:00 flags 1
 
 
 --	Quest start-up:

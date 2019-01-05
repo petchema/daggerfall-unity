@@ -182,7 +182,7 @@ Person _dummy_ group Innkeeper female
 
 Place _dungeon_ remote dungeon0
 
-Clock _S.10_ 1001.00:00 0 flag 1 range 0 1
+ClassicClock _S.10_ 1001.00:00 flags 1
 
 Foe _F.00_ is Mummy
 Foe _realmummy_ is Mummy

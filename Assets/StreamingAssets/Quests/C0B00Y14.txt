@@ -146,8 +146,8 @@ Person _priest_ group Cleric female
 
 Place _mondung_ remote dungeon4
 
-Clock _delay_ 01:00 0 flag 1 range 0 1
-Clock _qtime_ 00:00 0 flag 17 range 1 5
+ClassicClock _delay_ 01:00 flags 1
+ClassicClock _qtime_ time to _priest_ then to _mondung_ and back flags 1
 
 Foe _monster1_ is Zombie
 Foe _monster2_ is Mummy

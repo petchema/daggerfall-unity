@@ -176,8 +176,8 @@ Person _aubki_ named Queen_Aubk-i atHome
 Place _location_ remote random
 Place _palace_ remote palace
 
-Clock _2palace_ 00:00 0 flag 1 range 0 2
-Clock _S.07_ 2.00:00 0 flag 1 range 0 1
+ClassicClock _2palace_ time to _palace_ flags 1
+ClassicClock _S.07_ 2.00:00 flags 1
 
 Foe _F.00_ is Nightblade
 

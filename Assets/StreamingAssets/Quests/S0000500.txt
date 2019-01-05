@@ -150,10 +150,10 @@ Place _tavern_ remote tavern
 Place _sentinel_ permanent SentinelCastle4
 Place _safehouse_ remote house4
 
-Clock _S.00_ 31.06:00 93.18:00
-Clock _executiondelay_ 30.00:00 0 flag 1 range 0 1
-Clock _delay_ 01:00 0 flag 1 range 0 1
-Clock _escapetime_ 30.00:00 0 flag 1 range 0 1
+ClassicClock _S.00_ 31.06:00 to 93.18:00 flags 1
+ClassicClock _executiondelay_ time to _sentinel_ flags 1
+ClassicClock _delay_ 01:00 flags 1
+ClassicClock _escapetime_ time to _safehouse_ flags 1
 
 Foe _guards_ is Spellsword
 Foe _F.01_ is Spellsword

@@ -287,9 +287,9 @@ Person _db_ face 78 faction The_Dark_Brotherhood
 Person _scholar_ factiontype Temple female anyInfo 1017
 
 
-Clock _queston_ 00:00 0 flag 17 range 1 2
-Clock _S.02_ 01:40 13:20
-Clock _S.05_ 06:40 23:20
+ClassicClock _queston_ time to _scholar_ and back flags 1
+ClassicClock _S.02_ 01:40 to 13:20 flags 1
+ClassicClock _S.05_ 06:40 to 23:20 flags 1
 
 Foe _hunter_ is Orc_shaman
 

@@ -154,8 +154,8 @@ Person _merchant_ face 1 faction The_Merchants
 Place item0 local house2
 Place _store_ local generalstore
 
-Clock _questtime_ 31.00:00 0 flag 1 range 0 1
-Clock _shortdelay_ 01:00 0 flag 1 range 0 1
+ClassicClock _questtime_ 31.00:00 flags 1
+ClassicClock _shortdelay_ 01:00 flags 1
 
 
 --	Quest start-up:

@@ -174,10 +174,10 @@ Person faction absent from data base!
 Person _qgenemy_ face 1 faction The_Thieves_Guild anyInfo 1015 rumors 1016
 
 Place _thievesguild_ remote house1
-Place totambuCoven permanent MyrkwasaCoven
+Place _totambuCoven_ permanent MyrkwasaCoven
 
-Clock _1stparton_ 00:00 0 flag 17 range 1 4
-Clock _2ndparton_ 00:00 0 flag 1 range 2 5
+ClassicClock _1stparton_ time to _contact_ and back flags 1
+ClassicClock _2ndparton_ time to _thievesguild_ then to _questgiver_ flags 1
 
 Foe _thief_ is 2 Nightblade
 Foe _F.01_ is Thief
@@ -244,4 +244,4 @@ _yesmap_ task:
 
 variable _nomap_
 _readmap_ task:
-	reveal totambuCoven in province 46 at 423290 
+	reveal _totambuCoven_ in province 46 at 423290 

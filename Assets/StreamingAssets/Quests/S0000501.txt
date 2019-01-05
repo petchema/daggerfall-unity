@@ -147,9 +147,9 @@ Person _traitor_ face 217 named Lord_K'avar
 Place _wayrest_ permanent WayrestCastle2
 Place aide remote dungeon
 
-Clock _S.00_ 31.06:00 93.18:00
-Clock _patsy_ 30.00:00 0 flag 1 range 0 1
-Clock _time2_ 30.00:00 0 flag 1 range 0 1
+ClassicClock _S.00_ 31.06:00 to 93.18:00 flags 1
+ClassicClock _patsy_ time to _queen_ flags 1
+ClassicClock _time2_ time to _wayrest_ and back flags 1
 
 Foe _F.00_ is 3 Archer
 Foe _mtraitor_ is Ranger

@@ -132,7 +132,7 @@ Person _darkb_ face 1 faction The_Dark_Brotherhood anyInfo 1032 rumors 1033
 
 Place _place_ local random
 
-Clock _S.00_ 7.00:00 0 flag 1 range 0 1
+ClassicClock _S.00_ 7.00:00 flags 1
 
 Foe _bard_ is Bard
 Foe _rogue_ is Rogue

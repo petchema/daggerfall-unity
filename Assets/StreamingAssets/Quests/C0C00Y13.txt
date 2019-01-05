@@ -92,8 +92,8 @@ Person _priest_ group Group_5.0 female
 Person _enemy_ face 176 group Local_4.0
 
 
-Clock _traveltime_ 00:00 0 flag 1 range 1 2
-Clock _delay_ 01:00 0 flag 1 range 0 1
+ClassicClock _traveltime_ time to _priest_ flags 1
+ClassicClock _delay_ 01:00 flags 1
 
 Foe _thief_ is Thief
 Foe _spellsword_ is Spellsword

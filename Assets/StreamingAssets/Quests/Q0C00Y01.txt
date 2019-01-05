@@ -127,7 +127,7 @@ Person _daedra_ face 80 factiontype Daedra
 
 Place _temple_ remote temple
 
-Clock _queston_ 00:00 0 flag 17 range 0 2
+ClassicClock _queston_ time to _temple_ and back flags 1
 
 Foe _guardian_ is Spellsword
 

@@ -170,7 +170,7 @@ Place _store_ local generalstore
 Place _house_ local house2
 Place _informant1_ local tavern
 
-Clock _S.01_ 10.00:00 0 flag 9 range 0 1
+ClassicClock _S.01_ 10.00:00 flags 9
 
 Foe thiefFoe is Thief
 

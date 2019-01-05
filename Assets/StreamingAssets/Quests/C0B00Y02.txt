@@ -306,8 +306,7 @@ Place _house2_ local house2
 Place _house3_ remote random
 Place _tavern_ local tavern
 
-Clock _queston_ 5.00:00 10.00:00
--flag 17 range 1 4
+ClassicClock _queston_ 5.00:00 to 10.00:00 plus time to _priest_ and back flags 1
 
 Foe _daedra_ is Daedroth
 

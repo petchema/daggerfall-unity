@@ -110,8 +110,8 @@ Person _questgiver_ face 112 group Questor
 
 Place _mondung_ remote dungeon
 
-Clock _1stparton_ 00:00 0 flag 18 range 0 2
-Clock _2ndparton_ 2.18:40 4.04:00 flag 2 range 0 0
+ClassicClock _1stparton_ time to _mondung_ and back flags 2
+ClassicClock _2ndparton_ 2.18:40 to 4.04:00 flags 2
 
 Foe _monster_ is Bard
 

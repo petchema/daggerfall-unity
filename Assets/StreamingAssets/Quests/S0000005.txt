@@ -134,7 +134,7 @@ Person _aubki_ named Queen_Aubk-i atHome
 
 Place _huntstart_ permanent Shedungent2
 
-Clock _2shedungent_ 150.00:00 0 flag 1 range 0 1
+ClassicClock _2shedungent_ 150.00:00 flags 1
 
 
 --	Quest start-up:

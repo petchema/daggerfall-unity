@@ -108,8 +108,8 @@ Person _questgiver_ group Questor male
 Person _contact_ group Local_3.0 female
 
 
-Clock _queston_ 00:00 0 flag 1 range 1 4
-Clock _delay_ 00:30 0 flag 1 range 0 1
+ClassicClock _queston_ time to _contact_ flags 1
+ClassicClock _delay_ 00:30 flags 1
 
 Foe _thief_ is Nightblade
 

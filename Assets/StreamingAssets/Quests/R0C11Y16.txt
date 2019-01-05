@@ -142,8 +142,8 @@ Person _npc1_ group Local_3.0 female
 Person _npc2_ face 248 group Local_3.1
 
 
-Clock _1stparton_ 00:00 0 flag 1 range 1 4
-Clock _2ndparton_ 00:00 0 flag 1 range 1 4
+ClassicClock _1stparton_ time to _npc1_ flags 1
+ClassicClock _2ndparton_ time to _npc2_ flags 1
 
 
 --	Quest start-up:

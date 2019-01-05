@@ -115,8 +115,8 @@ Person _qgiver_ group Questor male
 
 Place _magesguild_ local magery
 
-Clock _oneday_ 1.03:00 0 flag 1 range 0 1
-Clock _S.10_ 3.00:00 0 flag 1 range 0 1
+ClassicClock _oneday_ 1.03:00 flags 1
+ClassicClock _S.10_ 3.00:00 flags 1
 
 Foe _F.00_ is Thief
 Foe _F.01_ is 4 Knight

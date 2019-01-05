@@ -92,7 +92,7 @@ Person _qgiver_ group Questor male
 
 Place _mansion_ remote generalstore
 
-Clock _traveltime_ 00:00 0 flag 17 range 0 2
+ClassicClock _traveltime_ time to _mansion_ and back flags 1
 
 Foe _F.00_ is Battle_mage
 Foe _F.01_ is Iron_atronach

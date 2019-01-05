@@ -155,8 +155,8 @@ Person _chemist_ group Chemist female anyInfo 1011
 Person _dummydaedra_ face 102 factiontype Daedra
 
 
-Clock _1stparton_ 00:00 0 flag 2 range 1 4
-Clock _2ndparton_ 00:00 0 flag 2 range 1 4
+ClassicClock _1stparton_ time to _chemist_ flags 2
+ClassicClock _2ndparton_ time to _questgiver_ flags 2
 
 Foe _daedra_ is Daedroth
 

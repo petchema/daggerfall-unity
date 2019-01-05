@@ -112,7 +112,7 @@ Person _knight_ face 5 faction The_Host_of_the_Horn
 
 Place _mondung_ remote palace
 
-Clock _1stparton_ 00:00 0 flag 18 range 0 2
+ClassicClock _1stparton_ time to _mondung_ and back flags 2
 
 Foe _F.00_ is Spellsword
 Foe _F.01_ is Knight

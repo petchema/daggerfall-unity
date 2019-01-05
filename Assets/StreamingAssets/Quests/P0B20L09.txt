@@ -127,7 +127,7 @@ Person _vamp_ factiontype Vampire_Clan male
 
 Place _mondung_ remote dungeon
 
-Clock _queston_ 00:00 0 flag 17 range 0 2
+ClassicClock _queston_ time to _mondung_ and back flags 1
 
 Foe _F.00_ is Werewolf
 Foe _wereboar_ is Wereboar

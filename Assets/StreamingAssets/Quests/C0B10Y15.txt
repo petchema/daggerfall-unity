@@ -141,8 +141,8 @@ Person _questgiver_ group Questor male
 
 Place _mondung_ remote dungeon
 
-Clock _qtime_ 00:00 0 flag 17 range 0 2
-Clock _shortdelay_ 00:02 0 flag 1 range 0 1
+ClassicClock _qtime_ time to _mondung_ and back flags 1
+ClassicClock _shortdelay_ 00:02 flags 1
 
 Foe _lich_ is Lich
 

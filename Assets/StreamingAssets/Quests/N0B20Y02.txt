@@ -146,9 +146,9 @@ Person _qgiver_ group Questor male
 
 Place _magesguild_ local magery
 
-Clock _oneday_ 1.03:00 0 flag 1 range 0 1
-Clock _S.09_ 7.00:00 0 flag 1 range 0 1
-Clock _S.12_ 03:00 0 flag 1 range 0 1
+ClassicClock _oneday_ 1.03:00 flags 1
+ClassicClock _S.09_ 7.00:00 flags 1
+ClassicClock _S.12_ 03:00 flags 1
 
 Foe _F.00_ is 3 Nightblade
 Foe _mage_ is Mage

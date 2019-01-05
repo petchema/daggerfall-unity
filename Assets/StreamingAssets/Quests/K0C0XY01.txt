@@ -194,9 +194,9 @@ Person _contact_ face 1 faction The_Fighters_Guild
 
 Place _mondung_ remote dungeon10
 
-Clock _2mondung_ 00:00 0 flag 17 range 0 2
-Clock _S.05_ 16:40 1.09:20
-Clock _S.06_ 05:00 10:00
+ClassicClock _2mondung_ time to _mondung_ and back flags 1
+ClassicClock _S.05_ 16:40 to 1.09:20 flags 1
+ClassicClock _S.06_ 05:00 to 10:00 flags 1
 
 Foe _F.00_ is Harpy
 Foe _F.01_ is Harpy
