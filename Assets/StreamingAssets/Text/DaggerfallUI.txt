@@ -66,6 +66,23 @@ arRep,              armor
 northern,           (northern)
 southern,           (southern)
 
+- Taverns
+
+tavernMenu,         {0} ({1} gold)
+tavernAle,          Ale
+tavernBeer,         Beer
+tavernMead,         Mead
+tavernWine,         Wine
+tavernBread,        Bread
+tavernBroth,        Broth
+tavernCheese,       Cheese
+tavernFowl,         Fowl
+tavernGruel,        Gruel
+tavernPie,          Pie
+tavernStew,         Stew
+youEat,             You eat the {0} you just bought.
+youDrink,           You drink the {0} you just bought.
+
 - Potion mixing window:
 
 noRecipes,          You have no recipes.

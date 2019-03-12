@@ -52,11 +52,22 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const int howManyAdditionalDaysId = 5100;
         const int howManyDaysId = 5102;
 
+        const string textDatabase = "DaggerfallUI";
+
         static readonly string[] tavernMenu =  {
-            HardStrings.tavernAle, HardStrings.tavernBeer, HardStrings.tavernMead, HardStrings.tavernWine,
-            HardStrings.tavernBread, HardStrings.tavernBroth, HardStrings.tavernCheese, HardStrings.tavernFowl,
-            HardStrings.tavernGruel, HardStrings.tavernPie, HardStrings.tavernStew };
+            TextManager.Instance.GetText(textDatabase, "tavernAle"), TextManager.Instance.GetText(textDatabase, "tavernBeer"), TextManager.Instance.GetText(textDatabase, "tavernMead"), TextManager.Instance.GetText(textDatabase, "tavernWine"),
+            TextManager.Instance.GetText(textDatabase, "tavernBread"), TextManager.Instance.GetText(textDatabase, "tavernBroth"), TextManager.Instance.GetText(textDatabase, "tavernCheese"), TextManager.Instance.GetText(textDatabase, "tavernFowl"),
+            TextManager.Instance.GetText(textDatabase, "tavernGruel"), TextManager.Instance.GetText(textDatabase, "tavernPie"), TextManager.Instance.GetText(textDatabase, "tavernStew") };
         byte[] tavernFoodAndDrinkPrices = { 1, 1, 2, 3, 1, 1, 2, 3, 2, 2, 3 };
+        enum foodType
+        {
+            MEAL,
+            DRINK,
+        }
+        foodType[] tavernFoodAndDrinkTypes = { 
+            foodType.DRINK, foodType.DRINK, foodType.DRINK, foodType.DRINK,
+            foodType.MEAL, foodType.MEAL, foodType.MEAL, foodType.MEAL, 
+            foodType.MEAL, foodType.MEAL, foodType.MEAL };
 
         StaticNPC merchantNPC;
         PlayerGPS.DiscoveredBuilding buildingData;
@@ -185,6 +196,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 if (playerEntity.GetGoldAmount() >= tradePrice)
                 {
                     playerEntity.DeductGoldAmount(tradePrice);
+                    DaggerfallUI.Instance.PlayOneShot(SoundClips.GoldPieces);
                     RentRoom();
                 }
                 else
@@ -242,8 +254,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 DaggerfallListPickerWindow foodAndDrinkPicker = new DaggerfallListPickerWindow(uiManager, this);
                 foodAndDrinkPicker.OnItemPicked += FoodAndDrink_OnItemPicked;
 
-                foreach (string menuItem in tavernMenu)
-                    foodAndDrinkPicker.ListBox.AddItem(menuItem);
+                for (int i = 0; i < tavernMenu.Length; i++)
+                {
+                    foodAndDrinkPicker.ListBox.AddItem(string.Format(TextManager.Instance.GetText(textDatabase, "tavernMenu"), tavernMenu[i], tavernFoodAndDrinkPrices[i]));
+                }
 
                 uiManager.PushWindow(foodAndDrinkPicker);
             }
@@ -278,9 +292,20 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             else
             {
                 if (holidayID != (int)DaggerfallConnect.DFLocation.Holidays.New_Life)
+                {
                     playerEntity.DeductGoldAmount(price);
+                    DaggerfallUI.Instance.PlayOneShot(SoundClips.GoldPieces);
+                }
                 playerEntity.SetHealth(playerEntity.CurrentHealth + 2 * price);
                 playerEntity.LastTimePlayerAteOrDrankAtTavern = gameMinutes;
+                switch (tavernFoodAndDrinkTypes[index]) {
+                    case foodType.MEAL:
+                        DaggerfallUI.AddHUDText(string.Format(TextManager.Instance.GetText(textDatabase, "youEat"), tavernMenu[index].ToLowerInvariant()));
+                        break;
+                    case foodType.DRINK:
+                        DaggerfallUI.AddHUDText(string.Format(TextManager.Instance.GetText(textDatabase, "youDrink"), tavernMenu[index].ToLowerInvariant()));
+                        break;
+                }
             }
         }
 
