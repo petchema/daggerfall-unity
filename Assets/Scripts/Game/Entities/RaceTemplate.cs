@@ -42,6 +42,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public DFCareer.EffectFlags LowToleranceFlags;          // Racial low tolerance
         public DFCareer.EffectFlags CriticalWeaknessFlags;      // Racial critical weakness
         public DFCareer.SpecialAbilityFlags SpecialAbilities;   // Racial special abilities
+        public DFCareer.ProficiencyFlags ExpertProficiencies;   // Racial weapon proficiencies
 
         /// <summary>
         /// Clones this race template.
@@ -66,6 +67,7 @@ namespace DaggerfallWorkshop.Game.Entity
             clone.LowToleranceFlags = LowToleranceFlags;
             clone.CriticalWeaknessFlags = CriticalWeaknessFlags;
             clone.SpecialAbilities = SpecialAbilities;
+            clone.ExpertProficiencies = ExpertProficiencies;
 
             return clone;
         }
@@ -125,7 +127,6 @@ namespace DaggerfallWorkshop.Game.Entity
             PaperDollHeadsFemale = "FACE10I0.CIF";
 
             ResistanceFlags = DFCareer.EffectFlags.Magic;
-            SpecialAbilities = DFCareer.SpecialAbilityFlags.increasedMagery.intInSpellPoints15;
         }
     }
 
@@ -150,7 +151,7 @@ namespace DaggerfallWorkshop.Game.Entity
 
             ResistanceFlags = DFCareer.EffectFlags.Disease;
             ResistanceFlags = DFCareer.EffectFlags.Poison;
-            SpecialAbilities = DFCareer.SpecialAbilityFlags.expertiseIn.longBlade;
+            ExpertProficiencies = DFCareer.ProficiencyFlags.LongBlades;
         }
     }
 
@@ -174,7 +175,7 @@ namespace DaggerfallWorkshop.Game.Entity
             PaperDollHeadsFemale = "FACE12I0.CIF";
 
             ResistanceFlags = DFCareer.EffectFlags.Frost;
-            SpecialAbilities = DFCareer.SpecialAbilityFlags.expertiseIn.axe;
+            ExpertProficiencies = DFCareer.ProficiencyFlags.Axes;
         }
     }
 
@@ -225,7 +226,6 @@ namespace DaggerfallWorkshop.Game.Entity
             LowToleranceFlags = DFCareer.EffectFlags.Fire;
             LowToleranceFlags = DFCareer.EffectFlags.Frost;
             LowToleranceFlags = DFCareer.EffectFlags.Shock;
-            SpecialAbilities = DFCareer.SpecialAbilityFlags.increasedMagery.intInSpellPoints2;
         }
     }
 
@@ -249,7 +249,7 @@ namespace DaggerfallWorkshop.Game.Entity
             PaperDollHeadsFemale = "FACE15I0.CIF";
 
             ResistanceFlag = DFCareer.EffectFlags.Disease;
-            SpecialAbilities = DFCareer.SpecialAbilityFlags.expertiseIn.missileWeapon;
+            ExpertProficiencies = DFCareer.ProficiencyFlags.MissileWeapons;
         }
     }
 
@@ -272,8 +272,8 @@ namespace DaggerfallWorkshop.Game.Entity
             PaperDollHeadsMale = "FACE06I0.CIF";
             PaperDollHeadsFemale = "FACE16I0.CIF";
 
-            SpecialAbilities = DFCareer.SpecialAbilityFlags.acuteHearing;
-            SpecialAbilities = DFCareer.SpecialAbilityFlags.expertiseIn.handToHand;
+            SpecialAbilities = DFCareer.SpecialAbilityFlags.AcuteHearing;
+            ExpertProficiencies = DFCareer.ProficiencyFlags.HandToHand;
         }
     }
 
