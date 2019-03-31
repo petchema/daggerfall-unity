@@ -642,7 +642,7 @@ namespace DaggerfallWorkshop
             // If this is an init we can use the load time to unload unused assets
             // Keeps memory usage much lower over time
             if (init)
-                Resources.UnloadUnusedAssets();
+                DaggerfallGC.UnloadUnusedAssets();
 
             // Set terrain neighbours
             UpdateNeighbours();
