@@ -148,6 +148,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             createCharCustomClassWindow = new CreateCharCustomClass(uiManager);
             createCharCustomClassWindow.OnClose += CreateCharCustomClassWindow_OnClose;
+
+            createCharCustomClassWindow.baseClass = characterDocument.baseClass;
+
             wizardStage = WizardStages.CustomClassBuilder;
             uiManager.PushWindow(createCharCustomClassWindow);
         }
@@ -317,18 +320,37 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 if (createCharClassSelectWindow.SelectedClass == null) // Custom class
                 {
                     characterDocument.isCustom = true;
+                    characterDocument.baseClass = null;
                     SetCustomClassWindow();
                 }
                 else
                 {
-                    characterDocument.career = createCharClassSelectWindow.SelectedClass;
-                    characterDocument.classIndex = createCharClassSelectWindow.SelectedClassIndex;
-                    SetChooseBioWindow();
+                    string strReviewClass = "Do you want to review the class you chose?";
+                    DaggerfallMessageBox confirmExitBox = new DaggerfallMessageBox(uiManager, DaggerfallMessageBox.CommonMessageBoxButtons.YesNo, strReviewClass, this);
+                    confirmExitBox.OnButtonClick += ConfirmReviewClassBox_OnButtonClick;
+                    confirmExitBox.Show();
                 }
             }
             else
             {
                 SetRaceSelectWindow();
+            }
+        }
+
+        private void ConfirmReviewClassBox_OnButtonClick(DaggerfallMessageBox sender, DaggerfallMessageBox.MessageBoxButtons messageBoxButton)
+        {
+            sender.CloseWindow();
+            if (messageBoxButton == DaggerfallMessageBox.MessageBoxButtons.Yes)
+            {
+                characterDocument.isCustom = true;
+                characterDocument.baseClass = createCharClassSelectWindow.SelectedClass;
+                SetCustomClassWindow();
+            }
+            else
+            {
+                characterDocument.career = new DFCareer(createCharClassSelectWindow.SelectedClass);
+                characterDocument.classIndex = createCharClassSelectWindow.SelectedClassIndex;
+                SetChooseBioWindow();
             }
         }
 

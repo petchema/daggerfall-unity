@@ -25,11 +25,17 @@ namespace DaggerfallConnect.Arena2
         #region Fields
 
         readonly FileProxy file = new FileProxy();
+        DFCareer.CFGData cfg = null;
         DFCareer career = null;
 
         #endregion
 
         #region Properties
+
+        public DFCareer.CFGData CFGData
+        {
+            get { return cfg; }
+        }
 
         /// <summary>
         /// Gets structured career data.
@@ -110,7 +116,7 @@ namespace DaggerfallConnect.Arena2
         void ReadFile(BinaryReader reader)
         {
             // Read class resist, etc. flags
-            DFCareer.CFGData cfg = new DFCareer.CFGData();
+            cfg = new DFCareer.CFGData();
             cfg.ResistanceFlags = reader.ReadByte();
             cfg.ImmunityFlags = reader.ReadByte();
             cfg.LowToleranceFlags = reader.ReadByte();

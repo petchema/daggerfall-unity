@@ -11,16 +11,9 @@
 
 using UnityEngine;
 using System;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using DaggerfallConnect;
-using DaggerfallConnect.Arena2;
-using DaggerfallWorkshop;
 using DaggerfallWorkshop.Game.UserInterface;
-using DaggerfallWorkshop.Game.Player;
-using DaggerfallWorkshop.Game.Entity;
-using DaggerfallWorkshop.Game.Formulas;
 using DaggerfallWorkshop.Utility.AssetInjection;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
@@ -261,8 +254,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 advantageLabels[i].OnMouseClick += AdvantageLabel_OnMouseClick;
                 advantageLabels[i].Tag = -1;
             }
-            UpdateLabels();
+
             InitializeAdjustmentDict();
+            InitFromCareerData();
+            UpdateLabels();
 
             IsSetup = true;
         }
@@ -308,8 +303,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             SpecialAdvDis s = new SpecialAdvDis 
             {
-                primaryString = advantageName
-                , secondaryString = string.Empty
+                primaryString = advantageName, 
+                secondaryString = string.Empty
             };
             string[] secondaryList = null;
             // advantages/disadvantages with secondary options
@@ -381,12 +376,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 {
                     return;
                 }
-                s = new SpecialAdvDis 
-                {
-                    primaryString = advantageName
-                    , secondaryString = string.Empty
-                    , difficulty = GetAdvDisAdjustment(advantageName, string.Empty)
-                };
+                s = EvalSpecialAdvDis(s);
                 advDisList.Add(s);
                 UpdateLabels();
                 UpdateDifficultyAdjustment();
@@ -402,6 +392,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     secondaryPicker.ListBox.AddItem(secondaryString);
                 }
                 uiManager.PushWindow(secondaryPicker);
+                // Add partial item for SecondaryPicker_OnItemPicked usage
                 advDisList.Add(s);
             }
         }
@@ -410,7 +401,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             CloseWindow();
             string primary = advDisList[advDisList.Count - 1].primaryString;
-            SpecialAdvDis item = new SpecialAdvDis { primaryString = primary, secondaryString = itemString, difficulty = GetAdvDisAdjustment(primary, itemString) };
+            SpecialAdvDis item = EvalSpecialAdvDis(primary, itemString);
             if (CannotAddAdvantage(item))
             {
                 advDisList.RemoveAt(advDisList.Count - 1);
@@ -455,6 +446,21 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         #endregion
 
         #region Helper methods
+
+        SpecialAdvDis EvalSpecialAdvDis(SpecialAdvDis s)
+        {
+            return EvalSpecialAdvDis(s.primaryString, s.secondaryString);
+        }
+
+        SpecialAdvDis EvalSpecialAdvDis(string primary, string secondary)
+        {
+            return new SpecialAdvDis
+            {
+                primaryString = primary,
+                secondaryString = secondary,
+                difficulty = GetAdvDisAdjustment(primary, secondary)
+            };
+        }
 
         int GetAdvDisAdjustment(string primary, string secondary)
         {
@@ -935,6 +941,37 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         public void ParseCareerData()
         {
+            // Set everything to default beforehand
+            advantageData.UndeadAttackModifier = DFCareer.AttackModifier.Normal;
+            advantageData.DaedraAttackModifier = DFCareer.AttackModifier.Normal;
+            advantageData.HumanoidAttackModifier = DFCareer.AttackModifier.Normal;
+            advantageData.AnimalsAttackModifier = DFCareer.AttackModifier.Normal;
+            advantageData.ExpertProficiencies = 0;
+            advantageData.ForbiddenProficiencies = 0;
+            advantageData.Disease = DFCareer.Tolerance.Normal;
+            advantageData.Fire = DFCareer.Tolerance.Normal;
+            advantageData.Frost = DFCareer.Tolerance.Normal;
+            advantageData.Magic = DFCareer.Tolerance.Normal;
+            advantageData.Paralysis = DFCareer.Tolerance.Normal;
+            advantageData.Poison = DFCareer.Tolerance.Normal;
+            advantageData.Shock = DFCareer.Tolerance.Normal;
+            advantageData.SpellPointMultiplier = DFCareer.SpellPointMultipliers.Times_0_50;
+            advantageData.SpellPointMultiplierValue = defaultSpellPointMod;
+            advantageData.RapidHealing = DFCareer.RapidHealingFlags.None;
+            advantageData.SpellAbsorption = DFCareer.SpellAbsorptionFlags.None;
+            advantageData.Regeneration = DFCareer.RegenerationFlags.None;
+            advantageData.DamageFromHolyPlaces = false;
+            advantageData.DamageFromSunlight = false;
+            advantageData.DarknessPoweredMagery = DFCareer.DarknessMageryFlags.Normal;
+            advantageData.ForbiddenArmors = 0;
+            advantageData.ForbiddenMaterials = 0;
+            advantageData.ForbiddenShields = 0;
+            advantageData.LightPoweredMagery = DFCareer.LightMageryFlags.Normal;
+            advantageData.NoRegenSpellPoints = false;
+            advantageData.AcuteHearing = false;
+            advantageData.Athleticism = false;
+            advantageData.AdrenalineRush = false;
+
             foreach (SpecialAdvDis advDis in advDisList)
             {
                 switch (advDis.primaryString)
@@ -1008,6 +1045,268 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     default:
                         break;
                 }
+            }
+        }
+
+        // Reverse of ParseCareerData()
+        private void InitFromCareerData()
+        {
+            advDisList.Clear();
+
+            if (!isDisadvantages)
+            {
+                // Advantages
+                if (advantageData.UndeadAttackModifier == DFCareer.AttackModifier.Bonus)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.bonusToHit, HardStrings.undead));
+                if (advantageData.DaedraAttackModifier == DFCareer.AttackModifier.Bonus)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.bonusToHit, HardStrings.daedra));
+                if (advantageData.HumanoidAttackModifier == DFCareer.AttackModifier.Bonus)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.bonusToHit, HardStrings.humanoid));
+                if (advantageData.AnimalsAttackModifier == DFCareer.AttackModifier.Bonus)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.bonusToHit, HardStrings.animals));
+
+                if ((advantageData.ExpertProficiencies & DFCareer.ProficiencyFlags.Axes) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.expertiseIn, HardStrings.axe));
+                if ((advantageData.ExpertProficiencies & DFCareer.ProficiencyFlags.BluntWeapons) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.expertiseIn, HardStrings.bluntWeapon));
+                if ((advantageData.ExpertProficiencies & DFCareer.ProficiencyFlags.HandToHand) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.expertiseIn, HardStrings.handToHand));
+                if ((advantageData.ExpertProficiencies & DFCareer.ProficiencyFlags.LongBlades) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.expertiseIn, HardStrings.longBlade));
+                if ((advantageData.ExpertProficiencies & DFCareer.ProficiencyFlags.MissileWeapons) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.expertiseIn, HardStrings.missileWeapon));
+                if ((advantageData.ExpertProficiencies & DFCareer.ProficiencyFlags.ShortBlades) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.expertiseIn, HardStrings.shortBlade));
+
+                if (advantageData.Disease == DFCareer.Tolerance.Immune)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.immunity, HardStrings.toDisease));
+                if (advantageData.Fire == DFCareer.Tolerance.Immune)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.immunity, HardStrings.toFire));
+                if (advantageData.Frost == DFCareer.Tolerance.Immune)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.immunity, HardStrings.toFrost));
+                if (advantageData.Magic == DFCareer.Tolerance.Immune)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.immunity, HardStrings.toMagic));
+                if (advantageData.Paralysis == DFCareer.Tolerance.Immune)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.immunity, HardStrings.toParalysis));
+                if (advantageData.Poison == DFCareer.Tolerance.Immune)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.immunity, HardStrings.toPoison));
+                if (advantageData.Shock == DFCareer.Tolerance.Immune)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.immunity, HardStrings.toShock));
+
+                if (advantageData.Disease == DFCareer.Tolerance.Resistant)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.resistance, HardStrings.toDisease));
+                if (advantageData.Fire == DFCareer.Tolerance.Resistant)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.resistance, HardStrings.toFire));
+                if (advantageData.Frost == DFCareer.Tolerance.Resistant)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.resistance, HardStrings.toFrost));
+                if (advantageData.Magic == DFCareer.Tolerance.Resistant)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.resistance, HardStrings.toMagic));
+                if (advantageData.Paralysis == DFCareer.Tolerance.Resistant)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.resistance, HardStrings.toParalysis));
+                if (advantageData.Poison == DFCareer.Tolerance.Resistant)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.resistance, HardStrings.toPoison));
+                if (advantageData.Shock == DFCareer.Tolerance.Resistant)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.resistance, HardStrings.toShock));
+
+                switch (advantageData.SpellPointMultiplier)
+                {
+                    case DFCareer.SpellPointMultipliers.Times_1_00:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.increasedMagery, HardStrings.intInSpellPoints));
+                        break;
+                    case DFCareer.SpellPointMultipliers.Times_1_50:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.increasedMagery, HardStrings.intInSpellPoints15));
+                        break;
+                    case DFCareer.SpellPointMultipliers.Times_1_75:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.increasedMagery, HardStrings.intInSpellPoints175));
+                        break;
+                    case DFCareer.SpellPointMultipliers.Times_2_00:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.increasedMagery, HardStrings.intInSpellPoints2));
+                        break;
+                    case DFCareer.SpellPointMultipliers.Times_3_00:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.increasedMagery, HardStrings.intInSpellPoints3));
+                        break;
+                    default:
+                        break;
+                }
+
+                switch (advantageData.RapidHealing)
+                {
+                    case DFCareer.RapidHealingFlags.Always:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.rapidHealing, HardStrings.general));
+                        break;
+                    case DFCareer.RapidHealingFlags.InDarkness:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.rapidHealing, HardStrings.inDarkness));
+                        break;
+                    case DFCareer.RapidHealingFlags.InLight:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.rapidHealing, HardStrings.inLight));
+                        break;
+                    default:
+                        break;
+                }
+
+                switch (advantageData.SpellAbsorption)
+                {
+                    case DFCareer.SpellAbsorptionFlags.Always:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.spellAbsorption, HardStrings.general));
+                        break;
+                    case DFCareer.SpellAbsorptionFlags.InDarkness:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.spellAbsorption, HardStrings.inDarkness));
+                        break;
+                    case DFCareer.SpellAbsorptionFlags.InLight:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.spellAbsorption, HardStrings.inLight));
+                        break;
+                    default:
+                        break;
+                }
+
+                switch (advantageData.Regeneration)
+                {
+                    case DFCareer.RegenerationFlags.Always:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.regenerateHealth, HardStrings.general));
+                        break;
+                    case DFCareer.RegenerationFlags.InDarkness:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.regenerateHealth, HardStrings.inDarkness));
+                        break;
+                    case DFCareer.RegenerationFlags.InLight:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.regenerateHealth, HardStrings.inLight));
+                        break;
+                    case DFCareer.RegenerationFlags.InWater:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.regenerateHealth, HardStrings.whileImmersed));
+                        break;
+                    default:
+                        break;
+                }
+
+                if (advantageData.AcuteHearing)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.acuteHearing, string.Empty));
+                if (advantageData.Athleticism)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.athleticism, string.Empty));
+                if (advantageData.AdrenalineRush)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.adrenalineRush, string.Empty));
+            }
+            else 
+            {
+                // Disadvantages
+                if (advantageData.UndeadAttackModifier == DFCareer.AttackModifier.Phobia)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.phobia, HardStrings.undead));
+                if (advantageData.DaedraAttackModifier == DFCareer.AttackModifier.Phobia)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.phobia, HardStrings.daedra));
+                if (advantageData.HumanoidAttackModifier == DFCareer.AttackModifier.Phobia)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.phobia, HardStrings.humanoid));
+                if (advantageData.AnimalsAttackModifier == DFCareer.AttackModifier.Phobia)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.phobia, HardStrings.animals));
+
+                if ((advantageData.ForbiddenProficiencies & DFCareer.ProficiencyFlags.Axes) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenWeaponry, HardStrings.axe));
+                if ((advantageData.ForbiddenProficiencies & DFCareer.ProficiencyFlags.BluntWeapons) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenWeaponry, HardStrings.bluntWeapon));
+                if ((advantageData.ForbiddenProficiencies & DFCareer.ProficiencyFlags.HandToHand) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenWeaponry, HardStrings.handToHand));
+                if ((advantageData.ForbiddenProficiencies & DFCareer.ProficiencyFlags.LongBlades) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenWeaponry, HardStrings.longBlade));
+                if ((advantageData.ForbiddenProficiencies & DFCareer.ProficiencyFlags.MissileWeapons) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenWeaponry, HardStrings.missileWeapon));
+                if ((advantageData.ForbiddenProficiencies & DFCareer.ProficiencyFlags.ShortBlades) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenWeaponry, HardStrings.shortBlade));
+
+                if (advantageData.Disease == DFCareer.Tolerance.LowTolerance)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.lowTolerance, HardStrings.toDisease));
+                if (advantageData.Fire == DFCareer.Tolerance.LowTolerance)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.lowTolerance, HardStrings.toFire));
+                if (advantageData.Frost == DFCareer.Tolerance.LowTolerance)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.lowTolerance, HardStrings.toFrost));
+                if (advantageData.Magic == DFCareer.Tolerance.LowTolerance)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.lowTolerance, HardStrings.toMagic));
+                if (advantageData.Paralysis == DFCareer.Tolerance.LowTolerance)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.lowTolerance, HardStrings.toParalysis));
+                if (advantageData.Poison == DFCareer.Tolerance.LowTolerance)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.lowTolerance, HardStrings.toPoison));
+                if (advantageData.Shock == DFCareer.Tolerance.LowTolerance)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.lowTolerance, HardStrings.toShock));
+
+                if (advantageData.Disease == DFCareer.Tolerance.CriticalWeakness)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.criticalWeakness, HardStrings.toDisease));
+                if (advantageData.Fire == DFCareer.Tolerance.CriticalWeakness)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.criticalWeakness, HardStrings.toFire));
+                if (advantageData.Frost == DFCareer.Tolerance.CriticalWeakness)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.criticalWeakness, HardStrings.toFrost));
+                if (advantageData.Magic == DFCareer.Tolerance.CriticalWeakness)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.criticalWeakness, HardStrings.toMagic));
+                if (advantageData.Paralysis == DFCareer.Tolerance.CriticalWeakness)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.criticalWeakness, HardStrings.toParalysis));
+                if (advantageData.Poison == DFCareer.Tolerance.CriticalWeakness)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.criticalWeakness, HardStrings.toPoison));
+                if (advantageData.Shock == DFCareer.Tolerance.CriticalWeakness)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.criticalWeakness, HardStrings.toShock));
+
+                if (advantageData.DamageFromHolyPlaces)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.damage, HardStrings.fromHolyPlaces));
+                if (advantageData.DamageFromSunlight)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.damage, HardStrings.fromSunlight));
+
+                switch (advantageData.DarknessPoweredMagery)
+                {
+                    case DFCareer.DarknessMageryFlags.ReducedPowerInLight:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.darknessPoweredMagery, HardStrings.lowerMagicAbilityDaylight));
+                        break;
+                    case DFCareer.DarknessMageryFlags.UnableToCastInLight:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.darknessPoweredMagery, HardStrings.unableToUseMagicInDaylight));
+                        break;
+                    default:
+                        break;
+                }
+
+                switch (advantageData.LightPoweredMagery)
+                {
+                    case DFCareer.LightMageryFlags.ReducedPowerInDarkness:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.lightPoweredMagery, HardStrings.lowerMagicAbilityDarkness));
+                        break;
+                    case DFCareer.LightMageryFlags.UnableToCastInDarkness:
+                        advDisList.Add(EvalSpecialAdvDis(HardStrings.lightPoweredMagery, HardStrings.unableToUseMagicInDarkness));
+                        break;
+                    default:
+                        break;
+                }
+
+                if ((advantageData.ForbiddenArmors & DFCareer.ArmorFlags.Chain) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenArmorType, HardStrings.chain));
+                if ((advantageData.ForbiddenArmors & DFCareer.ArmorFlags.Leather) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenArmorType, HardStrings.leather));
+                if ((advantageData.ForbiddenArmors & DFCareer.ArmorFlags.Plate) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenArmorType, HardStrings.plate));
+
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Adamantium) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.adamantium));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Daedric) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.daedric));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Dwarven) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.dwarven));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Ebony) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.ebony));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Elven) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.elven));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Iron) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.iron));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Mithril) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.mithril));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Orcish) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.orcish));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Silver) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.silver));
+                if ((advantageData.ForbiddenMaterials & DFCareer.MaterialFlags.Steel) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenMaterial, HardStrings.steel));
+
+                if ((advantageData.ForbiddenShields & DFCareer.ShieldFlags.Buckler) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenShieldTypes, HardStrings.buckler));
+                if ((advantageData.ForbiddenShields & DFCareer.ShieldFlags.KiteShield) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenShieldTypes, HardStrings.kiteShield));
+                if ((advantageData.ForbiddenShields & DFCareer.ShieldFlags.RoundShield) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenShieldTypes, HardStrings.roundShield));
+                if ((advantageData.ForbiddenShields & DFCareer.ShieldFlags.TowerShield) != 0)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.forbiddenShieldTypes, HardStrings.towerShield));
+
+                if (advantageData.NoRegenSpellPoints)
+                    advDisList.Add(EvalSpecialAdvDis(HardStrings.inabilityToRegen, string.Empty));
             }
         }
 

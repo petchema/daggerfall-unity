@@ -29,11 +29,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
     {
         const int startClassDescriptionID = 2100;
 
+        List<DFCareer.CFGData> classCfgList = new List<DFCareer.CFGData>();
         List<DFCareer> classList = new List<DFCareer>();
-        DFCareer selectedClass;
+        DFCareer.CFGData selectedClass;
         int selectedClassIndex = 0;
 
-        public DFCareer SelectedClass
+        public DFCareer.CFGData SelectedClass
         {
             get { return selectedClass; }
         }
@@ -54,6 +55,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 for (int i = 0; i < files.Length - 1; i++)
                 {
                     ClassFile classFile = new ClassFile(files[i]);
+                    classCfgList.Add(classFile.CFGData);
                     classList.Add(classFile.Career);
                     listBox.AddItem(classFile.Career.Name);
                 }
@@ -66,7 +68,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         void DaggerfallClassSelectWindow_OnItemPicked(int index, string className)
         {
-            if (index == classList.Count) // "Custom" option selected
+            if (index == classCfgList.Count) // "Custom" option selected
             {
                 selectedClass = null;
                 selectedClassIndex = -1;
@@ -74,7 +76,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             } 
             else 
             {
-                selectedClass = classList[index];
+                selectedClass = classCfgList[index];
                 selectedClassIndex = index;
 
                 TextFile.Token[] textTokens = DaggerfallUnity.Instance.TextProvider.GetRSCTokens(startClassDescriptionID + index);

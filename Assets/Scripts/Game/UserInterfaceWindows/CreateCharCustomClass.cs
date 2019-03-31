@@ -47,6 +47,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         DaggerfallFont font;
         StatsRollout statsRollout;
         TextBox nameTextBox = new TextBox();
+        public DFCareer.CFGData baseClass;
         DFCareer createdClass;
         int lastSkillButtonId;
         Dictionary<string, DFCareer.Skills> skillsDict;
@@ -158,10 +159,20 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             NativePanel.Components.Add(nameTextBox);
 
             // Initialize character class
-            createdClass = new DFCareer();
-            createdClass.HitPointsPerLevel = defaultHpPerLevel;
-            createdClass.SpellPointMultiplier = DFCareer.SpellPointMultipliers.Times_0_50;
-            createdClass.SpellPointMultiplierValue = .5f;
+            if (baseClass == null)
+            {
+                createdClass = new DFCareer();
+                createdClass.HitPointsPerLevel = defaultHpPerLevel;
+                createdClass.SpellPointMultiplier = DFCareer.SpellPointMultipliers.Times_0_50;
+                createdClass.SpellPointMultiplierValue = .5f;
+            }
+            else
+            {
+                createdClass = new DFCareer(baseClass);
+                nameTextBox.Text = createdClass.Name;
+                statsRollout.SetFromCareer(CreatedClass);
+                // Reputations?
+            }
 
             // Initiate UI components
             font = DaggerfallUI.DefaultFont;
@@ -173,7 +184,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             UpdateDifficulty();
 
             // Setup help dictionary
-            helpDict = new Dictionary<string, int> 
+            helpDict = new Dictionary<string, int>
             {
                 { HardStrings.helpAttributes, 2402 },
                 { HardStrings.helpClassName, 2401 },
@@ -194,6 +205,22 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             skillsDict.Remove(string.Empty); // Don't include "none" skill value.
             skillsList = new List<string>(skillsDict.Keys);
             skillsList.Sort(); // Sort skills alphabetically a la classic.
+
+            if (baseClass != null)
+            {
+                SkillAssign(0, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.PrimarySkill1));
+                SkillAssign(1, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.PrimarySkill2));
+                SkillAssign(2, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.PrimarySkill3));
+                SkillAssign(3, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MajorSkill1));
+                SkillAssign(4, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MajorSkill2));
+                SkillAssign(5, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MajorSkill3));
+                SkillAssign(6, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MinorSkill1));
+                SkillAssign(7, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MinorSkill2));
+                SkillAssign(8, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MinorSkill3));
+                SkillAssign(9, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MinorSkill4));
+                SkillAssign(10, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MinorSkill5));
+                SkillAssign(11, DaggerfallUnity.Instance.TextProvider.GetSkillName(createdClass.MinorSkill6));
+            }
 
             IsSetup = true;
         }
@@ -311,13 +338,26 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 default:
                     return;
             }
-            skillsList.Remove(skillName);
-            if (skillLabels[lastSkillButtonId].Text != string.Empty)
+            SkillAssign(lastSkillButtonId, skillName);
+        }
+
+        private void SkillAssign(int buttonId, string skillName)
+        {
+            if (skillName != string.Empty)
             {
-                skillsList.Add(skillLabels[lastSkillButtonId].Text);
+                skillsList.Remove(skillName);
+                SkillRelease(buttonId);
+                skillLabels[buttonId].Text = skillName;
             }
-            skillsList.Sort();
-            skillLabels[lastSkillButtonId].Text = skillName;
+        }
+
+        private void SkillRelease(int buttonId)
+        {
+            if (skillLabels[buttonId].Text != string.Empty)
+            {
+                skillsList.Add(skillLabels[buttonId].Text);
+                skillsList.Sort();
+            }
         }
 
         public void HitPointsUpButton_OnMouseClick(BaseScreenComponent sender, Vector2 pos)
@@ -362,7 +402,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         public void specialAdvantageButton_OnMouseClick(BaseScreenComponent sender, Vector2 pos)
         {
-            createCharSpecialAdvantageWindow = new CreateCharSpecialAdvantageWindow(uiManager, advantages, disadvantages, createdClass, this);
+            createCharSpecialAdvantageWindow = new CreateCharSpecialAdvantageWindow(uiManager, advantages, disadvantages, createdClass, this, false);
             uiManager.PushWindow(createCharSpecialAdvantageWindow);
         }
 

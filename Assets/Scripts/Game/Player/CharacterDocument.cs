@@ -22,6 +22,7 @@ namespace DaggerfallWorkshop.Game.Player
     {
         public RaceTemplate raceTemplate;
         public Genders gender;
+        public DFCareer.CFGData baseClass;
         public DFCareer career;
         public string name;
         public int faceIndex;

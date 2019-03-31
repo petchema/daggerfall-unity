@@ -143,6 +143,15 @@ namespace DaggerfallWorkshop.Game.UserInterface
 
         #region Public Methods
 
+        public void SetFromCareer(DFCareer dfClass)
+        {
+            workingStats = CharacterDocument.GetClassBaseStats(dfClass);
+            bonusPool = 0;
+            spinner.Value = 0;
+            UpdateStatLabels();
+            SelectStat(0);
+        }
+
         public void Reroll(DFCareer dfClass)
         {
             // Assign base stats from class template
