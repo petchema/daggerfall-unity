@@ -55,6 +55,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         readonly Dictionary<string, BaseEntityEffect> magicEffectTemplates = new Dictionary<string, BaseEntityEffect>();
         readonly Dictionary<int, BaseEntityEffect> potionEffectTemplates = new Dictionary<int, BaseEntityEffect>();
         readonly Dictionary<int, SpellRecord.SpellRecordData> classicSpells = new Dictionary<int, SpellRecord.SpellRecordData>();
+        readonly Dictionary<string, EffectBundleSettings> customSpellBundleOffers = new Dictionary<string, EffectBundleSettings>();
 
         #endregion
 
@@ -203,6 +204,42 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Allows a mod to register custom spell bundles for sale at the spell maker along with classic spells.
+        /// </summary>
+        /// <param name="key">Unique key of bundle for tracking.</param>
+        /// <param name="bundleSettings">EffectBundleSettings of spell bundle to offer.</param>
+        public void RegisterCustomSpellBundleOffer(string key, EffectBundleSettings bundleSettings)
+        {
+            if (customSpellBundleOffers.ContainsKey(key))
+            {
+                Debug.LogErrorFormat("RegisterCustomSpellBundleOffer: Duplicate bundle key '{0}'", key);
+                return;
+            }
+            customSpellBundleOffers.Add(key, bundleSettings);
+        }
+
+        /// <summary>
+        /// Gets a specific custom spell bundle offer.
+        /// </summary>
+        public EffectBundleSettings GetCustomSpellBundleOffers(string key)
+        {
+            if (!customSpellBundleOffers.ContainsKey(key))
+            {
+                Debug.LogErrorFormat("GetCustomSpellBundleOffers: Bundle key '{0}' not found", key);
+                return new EffectBundleSettings();
+            }
+            return customSpellBundleOffers[key];
+        }
+
+        /// <summary>
+        /// Gets all custom spell bundles offered for sale or item enchanting.
+        /// </summary>
+        public EffectBundleSettings[] GetCustomSpellBundleOffers()
+        {
+            return customSpellBundleOffers.Values.ToArray();
         }
 
         /// <summary>
@@ -513,18 +550,26 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         public bool GetArtifactBundleSettings(out EffectBundleSettings settings, int effectIndex)
         {
             string effectKey = string.Empty;
+            TargetTypes effectTargetType = TargetTypes.None;
             switch (effectIndex)
             {
                 case (int)ArtifactsSubTypes.Wabbajack:
                     effectKey = "WabbajackEffect";
+                    effectTargetType = TargetTypes.ByTouch;
                     break;
                 case (int)ArtifactsSubTypes.Mehrunes_Razor:
                     effectKey = "MehrunesRazorEffect";
+                    effectTargetType = TargetTypes.ByTouch;
+                    break;
+                case (int)ArtifactsSubTypes.Sanguine_Rose:
+                    effectKey = "SanguineRoseEffect";
+                    effectTargetType = TargetTypes.CasterOnly;
                     break;
             }
             settings = new EffectBundleSettings
             {
-                Effects = new EffectEntry[] { new EffectEntry(effectKey) }
+                Effects = new EffectEntry[] { new EffectEntry(effectKey) },
+                TargetType = effectTargetType
             };
 
             return effectKey != string.Empty;
