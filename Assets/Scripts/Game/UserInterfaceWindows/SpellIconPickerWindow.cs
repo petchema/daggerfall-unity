@@ -40,8 +40,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         ScrollingPanel scrollingPanel = new ScrollingPanel();
         VerticalScrollBar scroller = new VerticalScrollBar();
 
-        Color mainPanelBackgroundColor = new Color(0.0f, 0f, 0.0f, 1.0f);
-
         #endregion
 
         #region Fields
@@ -77,7 +75,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             mainPanel.VerticalAlignment = VerticalAlignment.Middle;
             mainPanel.Size = mainPanelSize;
             mainPanel.Outline.Enabled = true;
-            SetBackground(mainPanel, mainPanelBackgroundColor, "mainPanelBackgroundColor");
+            mainPanel.BackgroundColor = Color.black;
             NativePanel.Components.Add(mainPanel);
 
             // Scrolling panel
@@ -249,15 +247,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             if (!mouseOverIcon)
                 selectedIcon = null;
-        }
-
-        void SetBackground(BaseScreenComponent panel, Color color, string textureName)
-        {
-            Texture2D tex;
-            if (TextureReplacement.TryImportTexture(textureName, out tex))
-                panel.BackgroundTexture = tex;
-            else
-                panel.BackgroundColor = color;
         }
 
         private void Scroller_OnScroll()

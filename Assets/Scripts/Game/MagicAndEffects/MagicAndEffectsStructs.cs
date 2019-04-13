@@ -12,6 +12,7 @@
 using System;
 using DaggerfallConnect;
 using DaggerfallConnect.Arena2;
+using DaggerfallConnect.FallExe;
 
 namespace DaggerfallWorkshop.Game.MagicAndEffects
 {
@@ -40,6 +41,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         public EffectCosts DurationCosts;                           // Duration cost values
         public EffectCosts ChanceCosts;                             // Chance cost values
         public EffectCosts MagnitudeCosts;                          // Magnitude cost values
+        public ItemMakerFlags ItemMakerFlags;                       // Item maker features
+        public bool DisableReflectiveEnumeration;                   // Prevents effect template from being registered automatically with broker
     }
 
     /// <summary>
@@ -149,6 +152,74 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         public string Tag;
         public EffectEntry[] Effects;
         public LegacyEffectEntry[] LegacyEffects;
+    }
+
+    /// <summary>
+    /// Settings for a single enchantment on item.
+    /// </summary>
+    [Serializable]
+    public struct EnchantmentSettings : IEquatable<EnchantmentSettings>
+    {
+        public int Version;
+        public string EffectKey;
+        public EnchantmentTypes ClassicType;
+        public short ClassicParam;
+        public string CustomParam;
+        public string PrimaryDisplayName;
+        public string SecondaryDisplayName;
+        public int EnchantCost;
+
+        public bool Equals(EnchantmentSettings other)
+        {
+            return
+                Version == other.Version &&
+                EffectKey == other.EffectKey &&
+                ClassicType == other.ClassicType &&
+                ClassicParam == other.ClassicParam &&
+                CustomParam == other.CustomParam &&
+                PrimaryDisplayName == other.PrimaryDisplayName &&
+                SecondaryDisplayName == other.SecondaryDisplayName &&
+                EnchantCost == other.EnchantCost;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is EnchantmentSettings))
+                return false;
+
+            return Equals((EnchantmentSettings)obj);
+        }
+
+        public static bool operator == (EnchantmentSettings enchantment1, EnchantmentSettings enchantment2)
+        {
+            if (((object)enchantment1) == null || ((object)enchantment2) == null)
+                return Object.Equals(enchantment1, enchantment2);
+
+            return enchantment1.Equals(enchantment2);
+        }
+
+        public static bool operator != (EnchantmentSettings enchantment1, EnchantmentSettings enchantment2)
+        {
+            if (((object)enchantment1) == null || ((object)enchantment2) == null)
+                return !Object.Equals(enchantment1, enchantment2);
+
+            return !(enchantment1.Equals(enchantment2));
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            hash = hash * 23 + Version.GetHashCode();
+            if (!string.IsNullOrEmpty(EffectKey)) hash = hash * 23 + EffectKey.GetHashCode();
+            hash = hash * 23 + ClassicType.GetHashCode();
+            hash = hash * 23 + ClassicParam.GetHashCode();
+            if (!string.IsNullOrEmpty(CustomParam)) hash = hash * 23 + CustomParam.GetHashCode();
+            if (!string.IsNullOrEmpty(PrimaryDisplayName)) hash = hash * 23 + PrimaryDisplayName.GetHashCode();
+            if (!string.IsNullOrEmpty(SecondaryDisplayName)) hash = hash * 23 + SecondaryDisplayName.GetHashCode();
+            hash = hash * 23 + EnchantCost.GetHashCode();
+
+            return hash;
+        }
     }
 
     /// <summary>
