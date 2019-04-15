@@ -321,12 +321,18 @@ namespace DaggerfallWorkshop.Game
             // Set presets based on time of day
             if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsDay)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.SunnyDay;
+                if (_dfUnity.WorldTime.Now.SeasonValue == DaggerfallDateTime.Seasons.Winter)
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ColdDay;
+                else
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.SunnyDay;
                 return;
             }
             else if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ClearNight;
+                if (_dfUnity.WorldTime.Now.SeasonValue == DaggerfallDateTime.Seasons.Winter)
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ColdNight;
+                else
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ClearNight;
                 return;
             }
 
