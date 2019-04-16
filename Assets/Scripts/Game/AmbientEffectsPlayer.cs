@@ -356,7 +356,7 @@ namespace DaggerfallWorkshop.Game
         {
             // Reset countdown to next sound
             // Poisson process https://preshing.com/20111007/how-to-generate-random-timings-for-a-poisson-process/
-            float rateParameter = (MinWaitTime + MaxWaitTime) / 2f;
+            float rateParameter = (MinWaitTime + MaxWaitTime - 1) / 2f;
             waitTime = -Mathf.Log(Random.Range(0f, 1f)) * rateParameter;
             // apply bounds
             waitTime = Mathf.Max(MinWaitTime, Mathf.Min(MaxWaitTime, waitTime));
