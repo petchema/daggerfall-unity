@@ -18,6 +18,7 @@ using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Utility;
+using DaggerfallWorkshop.Game.MagicAndEffects;
 
 namespace DaggerfallWorkshop.Game.Items
 {
@@ -44,6 +45,7 @@ namespace DaggerfallWorkshop.Game.Items
         public int enchantmentPoints;
         public int message;
         public DaggerfallEnchantment[] legacyMagic = null;
+        public CustomEnchantment[] customMagic = null;
         public int stackCount = 1;
         public Poisons poisonType = Poisons.None;
 
@@ -246,17 +248,41 @@ namespace DaggerfallWorkshop.Game.Items
         /// </summary>
         public virtual bool IsEnchanted
         {
-            get { return GetIsEnchanted(); }
+            get { return HasLegacyEnchantments || HasCustomEnchantments; }
         }
 
         /// <summary>
-        /// Gets enchantments on this item. Can be null or empty.
-        /// Enchantments on items are stored and generated using the classic enchantment format.
-        /// At runtime this is instantiated to an effect bundle for execution by entity effect manager.
+        /// Gets legacy enchantments on this item. Can be null or empty.
+        /// Legacy enchantments on items are stored and generated using the classic type/param enchantment format.
         /// </summary>
-        public DaggerfallEnchantment[] Enchantments
+        public DaggerfallEnchantment[] LegacyEnchantments
         {
             get { return legacyMagic; }
+        }
+
+        /// <summary>
+        /// True if item has any legacy enchantments.
+        /// </summary>
+        public bool HasLegacyEnchantments
+        {
+            get { return GetHasLegacyEnchantment(); }
+        }
+
+        /// <summary>
+        /// Gets custom enchantments on this item. Can be null or empty.
+        /// Custom enchantments on items are stored and generated using an effectKey/customParam pair.
+        /// </summary>
+        public CustomEnchantment[] CustomEnchantments
+        {
+            get { return customMagic; }
+        }
+
+        /// <summary>
+        /// True is item has any custom enchantments.
+        /// </summary>
+        public bool HasCustomEnchantments
+        {
+            get { return customMagic != null && customMagic.Length > 0; }
         }
 
         /// <summary>
@@ -1482,10 +1508,8 @@ namespace DaggerfallWorkshop.Game.Items
             return false;
         }
 
-        // Basic check for magic items
-        // Currently uses legacyMagic data for imported items
-        // New items cannot currently have magical properties
-        bool GetIsEnchanted()
+        // Check if item has any valid legacy enchantments
+        bool GetHasLegacyEnchantment()
         {
             if (legacyMagic == null || legacyMagic.Length == 0)
                 return false;
@@ -1517,10 +1541,10 @@ namespace DaggerfallWorkshop.Game.Items
             return false;
         }
 
-        // Check if this item is identified. (only relevant if legacymagic != null)
+        // Check if this item is identified. (only relevant if item has some enchantments)
         bool GetIsIdentified()
         {
-            if (legacyMagic == null)
+            if (!IsEnchanted)
                 return true;
             return (flags & identifiedMask) > 0;
         }
