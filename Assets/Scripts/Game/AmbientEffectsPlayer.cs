@@ -53,7 +53,9 @@ namespace DaggerfallWorkshop.Game
             Rain,                   // Just raining
             Storm,                  // Storm ambience
             SunnyDay,               // Sunny day birds
+            ColdDay,                // Cold day wind and creepy birds. Crows would be better
             ClearNight,             // Clear night crickets
+            ColdNight,              // Cold night wind and wolves
         }
 
         void Start()
@@ -98,6 +100,12 @@ namespace DaggerfallWorkshop.Game
                     loopAudioSource.clip = null;
                     loopAudioSource.loop = false;
                 }
+
+                // Interrupt any ambient sound
+                //if (ambientAudioSource.isPlaying)
+                //{
+                //    ambientAudioSource.Stop();
+                //}
 
                 ApplyPresets();
                 StartWaiting();
@@ -356,52 +364,78 @@ namespace DaggerfallWorkshop.Game
         private void StartWaiting()
         {
             // Reset countdown to next sound
-            waitTime = random.Next(MinWaitTime, MaxWaitTime);
+            // Poisson process https://preshing.com/20111007/how-to-generate-random-timings-for-a-poisson-process/
+            float rateParameter = (MinWaitTime + MaxWaitTime - 1) / 2f;
+            waitTime = -Mathf.Log(Random.Range(0f, 1f)) * rateParameter;
+            // apply bounds
+            waitTime = Mathf.Max(MinWaitTime, Mathf.Min(MaxWaitTime, waitTime));
             waitCounter = 0;
         }
 
         private void ApplyPresets()
         {
-            if (Presets == AmbientSoundPresets.Dungeon)
+            switch (Presets)
             {
-                // Set dungeon one-shots
-                ambientSounds = new SoundClips[] {
-                    SoundClips.AmbientDripShort,
-                    SoundClips.AmbientDripLong,
-                    SoundClips.AmbientWindMoan,
-                    SoundClips.AmbientWindMoanDeep,
-                    SoundClips.AmbientDoorOpen,
-                    SoundClips.AmbientGrind,
-                    SoundClips.AmbientStrumming,
-                    SoundClips.AmbientWindBlow1,
-                    SoundClips.AmbientWindBlow1a,
-                    SoundClips.AmbientWindBlow1b,
-                    SoundClips.AmbientMonsterRoar,
-                    SoundClips.AmbientGoldPieces,
-                    SoundClips.AmbientBirdCall,
-                    SoundClips.AmbientDoorClose,
-                };
-            }
-            else if (Presets == AmbientSoundPresets.Storm)
-            {
-                // Set storm one-shots
-                ambientSounds = new SoundClips[] {
-                    SoundClips.StormLightningShort,
-                    SoundClips.StormLightningThunder,
-                    SoundClips.StormThunderRoll,
-                };
-            }
-            else if (Presets == AmbientSoundPresets.SunnyDay)
-            {
-                ambientSounds = new SoundClips[]
-                {
-                    SoundClips.BirdCall1,
-                    SoundClips.BirdCall2,
-                };
-            }
-            else
-            {
-                ambientSounds = null;
+                case AmbientSoundPresets.Dungeon:
+                    // Set dungeon one-shots
+                    ambientSounds = new SoundClips[] {
+                        SoundClips.AmbientDripShort,
+                        SoundClips.AmbientDripLong,
+                        SoundClips.AmbientWindMoan,
+                        SoundClips.AmbientWindMoanDeep,
+                        SoundClips.AmbientDoorOpen,
+                        SoundClips.AmbientGrind,
+                        SoundClips.AmbientStrumming,
+                        SoundClips.AmbientWindBlow1,
+                        SoundClips.AmbientWindBlow1a,
+                        SoundClips.AmbientWindBlow1b,
+                        SoundClips.AmbientMonsterRoar,
+                        SoundClips.AmbientGoldPieces,
+                        SoundClips.AmbientBirdCall,
+                        SoundClips.AmbientDoorClose,
+                    };
+                    break;
+
+                case AmbientSoundPresets.Storm:
+                    // Set storm one-shots
+                    ambientSounds = new SoundClips[] {
+                        SoundClips.StormLightningShort,
+                        SoundClips.StormLightningThunder,
+                        SoundClips.StormThunderRoll,
+                    };
+                    break;
+
+                case AmbientSoundPresets.SunnyDay:
+                    ambientSounds = new SoundClips[]
+                    {
+                        SoundClips.BirdCall1,
+                        SoundClips.BirdCall2,
+                    };
+                    break;
+
+                case AmbientSoundPresets.ColdDay:
+                    ambientSounds = new SoundClips[]
+                    {
+                        SoundClips.AmbientCreepyBirdCall,
+                        SoundClips.AmbientWindBlow1,
+                        SoundClips.AmbientWindBlow1a,
+                        SoundClips.AmbientWindBlow1b,
+                    };
+                    break;
+
+                case AmbientSoundPresets.ColdNight:
+                    ambientSounds = new SoundClips[]
+                    {
+                        SoundClips.AmbientDistantHowl,
+                        SoundClips.AmbientWindBlow1,
+                        SoundClips.AmbientWindBlow1a,
+                        SoundClips.AmbientWindBlow1b,
+                    };
+                    break;
+
+                default:
+                    ambientSounds = null;
+                    break;
             }
 
             lastPresets = Presets;
