@@ -17,11 +17,11 @@ using DaggerfallConnect.FallExe;
 namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 {
     /// <summary>
-    /// Cast spell when item used.
+    /// Cast spell on target when weapon strikes.
     /// </summary>
-    public class CastWhenUsed : BaseEntityEffect
+    public class CastWhenStrikes : BaseEntityEffect
     {
-        public static readonly string EffectKey = EnchantmentTypes.CastWhenUsed.ToString();
+        public static readonly string EffectKey = EnchantmentTypes.CastWhenStrikes.ToString();
 
         public override void SetProperties()
         {
@@ -52,7 +52,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 {
                     Version = 1,
                     EffectKey = EffectKey,
-                    ClassicType = EnchantmentTypes.CastWhenUsed,
+                    ClassicType = EnchantmentTypes.CastWhenStrikes,
                     ClassicParam = id,
                     PrimaryDisplayName = properties.GroupName,
                     SecondaryDisplayName = spellRecord.spellName,
@@ -62,8 +62,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 enchantments.Add(enchantment);
             }
 
-            // Enumerate custom spell bundle offers supporting CastWhenUsedEnchantment flag
-            EntityEffectBroker.CustomSpellBundleOffer[] offers = GameManager.Instance.EntityEffectBroker.GetCustomSpellBundleOffers(EntityEffectBroker.CustomSpellBundleOfferUsage.CastWhenUsedEnchantment);
+            // Enumerate custom spell bundle offers supporting CastWhenStrikesEnchantment flag
+            EntityEffectBroker.CustomSpellBundleOffer[] offers = GameManager.Instance.EntityEffectBroker.GetCustomSpellBundleOffers(EntityEffectBroker.CustomSpellBundleOfferUsage.CastWhenStrikesEnchantment);
             foreach(EntityEffectBroker.CustomSpellBundleOffer offer in offers)
             {
                 EnchantmentSettings enchantment = new EnchantmentSettings()
@@ -88,82 +88,34 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 
         static short[] classicSpellIDs =
         {
-            4,      //Levitate
-            5,      //Light
-            6,      //Invisibility
-            7,      //Wizard's Fire
-            8,      //Shock
-            9,      //Strength Leech
-            10,     //Free Action
-            18,     //Open
-            11,     //Resist Cold
-            12,     //Resist Fire
-            13,     //Resist Shock
-            19,     //Wizard Lock
-            14,     //Fireball
-            15,     //Cure Poison
-            16,     //Ice Bolt
-            17,     //Shield
-            22,     //Spell Shield
-            23,     //Silence
-            24,     //Troll's Blood
+            50,     //Paralysis
+            53,     //Hand of Sleep
+            52,     //Vampiric Touch
+            54,     //Magicka Leech
+            56,     //Hand of Decay
+            33,     //Wildfire
             20,     //Ice Storm
             25,     //Fire Storm
-            26,     //Resist Poison
-            33,     //Wildfire
-            27,     //Spell Drain
-            28,     //Far Silence
-            29,     //Toxic Cloud
-            34,     //Wizard Rend
-            30,     //Shalidor's Mirror
-            31,     //Lightning
-            35,     //Medusa's Gaze
-            36,     //Force Bolt
-            32,     //Gods' Fire
-            40,     //Stamina
-            64,     //Heal
-            60,     //Balyna's Antidote
-            94,     //Recall
+            16,     //Ice Bolt
+            7,      //Wizard's Fire
+            55,     //Sphere of Negation
+            67,     //Energy Leech
         };
 
         static short[] classicSpellCosts =
         {
-            330,    //Levitate
-            250,    //Light
-            540,    //Invisibility
-            480,    //Wizard's Fire
-            380,    //Shock
-            480,    //Strength Leech
-            1650,   //Free Action
-            900,    //Open
-            1560,   //Resist Cold
-            1560,   //Resist Fire
-            1560,   //Resist Shock
-            1740,   //Wizard Lock
-            470,    //Fireball
-            1020,   //Cure Poison
-            990,    //Ice Bolt
-            1040,   //Shield
-            1980,   //Spell Shield
-            1530,   //Silence
-            920,    //Troll's Blood
-            1420,   //Ice Storm
-            840,    //Fire Storm
-            1650,   //Resist Poison
+            1620,   //Paralysis
+            780,    //Hand of Sleep
+            1380,   //Vampiric Touch
+            930,    //Magicka Leech
+            1830,   //Hand of Decay
             1020,   //Wildfire
-            1300,   //Spell Drain
-            2290,   //Far Silence
-            1020,   //Toxic Cloud
-            1610,   //Wizard Rend
-            1930,   //Shalidor's Mirror
-            760,    //Lightning
-            2140,   //Medusa's Gaze
-            3030,   //Force Bolt
-            1750,   //Gods' Fire
-            130,    //Stamina
-            360,    //Heal
-            930,    //Balyna's Antidote
-            480,    //Recall
+            840,    //Ice Storm
+            840,    //Fire Storm
+            990,    //Ice Bolt
+            480,    //Wizard's Fire
+            4230,   //Sphere of Negation
+            1260,   //Energy Leech
         };
 
         #endregion
