@@ -107,7 +107,10 @@ namespace DaggerfallWorkshop.Game
 
                 // Play attack sound only about half the time
                 if (Random.value > 0.5f)
+                {
+                    SetVolumeScale();
                     dfAudioSource.AudioSource.PlayOneShot(attackClip, volumeScale * DaggerfallUnity.Settings.SoundVolume);
+                }
             }
         }
 
@@ -125,7 +128,8 @@ namespace DaggerfallWorkshop.Game
                     sound = (int)SoundClips.Hit1 + Random.Range(2, 4);
                 }
 
-                dfAudioSource.PlayOneShot(sound, 1, 1.1f);
+                SetVolumeScale();
+                dfAudioSource.PlayOneShot(sound, 1, volumeScale * 1.1f);
             }
         }
 
@@ -134,7 +138,8 @@ namespace DaggerfallWorkshop.Game
             if (IsReady())
             {
                 int sound = (int)SoundClips.Parry1 + UnityEngine.Random.Range(0, 9);
-                dfAudioSource.PlayOneShot(sound, 1, 1.1f);
+                SetVolumeScale();
+                dfAudioSource.PlayOneShot(sound, 1, volumeScale * 1.1f);
             }
         }
 
@@ -142,13 +147,14 @@ namespace DaggerfallWorkshop.Game
         {
             if (IsReady())
             {
+                SetVolumeScale();
                 if (weapon != null)
                 {
-                    dfAudioSource.PlayOneShot(weapon.GetSwingSound());
+                    dfAudioSource.PlayOneShot(weapon.GetSwingSound(), 1, volumeScale);
                 }
                 else
                 {
-                    dfAudioSource.PlayOneShot(SoundClips.SwingHighPitch);
+                    dfAudioSource.PlayOneShot(SoundClips.SwingHighPitch, 1, volumeScale);
                 }
             }
         }
@@ -169,7 +175,8 @@ namespace DaggerfallWorkshop.Game
 
                 float pitch = dfAudioSource.AudioSource.pitch;
                 dfAudioSource.AudioSource.pitch = pitch + Random.Range(0, 0.3f);
-                dfAudioSource.PlayOneShot(sound);
+                SetVolumeScale();
+                dfAudioSource.PlayOneShot(sound, 1, volumeScale);
                 dfAudioSource.AudioSource.pitch = pitch;
             }
         }
