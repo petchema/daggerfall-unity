@@ -50,6 +50,9 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         AllLocations
     }
 
+    /// <summary>
+    /// Textures for all frames of a billboard texture record.
+    /// </summary>
     public struct BillboardImportedTextures
     {
         public bool HasImportedTextures;            // Contains imported textures ?
@@ -59,10 +62,15 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         public List<Texture2D> Emission;            // EmissionMaps for all frames.
     }
 
+    /// <summary>
+    /// Imported textures for an archive used by a wandering npc or a foe.
+    /// </summary>
     public struct MobileBillboardImportedTextures
     {
-        public bool HasImportedTextures;            // Contains imported textures ?  
-        public List<List<Texture2D>> Textures;      // Textures for all records and frames.
+        public bool HasImportedTextures;            // Contains imported textures ?
+        public bool IsEmissive;                     // Is billboard emissive ?
+        public Texture2D[][] Albedo;                // Textures for all records and frames.
+        public Texture2D[][] EmissionMaps;          // Emission maps for all records and frames.
     }
 
     #endregion
@@ -382,6 +390,10 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         /// <summary>
         /// Import textures and emission maps for all frames of this billboard. Also set other material properties from xml.
         /// </summary>
+        /// <remarks>
+        /// Seek the texture for the first frame of the given record. If found, it imports all other frames.
+        /// Always creates an emission map for textures marked as emissive by TextureReader, import emission maps for others only if available.
+        /// </remarks>
         public static void SetBillboardImportedTextures(GameObject go, ref DaggerfallBillboard.BillboardSummary summary)
         {
             if (!DaggerfallUnity.Settings.AssetInjection)
@@ -392,28 +404,28 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             int archive = summary.Archive;
             int record = summary.Record;
             int frame = 0;
-            bool isEmissive = DaggerfallUnity.Instance.MaterialReader.TextureReader.IsEmissive(archive, record);
 
             // Check first frame
             Texture2D albedo, emission;
-            bool hasImportedTextures = LoadFromCacheOrImport(archive, record, frame, isEmissive, out albedo, out emission);
+            bool hasImportedTextures = LoadFromCacheOrImport(archive, record, frame, true, out albedo, out emission);
+            bool isEmissive = emission || DaggerfallUnity.Instance.MaterialReader.TextureReader.IsEmissive(archive, record);
 
             if (summary.ImportedTextures.HasImportedTextures = hasImportedTextures)
             {
                 // Set textures on material; emission is always overriden, with actual texture or null.
                 meshRenderer.material.SetTexture(Uniforms.MainTex, albedo);
-                meshRenderer.material.SetTexture(Uniforms.EmissionMap, emission);
+                meshRenderer.material.SetTexture(Uniforms.EmissionMap, emission ?? albedo);
                 if (!isEmissive)
                     meshRenderer.material.DisableKeyword(KeyWords.Emission);
 
                 // Import animation frames
                 var albedoTextures = new List<Texture2D>();
-                var emissionTextures = new List<Texture2D>();
+                var emissionTextures = isEmissive ? new List<Texture2D>() : null;
                 do
                 {
                     albedoTextures.Add(albedo);
                     if (isEmissive)
-                        emissionTextures.Add(emission);
+                        emissionTextures.Add(emission ?? albedo);
                 }
                 while (LoadFromCacheOrImport(archive, record, ++frame, isEmissive, out albedo, out emission));
 
@@ -438,49 +450,61 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
                 summary.ImportedTextures.IsEmissive = isEmissive;
                 summary.ImportedTextures.Albedo = albedoTextures;
                 summary.ImportedTextures.Emission = emissionTextures;
-            }        
+            }
         }
 
         /// <summary>
         /// Import textures for all records and frames of a mobile billboard.
         /// </summary>
-        public static void SetMobileBillboardImportedTextures(int archive, MeshFilter meshFilter, ref MobileBillboardImportedTextures importedTextures)
+        /// <remarks>
+        /// Seek the texture for the first frame of the first record. If found, it imports the entire archive.
+        /// If this texture has an emission map the material is considered emissive and all emission maps are imported.
+        /// </remarks>
+        public static void SetMobileBillboardImportedTextures(int archive, MeshFilter meshFilter, Material material, ref MobileBillboardImportedTextures importedTextures)
         {
             if (!DaggerfallUnity.Settings.AssetInjection)
                 return;
 
-            // Check first texture.
-            Texture2D tex;
-            bool hasImportedTextures = LoadFromCacheOrImport(archive, 0, 0, out tex);
-
-            if (importedTextures.HasImportedTextures = hasImportedTextures)
+            Texture2D tex, emission;
+            if (importedTextures.HasImportedTextures = LoadFromCacheOrImport(archive, 0, 0, true, out tex, out emission))
             {
+                // Enable emission
+                if (importedTextures.IsEmissive = emission != null)
+                {
+                    material.EnableKeyword(KeyWords.Emission);
+                    material.SetColor(Uniforms.EmissionColor, Color.white);
+                }
+
+                // Load texture file to get record and frame count
                 string fileName = TextureFile.IndexToFileName(archive);
                 var textureFile = new TextureFile(Path.Combine(DaggerfallUnity.Instance.Arena2Path, fileName), FileUsage.UseMemory, true);
 
                 // Import all textures in this archive
-                var textures = new List<List<Texture2D>>();
+                importedTextures.Albedo = new Texture2D[textureFile.RecordCount][];
+                importedTextures.EmissionMaps = importedTextures.IsEmissive ? new Texture2D[textureFile.RecordCount][] : null;
                 for (int record = 0; record < textureFile.RecordCount; record++)
                 {
                     int frames = textureFile.GetFrameCount(record);
-                    var frameTextures = new List<Texture2D>();
+                    var frameTextures = new Texture2D[frames];
+                    var frameEmissionMaps = importedTextures.IsEmissive ? new Texture2D[frames] : null;
+
                     for (int frame = 0; frame < frames; frame++)
                     {
-                        if ((record != 0 || frame != 0) && !LoadFromCacheOrImport(archive, record, frame, out tex))
-                        {
-                            Debug.LogErrorFormat("Imported archive {0} does not contain texture for record {1}, frame {2}!", archive, record, frame);
-                            tex = ImageReader.GetTexture(fileName, record, frame, true);
-                        }
-                        frameTextures.Add(tex);
+                        if (record != 0 || frame != 0)
+                            LoadFromCacheOrImport(archive, record, frame, importedTextures.IsEmissive, out tex, out emission);
+
+                        frameTextures[frame] = tex ?? ImageReader.GetTexture(fileName, record, frame, true);
+                        if (frameEmissionMaps != null)
+                            frameEmissionMaps[frame] = emission ?? frameTextures[frame];
                     }
-                    textures.Add(frameTextures);
+
+                    importedTextures.Albedo[record] = frameTextures;
+                    if (importedTextures.EmissionMaps != null)
+                        importedTextures.EmissionMaps[record] = frameEmissionMaps;
                 }
 
                 // Update UV map
                 SetUv(meshFilter);
-
-                // Save results
-                importedTextures.Textures = textures;
             }
         }
 
@@ -879,24 +903,20 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         }
 
         /// <summary>
-        /// Seek albedo from cache, loose files and mods.
-        /// </summary>
-        private static bool LoadFromCacheOrImport(int archive, int record, int frame, out Texture2D albedo)
-        {
-            Texture2D emission;
-            return LoadFromCacheOrImport(archive, record, frame, false, out albedo, out emission);
-        }
-
-        /// <summary>
         /// Seek albedo and, if requested, emission map from cache, loose files and mods.
         /// </summary>
-        /// <param name="isEmissive">Request emission map. If missing, albedo is used as a fully emissive surface.</param>
+        /// <param name="archive">Archive index.</param>
+        /// <param name="record">Record index.</param>
+        /// <param name="frame">Texture frame.</param>
+        /// <param name="allowEmissionMap">Should the emission map be seeked?</param>
+        /// <param name="albedo">Imported albedo or null.</param>
+        /// <param name="emission">Imported emission map or null.</param>
         /// <returns>True if textures found and loaded.</returns>
         private static bool LoadFromCacheOrImport(
             int archive,
             int record,
             int frame,
-            bool isEmissive,
+            bool allowEmissionMap,
             out Texture2D albedo,
             out Texture2D emission)
         {
@@ -922,10 +942,8 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
                 albedo.filterMode = filterMode;
                 cachedMaterial.albedoMap = albedo;
 
-                if (isEmissive)
+                if (allowEmissionMap && TryImportTexture(archive, record, frame, TextureMap.Emission, out emission))
                 {
-                    if (!TryImportTexture(archive, record, frame, TextureMap.Emission, out emission))
-                        emission = albedo;
                     emission.filterMode = filterMode;
                     cachedMaterial.emissionMap = emission;
                 }
