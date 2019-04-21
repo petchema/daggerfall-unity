@@ -35,6 +35,7 @@ namespace DaggerfallWorkshop.Game
         DaggerfallAudioSource dfAudioSource;
         AudioSource loopAudioSource;
         Stack<AudioSource> ambientAudioSourcePool;
+        int allocatedAmbientAudioSources = 0;      // for statistics only
         private Coroutine relativePositionCoroutine = null;
 
         SoundClips[] ambientSounds;
@@ -181,6 +182,8 @@ namespace DaggerfallWorkshop.Game
         {
             if (ambientAudioSourcePool.Count == 0)
             {
+                allocatedAmbientAudioSources++;
+                Debug.Log("Allocated ambient audio sources: " + allocatedAmbientAudioSources);
                 return GetNewAudioSource();
             }
             AudioSource audioSource = ambientAudioSourcePool.Pop();
