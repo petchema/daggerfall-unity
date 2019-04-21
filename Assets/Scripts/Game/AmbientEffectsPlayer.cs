@@ -11,6 +11,7 @@
 
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -22,8 +23,8 @@ namespace DaggerfallWorkshop.Game
     [RequireComponent(typeof(DaggerfallAudioSource))]
     public class AmbientEffectsPlayer : MonoBehaviour
     {
-        public int MinWaitTime = 4;             // Min wait time in seconds before next sound
-        public int MaxWaitTime = 35;            // Max wait time in seconds before next sound
+        public float MinWaitTime = 0f;             // Min wait time in seconds before next sound
+        public float MaxWaitTime = 34f;            // Max wait time in seconds before next sound
         public AmbientSoundPresets Presets;     // Ambient sound preset
         public bool doNotPlayInCastle = true;   // Do not play ambient effects in castle blocks
         public bool PlayLightningEffect;        // Play a lightning effect where appropriate
@@ -33,7 +34,7 @@ namespace DaggerfallWorkshop.Game
         System.Random random;
         DaggerfallAudioSource dfAudioSource;
         AudioSource loopAudioSource;
-        AudioSource ambientAudioSource;
+        Stack<AudioSource> ambientAudioSourcePool;
         private Coroutine relativePositionCoroutine = null;
 
         SoundClips[] ambientSounds;
@@ -63,7 +64,7 @@ namespace DaggerfallWorkshop.Game
             random = new System.Random(System.DateTime.Now.Millisecond);
             dfAudioSource = GetComponent<DaggerfallAudioSource>();
             loopAudioSource = GetNewAudioSource();
-            ambientAudioSource = GetNewAudioSource();
+            ambientAudioSourcePool = new Stack<AudioSource>();
 
             ApplyPresets();
             StartWaiting();
@@ -163,12 +164,55 @@ namespace DaggerfallWorkshop.Game
         {
             AudioSource audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.hideFlags = HideFlags.HideInInspector;
+            ResetAudioSource(audioSource);
+            return audioSource;
+        }
+
+        private static void ResetAudioSource(AudioSource audioSource)
+        {
             audioSource.playOnAwake = false;
             audioSource.loop = false;
             audioSource.dopplerLevel = 0f;
             audioSource.spatialBlend = 0f;
             audioSource.volume = DaggerfallUnity.Settings.SoundVolume;
+        }
+
+        private AudioSource BorrowAudioSource()
+        {
+            if (ambientAudioSourcePool.Count == 0)
+            {
+                return GetNewAudioSource();
+            }
+            AudioSource audioSource = ambientAudioSourcePool.Pop();
+            ResetAudioSource(audioSource);
             return audioSource;
+        }
+
+        private void ReleaseAudioSource(AudioSource audioSource)
+        {
+            ambientAudioSourcePool.Push(audioSource);
+        }
+
+        private IEnumerator ReleaseAudioSourceWhenDone(AudioSource audioSource)
+        {
+            while (audioSource.isPlaying)
+            {
+                yield return null;
+            }
+            ReleaseAudioSource(audioSource);
+        }
+
+        private void WithAudioSource(System.Action<AudioSource> f)
+        {
+            AudioSource audioSource = BorrowAudioSource();
+            try
+            {
+                f(audioSource);
+            }
+            finally 
+            {
+                ReleaseAudioSourceWhenDone(audioSource);
+            }
         }
 
         private AudioClip PlayLoop(SoundClips clip, float volumeScale)
@@ -182,34 +226,43 @@ namespace DaggerfallWorkshop.Game
 
         private void AmbientPlayOneShot(SoundClips clip, float volumeScale)
         {
-            AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
-            ambientAudioSource.spatialBlend = 0;
-            ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            WithAudioSource(ambientAudioSource => 
+            {
+                AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
+                ambientAudioSource.spatialBlend = 0;
+                ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            });
         }
 
         private void SpatializedPlayOneShot(SoundClips clip, Vector3 position, float volumeScale)
         {
-            AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
-            ambientAudioSource.transform.position = position;
-            ambientAudioSource.spatialBlend = 1f;
-            ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            WithAudioSource(ambientAudioSource =>
+            {
+                AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
+                ambientAudioSource.transform.position = position;
+                ambientAudioSource.spatialBlend = 1f;
+                ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            });
         }
 
         private void RelativePlayOneShot(SoundClips clip, Vector3 relativePosition, float volumeScale)
         {
-            AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
-            ambientAudioSource.spatialBlend = 1f;
-            ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
-            if (relativePositionCoroutine != null)
-                StopCoroutine(relativePositionCoroutine);
-            relativePositionCoroutine = StartCoroutine(UpdateAmbientSoundRelativePosition(relativePosition));
+            WithAudioSource(ambientAudioSource =>
+            {
+                AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
+                ambientAudioSource.spatialBlend = 1f;
+                ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+                if (relativePositionCoroutine != null)
+                    StopCoroutine(relativePositionCoroutine);
+                relativePositionCoroutine = StartCoroutine(UpdateAmbientSoundRelativePosition(ambientAudioSource, relativePosition));
+            });
         }
 
-        private IEnumerator UpdateAmbientSoundRelativePosition(Vector3 relativePosition)
+        private IEnumerator UpdateAmbientSoundRelativePosition(AudioSource audioSource, Vector3 relativePosition)
         {
-            while (ambientAudioSource.isPlaying)
+            while (audioSource.isPlaying)
             {
-                ambientAudioSource.transform.position = playerBehaviour.transform.position + relativePosition;
+                audioSource.transform.position = playerBehaviour.transform.position + relativePosition;
                 yield return new WaitForEndOfFrame();
             }
         }
@@ -231,7 +284,7 @@ namespace DaggerfallWorkshop.Game
         private void PlayEffects()
         {
             // Do nothing if audio not setup
-            if (ambientAudioSource == null || ambientSounds == null)
+            if (ambientSounds == null)
                 return;
 
             // Get next sound index
@@ -359,7 +412,7 @@ namespace DaggerfallWorkshop.Game
             float rateParameter = (MinWaitTime + MaxWaitTime - 1) / 2f;
             waitTime = -Mathf.Log(Random.Range(0f, 1f)) * rateParameter;
             // apply bounds
-            waitTime = Mathf.Max(MinWaitTime, Mathf.Min(MaxWaitTime, waitTime));
+            // waitTime = Mathf.Max(MinWaitTime, Mathf.Min(MaxWaitTime, waitTime));
             waitCounter = 0;
         }
 
