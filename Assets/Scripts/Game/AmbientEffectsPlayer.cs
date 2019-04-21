@@ -35,6 +35,7 @@ namespace DaggerfallWorkshop.Game
         DaggerfallAudioSource dfAudioSource;
         AudioSource loopAudioSource;
         Stack<AudioSource> ambientAudioSourcePool;
+        int allocatedAmbientAudioSources = 0;      // for statistics only
         private Coroutine relativePositionCoroutine = null;
 
         SoundClips[] ambientSounds;
@@ -181,6 +182,8 @@ namespace DaggerfallWorkshop.Game
         {
             if (ambientAudioSourcePool.Count == 0)
             {
+                allocatedAmbientAudioSources++;
+                // Debug.Log("Allocated ambient audio sources: " + allocatedAmbientAudioSources);
                 return GetNewAudioSource();
             }
             AudioSource audioSource = ambientAudioSourcePool.Pop();
@@ -197,7 +200,7 @@ namespace DaggerfallWorkshop.Game
         {
             while (audioSource.isPlaying)
             {
-                yield return null;
+                yield return new WaitForEndOfFrame();
             }
             ReleaseAudioSource(audioSource);
         }
@@ -211,7 +214,7 @@ namespace DaggerfallWorkshop.Game
             }
             finally 
             {
-                ReleaseAudioSourceWhenDone(audioSource);
+                StartCoroutine(ReleaseAudioSourceWhenDone(audioSource));
             }
         }
 
@@ -226,61 +229,36 @@ namespace DaggerfallWorkshop.Game
 
         private void AmbientPlayOneShot(SoundClips clip, float volumeScale)
         {
-<<<<<<< HEAD
-            if (!ambientAudioSource.isPlaying)
-=======
             WithAudioSource(ambientAudioSource => 
->>>>>>> sound-ambiences-experiments-2
             {
                 AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
                 ambientAudioSource.spatialBlend = 0;
                 ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
-<<<<<<< HEAD
-            }
-=======
             });
->>>>>>> sound-ambiences-experiments-2
         }
 
         private void SpatializedPlayOneShot(SoundClips clip, Vector3 position, float volumeScale)
         {
-<<<<<<< HEAD
-            if (!ambientAudioSource.isPlaying)
-=======
             WithAudioSource(ambientAudioSource =>
->>>>>>> sound-ambiences-experiments-2
             {
                 AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
                 ambientAudioSource.transform.position = position;
                 ambientAudioSource.spatialBlend = 1f;
                 ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
-<<<<<<< HEAD
-            }
-=======
             });
->>>>>>> sound-ambiences-experiments-2
         }
 
         private void RelativePlayOneShot(SoundClips clip, Vector3 relativePosition, float volumeScale)
         {
-<<<<<<< HEAD
-            if (!ambientAudioSource.isPlaying)
-=======
             WithAudioSource(ambientAudioSource =>
->>>>>>> sound-ambiences-experiments-2
             {
                 AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
                 ambientAudioSource.spatialBlend = 1f;
                 ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
                 if (relativePositionCoroutine != null)
                     StopCoroutine(relativePositionCoroutine);
-<<<<<<< HEAD
-                relativePositionCoroutine = StartCoroutine(UpdateAmbientSoundRelativePosition(relativePosition));
-            }
-=======
                 relativePositionCoroutine = StartCoroutine(UpdateAmbientSoundRelativePosition(ambientAudioSource, relativePosition));
             });
->>>>>>> sound-ambiences-experiments-2
         }
 
         private IEnumerator UpdateAmbientSoundRelativePosition(AudioSource audioSource, Vector3 relativePosition)
