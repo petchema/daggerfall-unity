@@ -414,7 +414,7 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             {
                 // Set textures on material; emission is always overriden, with actual texture or null.
                 meshRenderer.material.SetTexture(Uniforms.MainTex, albedo);
-                meshRenderer.material.SetTexture(Uniforms.EmissionMap, emission ?? albedo);
+                meshRenderer.material.SetTexture(Uniforms.EmissionMap, isEmissive ? emission ?? albedo : null);
                 if (!isEmissive)
                     meshRenderer.material.DisableKeyword(KeyWords.Emission);
 
