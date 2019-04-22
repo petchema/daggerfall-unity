@@ -42,6 +42,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         public EffectCosts ChanceCosts;                             // Chance cost values
         public EffectCosts MagnitudeCosts;                          // Magnitude cost values
         public ItemMakerFlags ItemMakerFlags;                       // Item maker features
+        public EnchantmentPayloadFlags EnchantmentPayloadFlags;     // How an enchantment wants to receive execution callbacks to deliver payload
         public bool DisableReflectiveEnumeration;                   // Prevents effect template from being registered automatically with broker
     }
 
@@ -280,5 +281,16 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
     {
         public string EffectKey;                                    // Define the effect used by this enchantment
         public string CustomParam;                                  // Passed back to effect to locate/invoke enchantment settings
+    }
+
+    /// <summary>
+    /// References either a classic or custom spell bundle.
+    /// Always considered to reference a custom spell bundle when CustomKey is not null or empty.
+    /// </summary>
+    [Serializable]
+    public struct SpellReference
+    {
+        public int ClassicID;                                       // Spell ID into SPELLS.STD
+        public string CustomKey;                                    // Key into custom spell bundle offers
     }
 }

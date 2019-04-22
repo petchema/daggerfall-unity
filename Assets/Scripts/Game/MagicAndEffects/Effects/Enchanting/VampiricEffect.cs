@@ -15,11 +15,11 @@ using DaggerfallConnect.FallExe;
 namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 {
     /// <summary>
-    /// Extra spell points.
+    /// Vampiric effect at range or on strike.
     /// </summary>
-    public class ExtraSpellPts : BaseEntityEffect
+    public class VampiricEffect : BaseEntityEffect
     {
-        public static readonly string EffectKey = EnchantmentTypes.ExtraSpellPts.ToString();
+        public static readonly string EffectKey = EnchantmentTypes.VampiricEffect.ToString();
 
         public override void SetProperties()
         {
@@ -38,16 +38,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             List<EnchantmentSettings> enchantments = new List<EnchantmentSettings>();
 
             // Enumerate classic params
-            for (int i = 0; i < classicParams.Length; i++)
+            for (int i = 0; i < classicParamCosts.Length; i++)
             {
-                short id = classicParams[i];
-
                 EnchantmentSettings enchantment = new EnchantmentSettings()
                 {
                     Version = 1,
                     EffectKey = EffectKey,
-                    ClassicType = EnchantmentTypes.ExtraSpellPts,
-                    ClassicParam = id,
+                    ClassicType = EnchantmentTypes.VampiricEffect,
+                    ClassicParam = (short)i,
                     PrimaryDisplayName = properties.GroupName,
                     SecondaryDisplayName = TextManager.Instance.GetText(textDatabase, classicTextKeys[i]),
                     EnchantCost = classicParamCosts[i],
@@ -61,49 +59,16 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 
         #region Classic Support
 
-        static short[] classicParams =
-        {
-            0,      //During Winter
-            1,      //During Spring
-            2,      //During Summer
-            3,      //During Fall
-            4,      //During Full Moon
-            5,      //During Half Moon
-            6,      //During New Moon
-            7,      //Near Undead
-            8,      //Near Daedra
-            9,      //Near Humanoids
-            10,     //Near Animals
-        };
-
         static short[] classicParamCosts =
         {
-            500,    //During Winter
-            500,    //During Spring
-            500,    //During Summer
-            500,    //During Fall
-            200,    //During Full Moon
-            200,    //During Half Moon
-            200,    //During New Moon
-            700,    //Near Undead
-            800,    //Near Daedra
-            900,    //Near Humanoids
-            1000,   //Near Animals
+            2000,   //at range
+            1000,   //when strikes
         };
 
         static string[] classicTextKeys =
         {
-            "duringWinter",
-            "duringSpring",
-            "duringSummer",
-            "duringFall",
-            "duringFullMoon",
-            "duringHalfMoon",
-            "duringNewMoon",
-            "nearUndead",
-            "nearDaedra",
-            "nearHumanoids",
-            "nearAnimals",
+            "atRange",
+            "whenStrikes",
         };
 
         #endregion

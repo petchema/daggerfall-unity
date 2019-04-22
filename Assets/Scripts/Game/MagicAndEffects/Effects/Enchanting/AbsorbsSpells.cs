@@ -14,13 +14,13 @@ using DaggerfallConnect.FallExe;
 namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 {
     /// <summary>
-    /// Repairs equipped items.
+    /// Absorbs spells.
     /// </summary>
-    public class RepairsObjects : BaseEntityEffect
+    public class AbsorbsSpells : BaseEntityEffect
     {
-        public static readonly string EffectKey = EnchantmentTypes.RepairsObjects.ToString();
+        public static readonly string EffectKey = EnchantmentTypes.AbsorbsSpells.ToString();
 
-        const int enchantCost = 900;
+        const int enchantCost = 1500;
 
         public override void SetProperties()
         {
@@ -38,7 +38,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             {
                 Version = 1,
                 EffectKey = EffectKey,
-                ClassicType = EnchantmentTypes.RepairsObjects,
+                ClassicType = EnchantmentTypes.AbsorbsSpells,
                 ClassicParam = -1,
                 PrimaryDisplayName = properties.GroupName,
                 EnchantCost = enchantCost,

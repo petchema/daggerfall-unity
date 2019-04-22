@@ -15,18 +15,17 @@ using DaggerfallConnect.FallExe;
 namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 {
     /// <summary>
-    /// Extra spell points.
+    /// Increases carry weight.
     /// </summary>
-    public class ExtraSpellPts : BaseEntityEffect
+    public class IncreasedWeightAllowance : BaseEntityEffect
     {
-        public static readonly string EffectKey = EnchantmentTypes.ExtraSpellPts.ToString();
+        public static readonly string EffectKey = EnchantmentTypes.IncreasedWeightAllowance.ToString();
 
         public override void SetProperties()
         {
             properties.Key = EffectKey;
             properties.GroupName = TextManager.Instance.GetText(textDatabase, EffectKey);
             properties.AllowedCraftingStations = MagicCraftingStations.ItemMaker;
-            properties.ItemMakerFlags = ItemMakerFlags.AllowMultiplePrimaryInstances;
             properties.EnchantmentPayloadFlags = EnchantmentPayloadFlags.None; // TEMP: Payload currently handled by PassiveItemSpecialsEffect
         }
 
@@ -38,16 +37,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             List<EnchantmentSettings> enchantments = new List<EnchantmentSettings>();
 
             // Enumerate classic params
-            for (int i = 0; i < classicParams.Length; i++)
+            for (int i = 0; i < classicParamCosts.Length; i++)
             {
-                short id = classicParams[i];
-
                 EnchantmentSettings enchantment = new EnchantmentSettings()
                 {
                     Version = 1,
                     EffectKey = EffectKey,
-                    ClassicType = EnchantmentTypes.ExtraSpellPts,
-                    ClassicParam = id,
+                    ClassicType = EnchantmentTypes.IncreasedWeightAllowance,
+                    ClassicParam = (short)i,
                     PrimaryDisplayName = properties.GroupName,
                     SecondaryDisplayName = TextManager.Instance.GetText(textDatabase, classicTextKeys[i]),
                     EnchantCost = classicParamCosts[i],
@@ -61,49 +58,16 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 
         #region Classic Support
 
-        static short[] classicParams =
-        {
-            0,      //During Winter
-            1,      //During Spring
-            2,      //During Summer
-            3,      //During Fall
-            4,      //During Full Moon
-            5,      //During Half Moon
-            6,      //During New Moon
-            7,      //Near Undead
-            8,      //Near Daedra
-            9,      //Near Humanoids
-            10,     //Near Animals
-        };
-
         static short[] classicParamCosts =
         {
-            500,    //During Winter
-            500,    //During Spring
-            500,    //During Summer
-            500,    //During Fall
-            200,    //During Full Moon
-            200,    //During Half Moon
-            200,    //During New Moon
-            700,    //Near Undead
-            800,    //Near Daedra
-            900,    //Near Humanoids
-            1000,   //Near Animals
+            400,    //25% additional
+            600,    //50% additional
         };
 
         static string[] classicTextKeys =
         {
-            "duringWinter",
-            "duringSpring",
-            "duringSummer",
-            "duringFall",
-            "duringFullMoon",
-            "duringHalfMoon",
-            "duringNewMoon",
-            "nearUndead",
-            "nearDaedra",
-            "nearHumanoids",
-            "nearAnimals",
+            "add25Percent",
+            "add50Percent",
         };
 
         #endregion
