@@ -21,6 +21,7 @@ using DaggerfallWorkshop.Game.Serialization;
 using DaggerfallWorkshop.Game.Utility;
 using DaggerfallWorkshop.Game.Items;
 using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
+using DaggerfallWorkshop.Game.UserInterfaceWindows;
 
 namespace DaggerfallWorkshop.Game.MagicAndEffects
 {
@@ -71,6 +72,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             get { return magicRoundsSinceStartup; }
         }
 
+        /// <summary>
+        /// Gets or sets flag stating if time was just increased synthetically.
+        /// Should only be raised by fast travel and prison time.
+        /// Some time-based effects do not operate during these increases, e.g. the "item deteriorates" side-effect
+        /// This flag is lowered at the end of each magic update.
+        /// </summary>
+        public bool SyntheticTimeIncrease { get; private set; }
+
         #endregion
 
         #region Constructors
@@ -80,6 +89,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             SaveLoadManager.OnLoad += SaveLoadManager_OnLoad;
             StartGameBehaviour.OnNewGame += StartGameBehaviour_OnNewGame;
             StartGameBehaviour.OnStartGame += StartGameBehaviour_OnStartGame;
+            DaggerfallTravelPopUp.OnPostFastTravel += DaggerfallTravelPopUp_OnPostFastTravel;
+            DaggerfallCourtWindow.OnEndPrisonTime += DaggerfallCourtWindow_OnEndPrisonTime;
         }
 
         #endregion
@@ -217,6 +228,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 //long totalTime = stopwatch.ElapsedMilliseconds - startTime;
                 //Debug.LogFormat("Time to run {0} magic rounds: {1}ms", catchupRounds, totalTime);
             }
+
+            // Lower synthetic time increase flag
+            SyntheticTimeIncrease = false;
         }
 
         #endregion
@@ -824,6 +838,16 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         void SaveLoadManager_OnLoad(SaveData_v1 saveData)
         {
             InitMagicRoundTimer();
+        }
+
+        private void DaggerfallCourtWindow_OnEndPrisonTime()
+        {
+            SyntheticTimeIncrease = true;
+        }
+
+        private void DaggerfallTravelPopUp_OnPostFastTravel()
+        {
+            SyntheticTimeIncrease = true;
         }
 
         #endregion

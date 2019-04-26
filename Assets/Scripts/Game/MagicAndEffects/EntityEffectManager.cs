@@ -939,12 +939,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
 
                         // Apply durability loss to used item on use
                         // http://en.uesp.net/wiki/Daggerfall:Magical_Items#Durability_of_Magical_Items
-                        item.currentCondition -= 10;
-                        if (item.currentCondition <= 0 && collection != null)
-                        {
-                            item.ItemBreaks(GameManager.Instance.PlayerEntity);
-                            collection.RemoveItem(item);
-                        }
+                        item.LowerCondition(10, GameManager.Instance.PlayerEntity, collection);
                     }
                 }
                 if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect && enchantment.param == 4) // Handle Sanguine Rose
@@ -1481,6 +1476,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             // Clear direct mods
             Array.Clear(directStatMods, 0, DaggerfallStats.Count);
             Array.Clear(directSkillMods, 0, DaggerfallSkills.Count);
+            if (IsPlayerEntity)
+                (entityBehaviour.Entity as PlayerEntity).ClearReactionMods();
 
             // Run all bundles
             foreach (LiveEffectBundle bundle in instancedBundles)
@@ -1871,6 +1868,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         {
             public string key;
             public EffectSettings effectSettings;
+            public EnchantmentParam? enchantmentParam;
             public int roundsRemaining;
             public bool chanceSuccess;
             public int[] statMods;
@@ -1924,6 +1922,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             EffectSaveData_v1 effectData = new EffectSaveData_v1();
             effectData.key = effect.Key;
             effectData.effectSettings = effect.Settings;
+            effectData.enchantmentParam = effect.EnchantmentParam;
             effectData.roundsRemaining = effect.RoundsRemaining;
             effectData.chanceSuccess = effect.ChanceSuccess;
             effectData.statMods = effect.StatMods;
@@ -1985,6 +1984,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
 
                     // Resume effect
                     effect.ParentBundle = instancedBundle;
+                    effect.EnchantmentParam = effectData.enchantmentParam;
                     effect.Resume(effectData, this, instancedBundle.caster);
                     effect.RestoreSaveData(effectData.effectSpecific);
                     instancedBundle.liveEffects.Add(effect);
