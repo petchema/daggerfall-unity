@@ -17,7 +17,6 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 {
     /// <summary>
     /// Item weight is reduced to a low fixed value regardless of original weight.
-    /// TODO: Make exclusive with ExtraWeight
     /// </summary>
     public class FeatherWeight : BaseEntityEffect
     {
@@ -52,13 +51,28 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             return enchantments;
         }
 
-        public override void EnchantmentPayloadCallback(EnchantmentPayloadFlags context, EnchantmentParam? param = null, DaggerfallEntityBehaviour sourceEntity = null, DaggerfallEntityBehaviour targetEntity = null, DaggerfallUnityItem sourceItem = null)
+        public override PayloadCallbackResults? EnchantmentPayloadCallback(EnchantmentPayloadFlags context, EnchantmentParam? param = null, DaggerfallEntityBehaviour sourceEntity = null, DaggerfallEntityBehaviour targetEntity = null, DaggerfallUnityItem sourceItem = null)
         {
             base.EnchantmentPayloadCallback(context, param, sourceEntity, targetEntity, sourceItem);
 
             // Lower weight when item is enchanted
             if (context == EnchantmentPayloadFlags.Enchanted && sourceItem != null)
                 sourceItem.weightInKg = weightValue;
+
+            return null;
+        }
+
+        public override bool IsEnchantmentExclusiveTo(EnchantmentSettings[] settingsToTest, EnchantmentParam? comparerParam = null)
+        {
+            // Exclusive to ExtraWeight - no param test required
+            string extraWeightKey = EnchantmentTypes.ExtraWeight.ToString();
+            foreach (EnchantmentSettings settings in settingsToTest)
+            {
+                if (settings.EffectKey == extraWeightKey)
+                    return true;
+            }
+
+            return false;
         }
     }
 }
