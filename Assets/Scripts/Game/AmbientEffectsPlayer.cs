@@ -183,7 +183,7 @@ namespace DaggerfallWorkshop.Game
             if (ambientAudioSourcePool.Count == 0)
             {
                 allocatedAmbientAudioSources++;
-                Debug.Log("Allocated ambient audio sources: " + allocatedAmbientAudioSources);
+                // Debug.Log("Allocated ambient audio sources: " + allocatedAmbientAudioSources);
                 return GetNewAudioSource();
             }
             AudioSource audioSource = ambientAudioSourcePool.Pop();
@@ -200,7 +200,7 @@ namespace DaggerfallWorkshop.Game
         {
             while (audioSource.isPlaying)
             {
-                yield return null;
+                yield return new WaitForEndOfFrame();
             }
             ReleaseAudioSource(audioSource);
         }
@@ -214,7 +214,7 @@ namespace DaggerfallWorkshop.Game
             }
             finally 
             {
-                ReleaseAudioSourceWhenDone(audioSource);
+                StartCoroutine(ReleaseAudioSourceWhenDone(audioSource));
             }
         }
 
