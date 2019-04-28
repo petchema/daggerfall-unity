@@ -15,6 +15,7 @@ using DaggerfallWorkshop.Utility;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using DaggerfallConnect.Arena2;
+using System.Collections.Generic;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -71,6 +72,7 @@ namespace DaggerfallWorkshop.Game
         DaggerfallUnity _dfUnity;
         float _pollTimer;
         private WeatherTable _weatherTable;
+        private List<MapsFile.Climates> _noColdWinters;
         private float _pollWeatherInSeconds = 30f;
 
         // used to set post processing fog settings (excludeSkybox setting)
@@ -112,15 +114,16 @@ namespace DaggerfallWorkshop.Game
         {
             _dfUnity = DaggerfallUnity.Instance;
             _weatherTable = WeatherTable.ParseJsonTable();
-            
+            SetNoColdWintersClimates();
+
             postProcessingBehaviour = Camera.main.GetComponent<PostProcessingBehaviour>();
             if (postProcessingBehaviour != null)
             {
                 var fogSettings = postProcessingBehaviour.profile.fog.settings;
                 fogSettings.excludeSkybox = true;
-                postProcessingBehaviour.profile.fog.settings = fogSettings;              
+                postProcessingBehaviour.profile.fog.settings = fogSettings;
             }
-            
+
             if (DaggerfallUnity.Settings.AssetInjection)
                 AddWindZone();
 
@@ -321,12 +324,19 @@ namespace DaggerfallWorkshop.Game
             // Set presets based on time of day
             if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsDay)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.SunnyDay;
+                if (_dfUnity.WorldTime.Now.SeasonValue == DaggerfallDateTime.Seasons.Winter)
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ColdDay;
+                else
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.SunnyDay;
                 return;
             }
             else if (DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.IsNight)
             {
-                WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ClearNight;
+                if (_dfUnity.WorldTime.Now.SeasonValue == DaggerfallDateTime.Seasons.Winter && 
+                    !_noColdWinters.Contains((MapsFile.Climates)PlayerWeather.PlayerGps.CurrentClimateIndex))
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ColdNight;
+                else
+                    WeatherEffects.Presets = AmbientEffectsPlayer.AmbientSoundPresets.ClearNight;
                 return;
             }
 
@@ -376,11 +386,23 @@ namespace DaggerfallWorkshop.Game
             PlayerWeather.ClimateWeathers[5] = (byte)_weatherTable.GetWeather((int)MapsFile.Climates.Woodlands, _dfUnity.WorldTime.Now.SeasonValue);
         }
 
+        private void SetNoColdWintersClimates()
+        {
+            // Climates without snow
+            _noColdWinters = new List<MapsFile.Climates>
+            {
+                MapsFile.Climates.Desert,
+                MapsFile.Climates.Desert2,
+                MapsFile.Climates.Rainforest,
+                MapsFile.Climates.Subtropical
+            };
+        }
+
+
         public void SetWeatherFromWeatherClimateArray()
         {
             int climate = PlayerWeather.PlayerGps.CurrentClimateIndex;
             int index = Utility.TravelTimeCalculator.climateIndices[climate - (int)MapsFile.Climates.Ocean];
-
             WeatherType weather = (WeatherType)PlayerWeather.ClimateWeathers[index];
 
             if (weather == PlayerWeather.WeatherType)
