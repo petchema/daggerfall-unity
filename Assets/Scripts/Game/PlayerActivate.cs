@@ -146,7 +146,7 @@ namespace DaggerfallWorkshop.Game
             }
 
             // Fire ray into scene
-            if (InputManager.Instance.ActionStarted(InputManager.Actions.ActivateCenterObject))
+            if (InputManager.Instance.ActionComplete(InputManager.Actions.ActivateCenterObject))
             {
                 // TODO: Clean all this up
 
