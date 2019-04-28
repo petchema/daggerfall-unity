@@ -780,29 +780,11 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         /// Handles any magic-related work of equipping an item to this entity.
         /// </summary>
         /// <param name="item">Item just equipped.</param>
-        public void StartEquippedItem(DaggerfallUnityItem item)
+        public void Deprecated_StartEquippedItem(DaggerfallUnityItem item)
         {
             // Item must have enchancements
             if (item == null || !item.IsEnchanted)
                 return;
-
-            // All equipped magic items add a passive item specials effect
-            // This may or may not deliver any payload based on passive enchanment settings
-            // NOTES:
-            //  * PassiveItemSpecialsEffect is deprecated and will be removed at a later date
-            //  * Future enchantment effects should implement payload within their effect class
-            EffectBundleSettings passiveItemSpecialsSettings = new EffectBundleSettings()
-            {
-                Version = EntityEffectBroker.CurrentSpellVersion,
-                BundleType = BundleTypes.HeldMagicItem,
-                TargetType = TargetTypes.None,
-                ElementType = ElementTypes.None,
-                Name = "Item Specials",
-                Effects = new EffectEntry[] { new EffectEntry(PassiveItemSpecialsEffect.EffectKey) },
-            };
-            EntityEffectBundle passiveItemSpecialsBundle = new EntityEffectBundle(passiveItemSpecialsSettings, entityBehaviour);
-            passiveItemSpecialsBundle.FromEquippedItem = item;
-            AssignBundle(passiveItemSpecialsBundle, AssignBundleFlags.BypassSavingThrows);
 
             // Add legacy enchantment effects
             DaggerfallEnchantment[] enchantments = item.LegacyEnchantments;
@@ -889,7 +871,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         /// Handles any magic-related work of unequipping an item from this entity
         /// </summary>
         /// <param name="item">Item just unequipped.</param>
-        public void StopEquippedItem(DaggerfallUnityItem item)
+        public void Deprecated_StopEquippedItem(DaggerfallUnityItem item)
         {
             // Item must have enchancements
             if (item == null || !item.IsEnchanted)
@@ -905,78 +887,52 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
 
         /// <summary>
         /// Offers item to effect manager when used by player in inventory.
+        /// TODO: Match classic when "use" casts multiple spells of different types from same item.
         /// </summary>
         /// <param name="item">Item just used.</param>
         /// <param name="collection">Collection containing item.</param>
-        public void UseItem(DaggerfallUnityItem item, ItemCollection collection = null)
+        public void Deprecated_UseItem(DaggerfallUnityItem item, ItemCollection collection = null)
         {
             // Item must have enchancements
             if (item == null || !item.IsEnchanted)
                 return;
 
-            // Cast first "cast when used" enchantment
-            // This works by sending effect to readySpell which currently cannot queue more than one spell
-            // Not sure how classic handles multiple "cast when used" effects, especially for "press to release" styled spells
-            DaggerfallEnchantment[] enchantments = item.LegacyEnchantments;
-            foreach (DaggerfallEnchantment enchantment in enchantments)
+            // Legacy enchantment effects
+            DaggerfallEnchantment[] legacyEnchantments = item.LegacyEnchantments;
+            foreach (DaggerfallEnchantment enchantment in legacyEnchantments)
             {
-                SpellRecord.SpellRecordData spell;
-                EffectBundleSettings bundleSettings;
-                EntityEffectBundle bundle;
-                if (enchantment.type == EnchantmentTypes.CastWhenUsed)
+                // Ignore empty enchantment slots
+                if (enchantment.type == EnchantmentTypes.None)
+                    continue;
+
+                // Get classic effect key - enchantments use EnchantmentTypes string as key, artifacts use ArtifactsSubTypes string
+                string effectKey;
+                if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect)
+                    effectKey = ((ArtifactsSubTypes)enchantment.param).ToString();
+                else
+                    effectKey = enchantment.type.ToString();
+
+                // Get effect template
+                IEntityEffect effectTemplate = GameManager.Instance.EntityEffectBroker.GetEffectTemplate(effectKey);
+                if (effectTemplate == null)
                 {
-                    if (GameManager.Instance.EntityEffectBroker.GetClassicSpellRecord(enchantment.param, out spell))
-                    {
-                        //Debug.LogFormat("EntityEffectManager.UseItem: Found CastWhenUsed enchantment '{0}'", spell.spellName);
-
-                        // Create effect bundle settings from classic spell
-                        if (!GameManager.Instance.EntityEffectBroker.ClassicSpellRecordDataToEffectBundleSettings(spell, BundleTypes.Spell, out bundleSettings))
-                            continue;
-
-                        // Assign bundle to ready spell 
-                        bundle = new EntityEffectBundle(bundleSettings, entityBehaviour);
-                        SetReadySpell(bundle, true);
-
-                        // Apply durability loss to used item on use
-                        // http://en.uesp.net/wiki/Daggerfall:Magical_Items#Durability_of_Magical_Items
-                        item.LowerCondition(10, GameManager.Instance.PlayerEntity, collection);
-                    }
-                }
-                if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect && enchantment.param == 4) // Handle Sanguine Rose
-                {
-                    // Use for any artifact that simply assigns a bundle
-                    if (!GameManager.Instance.EntityEffectBroker.GetArtifactBundleSettings(out bundleSettings, enchantment.param))
-                        continue;
-                    bundle = new EntityEffectBundle(bundleSettings, entityBehaviour);
-                    AssignBundle(bundle, AssignBundleFlags.ShowNonPlayerFailures);
+                    Debug.LogWarningFormat("UseItem() classic effect key {0} not found in broker.", effectKey);
+                    continue;
                 }
 
-                // Handle Oghma Infinium
-                if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect && enchantment.param == 5)
+                // Used payload callback
+                EnchantmentParam param = new EnchantmentParam() { ClassicParam = enchantment.param };
+                if (effectTemplate.HasEnchantmentPayloadFlags(EnchantmentPayloadFlags.Used))
                 {
-                    GameManager.Instance.PlayerEntity.ReadyToLevelUp = true;
-                    GameManager.Instance.PlayerEntity.OghmaLevelUp = true;
-                    DaggerfallUI.PostMessage(DaggerfallUIMessages.dfuiOpenCharacterSheetWindow);
-                    collection.RemoveItem(item);
-                }
+                    PayloadCallbackResults? results = effectTemplate.EnchantmentPayloadCallback(EnchantmentPayloadFlags.Used, param, entityBehaviour, entityBehaviour, item);
 
-                // Handle Azura's Star
-                if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect && enchantment.param == 9)
-                {
-                    const int soulReleasedID = 32;
-                    const int noSoulToReleaseID = 20;
-
-                    if (item.TrappedSoulType != MobileTypes.None)
-                    {
-                        item.TrappedSoulType = MobileTypes.None;
-                        DaggerfallUI.MessageBox(soulReleasedID);
-                    }
-                    else
-                    {
-                        DaggerfallUI.MessageBox(noSoulToReleaseID);
-                    }
+                    // Apply durability loss after using item
+                    if (results != null && results.Value.durabilityLoss > 0)
+                        item.LowerCondition(results.Value.durabilityLoss, GameManager.Instance.PlayerEntity, collection);
                 }
             }
+
+            // TODO: Modern enchantment effects
         }
 
         /// <summary>
@@ -986,7 +942,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         /// <param name="caster">Entity attacking with item.</param>
         /// <param name="damageIn">Original damage amount before effects.</param>
         /// <returns>Damage out after effect callbacks. Always 0 or greater.</returns>
-        public int StrikeWithItem(DaggerfallUnityItem item, DaggerfallEntityBehaviour caster, int damageIn)
+        public int Deprecated_StrikeWithItem(DaggerfallUnityItem item, DaggerfallEntityBehaviour caster, int damageIn)
         {
             int damageOut = damageIn;
 
@@ -994,7 +950,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             if (item == null || !item.IsEnchanted)
                 return damageOut;
 
-            // Legacy enchantmentment effects
+            // Legacy enchantment effects
             List<EntityEffectBundle> bundles = new List<EntityEffectBundle>();
             DaggerfallEnchantment[] enchantments = item.LegacyEnchantments;
             foreach (DaggerfallEnchantment enchantment in enchantments)
@@ -1022,23 +978,20 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                         // http://en.uesp.net/wiki/Daggerfall:Magical_Items#Durability_of_Magical_Items
                     }
                 }
-                else if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect) // For artifact weapons
-                {
-                    // TODO: Migrate this to enchantment system
-                    if (!GameManager.Instance.EntityEffectBroker.GetArtifactBundleSettings(out bundleSettings, enchantment.param))
-                        continue;
-                    bundle = new EntityEffectBundle(bundleSettings, entityBehaviour);
-                    bundle.CasterEntityBehaviour = caster;
-                    bundles.Add(bundle);
-                }
                 else
                 {
                     // Ignore empty enchantment slots
                     if (enchantment.type == EnchantmentTypes.None)
                         continue;
 
-                    // Get effect template - classic enchantment effects use EnchantmentTypes string as their key
-                    string effectKey = enchantment.type.ToString();
+                    // Get classic effect key - enchantments use EnchantmentTypes string as key, artifacts use ArtifactsSubTypes string
+                    string effectKey;
+                    if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect)
+                        effectKey = ((ArtifactsSubTypes)enchantment.param).ToString();
+                    else
+                        effectKey = enchantment.type.ToString();
+
+                    // Get effect template
                     IEntityEffect effectTemplate = GameManager.Instance.EntityEffectBroker.GetEffectTemplate(effectKey);
                     if (effectTemplate == null)
                     {
@@ -1050,9 +1003,13 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                     EnchantmentParam param = new EnchantmentParam() { ClassicParam = enchantment.param };
                     if (effectTemplate.HasEnchantmentPayloadFlags(EnchantmentPayloadFlags.Strikes))
                     {
-                        PayloadCallbackResults? results = effectTemplate.EnchantmentPayloadCallback(EnchantmentPayloadFlags.Strikes, param, caster, entityBehaviour, item);
+                        PayloadCallbackResults? results = effectTemplate.EnchantmentPayloadCallback(EnchantmentPayloadFlags.Strikes, param, caster, entityBehaviour, item, damageIn);
                         if (results != null)
                             damageOut += results.Value.strikesModulateDamage;
+
+                        // Apply durability loss after striking with item
+                        if (results != null && results.Value.durabilityLoss > 0)
+                            item.LowerCondition(results.Value.durabilityLoss, caster.Entity, caster.Entity.Items);
                     }
                 }
             }
