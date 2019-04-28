@@ -174,27 +174,36 @@ namespace DaggerfallWorkshop.Game
 
         private void AmbientPlayOneShot(SoundClips clip, float volumeScale)
         {
-            AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
-            ambientAudioSource.spatialBlend = 0;
-            ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            if (!ambientAudioSource.isPlaying)
+            {
+                AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
+                ambientAudioSource.spatialBlend = 0;
+                ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            }
         }
 
         private void SpatializedPlayOneShot(SoundClips clip, Vector3 position, float volumeScale)
         {
-            AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
-            ambientAudioSource.transform.position = position;
-            ambientAudioSource.spatialBlend = 1f;
-            ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            if (!ambientAudioSource.isPlaying)
+            {
+                AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
+                ambientAudioSource.transform.position = position;
+                ambientAudioSource.spatialBlend = 1f;
+                ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+            }
         }
 
         private void RelativePlayOneShot(SoundClips clip, Vector3 relativePosition, float volumeScale)
         {
-            AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
-            ambientAudioSource.spatialBlend = 1f;
-            ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
-            if (relativePositionCoroutine != null)
-                StopCoroutine(relativePositionCoroutine);
-            relativePositionCoroutine = StartCoroutine(UpdateAmbientSoundRelativePosition(relativePosition));
+            if (!ambientAudioSource.isPlaying)
+            {
+                AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
+                ambientAudioSource.spatialBlend = 1f;
+                ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
+                if (relativePositionCoroutine != null)
+                    StopCoroutine(relativePositionCoroutine);
+                relativePositionCoroutine = StartCoroutine(UpdateAmbientSoundRelativePosition(relativePosition));
+            }
         }
 
         private IEnumerator UpdateAmbientSoundRelativePosition(Vector3 relativePosition)
