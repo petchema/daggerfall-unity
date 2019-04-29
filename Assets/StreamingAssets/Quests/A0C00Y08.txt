@@ -4,6 +4,7 @@
 -- Questor: peasant
 -- Repute: 0
 -- QuestId: 8
+-- Edited for Daggerfall Unity by Jay_H
 Messages: 34
 Quest: A0C00Y08
 -- Message panels
@@ -164,6 +165,7 @@ _S.04_ task:
 	restrain foe _spellsword_ 
 	place foe _spellsword_ at _place_ 
 
+--unknown S.05 here. Never used.
 variable _S.05_
 _S.06_ task:
 	injured _rogue_ saying 1023 
@@ -182,10 +184,11 @@ _S.07_ task:
 _S.08_ task:
 	clicked npc _questgiver_ 
 
+--without this additional clear clearclick here, this clearing function would stop working after the first click.
 _clearclick_ task:
 	when _S.08_ and not _S.07_ 
 	say 1015 
-	clear _S.08_ 
+	clear _S.08_ _clearclick_
 
 _S.10_ task:
 	when _S.08_ and _S.07_ 

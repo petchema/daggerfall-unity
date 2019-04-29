@@ -119,9 +119,7 @@ _pcgetsgold_ task:
 _qgclicked_ task:
 	clicked npc _questgiver_ 
 
-_clearclick_ task:
-               when _qgclicked_ and not _S.02_
-               clear _qgclicked_ _clearclick_
+--clearclick was somehow duplicated here
 
 _S.02_ task:
 	killed 1 _F.00_ saying 1021 
@@ -130,10 +128,12 @@ _S.02_ task:
 	killed 1 _F.01_ saying 1021 
 
 variable _queston_
+--unused variable
 _1stparton_ task:
 	end quest 
 
 variable _2ndparton_
+--unused variable
 _S.06_ task:
 	place foe _F.00_ at _mondung_ 
 
@@ -147,7 +147,8 @@ _onehour_ task:
 	place foe _F.03_ at _mondung_ 
 
 _clearclick_ task:
-	when _qgclicked_ and not _S.02_ 
+	when _qgclicked_ and not _S.02_
+	say 1003 
 	clear _qgclicked_ _clearclick_ 
 
 _S.11_ task:

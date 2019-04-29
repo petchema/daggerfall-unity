@@ -4,6 +4,7 @@
 -- Questor: temple
 -- Repute: 10
 -- QuestId: 5
+-- Edited for Daggerfall Unity by Jay_H
 Messages: 13
 Quest: C0B10Y05
 -- Message panels
@@ -139,6 +140,7 @@ variable _gem1_
 variable _bear_
 variable _gem3_
 variable _gem4_
+--no idea about these variables
 _S.06_ task:
 	injured _orc2_ saying 1011 
 	injured _orc4_ saying 1011 
@@ -147,4 +149,6 @@ _S.06_ task:
 
 _S.07_ task:
 	when _traveltime_ and not _S.01_ 
-	make pc ill with Witches'_Pox saying 1012 
+	make pc ill with Witches'_Pox
+	say 1012 
+	--illegal argument
