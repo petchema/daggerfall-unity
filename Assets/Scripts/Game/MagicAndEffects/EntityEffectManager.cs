@@ -367,6 +367,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             // Check flags
             bool showNonPlayerFailures = (flags & AssignBundleFlags.ShowNonPlayerFailures) == AssignBundleFlags.ShowNonPlayerFailures;
             bool bypassSavingThrows = (flags & AssignBundleFlags.BypassSavingThrows) == AssignBundleFlags.BypassSavingThrows;
+            bool specialInfection = (flags & AssignBundleFlags.SpecialInfection) == AssignBundleFlags.SpecialInfection;
 
             // Source bundle must have one or more effects
             if (sourceBundle.Settings.Effects == null || sourceBundle.Settings.Effects.Length == 0)
@@ -408,7 +409,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 effect.EnchantmentParam = sourceBundle.Settings.Effects[i].EnchantmentParam;
 
                 // Incoming disease and paralysis effects are blocked if entity is hard immune (e.g. vampires/lycanthropes)
-                if (effect is DiseaseEffect && IsEntityImmuneToDisease() ||
+                // The exceptions are vampirism/lycanthropy special infections themselves which ignore disease resistance
+                if (effect is DiseaseEffect && IsEntityImmuneToDisease() && !specialInfection ||
                     effect is Paralyze && IsEntityImmuneToParalysis())
                 {
                     continue;
@@ -1162,6 +1164,31 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 Version = EntityEffectBroker.CurrentSpellVersion,
                 BundleType = BundleTypes.Disease,
                 Effects = new EffectEntry[] { new EffectEntry(VampirismInfection.VampirismInfectionKey) },
+            };
+
+            return new EntityEffectBundle(settings, entityBehaviour);
+        }
+
+        public EntityEffectBundle CreateLycanthropyDisease(LycanthropyTypes infectionType)
+        {
+            string effectKey;
+            switch (infectionType)
+            {
+                case LycanthropyTypes.Werewolf:
+                    effectKey = WerewolfInfection.WerewolfInfectionKey;
+                    break;
+                case LycanthropyTypes.Wereboar:
+                    effectKey = WereboarInfection.WereboarInfectionKey;
+                    break;
+                default:
+                    throw new Exception("CreateLycanthropyInfection() infectionType cannot be LycanthropyTypes.None");
+            }
+
+            EffectBundleSettings settings = new EffectBundleSettings()
+            {
+                Version = EntityEffectBroker.CurrentSpellVersion,
+                BundleType = BundleTypes.None,
+                Effects = new EffectEntry[] { new EffectEntry(effectKey) },
             };
 
             return new EntityEffectBundle(settings, entityBehaviour);
