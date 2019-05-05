@@ -226,14 +226,16 @@ namespace DaggerfallWorkshop
             if (!ReadyCheck())
                 return;
 
+#if SHOW_LOOSEOBJECTS_TIMES
             if (Time.realtimeSinceStartup > debugTimer + 1f)
             {
                 if (!looseObjects.IsEmpty)
                     looseObjects.DebugLog(MapPixelX, MapPixelY, TerrainDistance);
                 else
                     Debug.Log("No looseObjects");
-                debugTimer = Time.realtimeSinceStartup;
+            debugTimer = Time.realtimeSinceStartup;
             }
+#endif
 
             // Handle moving to new map pixel or first-time init
             DFPosition curMapPixel = LocalPlayerGPS.CurrentMapPixel;
