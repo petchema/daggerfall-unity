@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections;
 using DaggerfallConnect;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -11,7 +12,7 @@ namespace DaggerfallWorkshop.Game
     public class ClimbingMotor : MonoBehaviour
     {
         private Entity.PlayerEntity player;
-        private PlayerGroundMotor groundMotor;
+        //private PlayerGroundMotor groundMotor;
         private RappelMotor rappelMotor;
         private HangingMotor hangingMotor;
         private PlayerMotor playerMotor;
@@ -36,6 +37,10 @@ namespace DaggerfallWorkshop.Game
         /// The current horizontal direction of the ledge of the wall the player is on 
         /// </summary>
         private Vector3 myLedgeDirection = Vector3.zero;
+        /// <summary>
+        /// The current direction to the wall player is climbing
+        /// </summary>
+        private Vector3 wallDirection;
         /// <summary>
         /// the adjacent wall's horizontal ledge direction, opposite of its normal
         /// </summary>
@@ -94,7 +99,7 @@ namespace DaggerfallWorkshop.Game
         {
             player = GameManager.Instance.PlayerEntity;
             playerMotor = GetComponent<PlayerMotor>();
-            groundMotor = GetComponent<PlayerGroundMotor>();
+            //groundMotor = GetComponent<PlayerGroundMotor>();
             levitateMotor = GetComponent<LevitateMotor>();
             controller = GetComponent<CharacterController>();
             playerEnterExit = GetComponent<PlayerEnterExit>();
@@ -150,7 +155,7 @@ namespace DaggerfallWorkshop.Game
             bool horizontallyStationary = Vector2.Distance(lastHorizontalPosition, new Vector2(controller.transform.position.x, controller.transform.position.z)) < startClimbHorizontalTolerance;
             bool touchingSides = (playerMotor.CollisionFlags & CollisionFlags.Sides) != 0;
             bool touchingGround = (playerMotor.CollisionFlags & CollisionFlags.Below) != 0;
-            bool touchingAbove = (playerMotor.CollisionFlags & CollisionFlags.Above) != 0;
+            //bool touchingAbove = (playerMotor.CollisionFlags & CollisionFlags.Above) != 0;
             bool slippedToGround = isSlipping && touchingGround;
             bool nonOrthogonalStart = !isClimbing && inputForward && !horizontallyStationary;
             bool forwardStationaryNearCeiling = inputForward && hangingMotor.IsWithinHangingDistance && horizontallyStationary;
@@ -181,8 +186,6 @@ namespace DaggerfallWorkshop.Game
                 if (isClimbing && inputAbortCondition && advancedClimbingOn)
                     WallEject = true;
 
-                isClimbing = false;
-                showClimbingModeMessage = true;
                 StopClimbing();
                 releasedFromCeiling = false;
                 // Reset position for horizontal distance check and timer to wait for climbing start
@@ -263,6 +266,8 @@ namespace DaggerfallWorkshop.Game
 
         public void StopClimbing(bool fromHanging = false)
         {
+            isClimbing = false;
+            showClimbingModeMessage = true;
             climbingStartTimer = 0;
         }
 
@@ -305,16 +310,35 @@ namespace DaggerfallWorkshop.Game
         {
             if (!isClimbing)
             {
-                if (showClimbingModeMessage)
-                    DaggerfallUI.AddHUDText(UserInterfaceWindows.HardStrings.climbingMode);
-                // Disable further showing of climbing mode message until current climb attempt is stopped
-                // to keep it from filling message log
-                showClimbingModeMessage = false;
                 isClimbing = true;
                 hangingMotor.CancelHanging();
                 // reset jumping in case we jumped onto the wall
                 acrobatMotor.Jumping = false;
             }
+        }
+
+        /// <summary>
+        /// Checks to see if player should actually climb this object.
+        /// </summary>
+        bool IsClimable(Transform testTransform)
+        {
+            // Must be testing something
+            if (!testTransform || !testTransform.gameObject)
+                return false;
+
+            // Do not climb moving action objects
+            // We allow action objects because sometimes action objects are just the environment (e.g. inside throne rooms)
+            GameObject go = testTransform.gameObject;
+            DaggerfallAction action = go.GetComponent<DaggerfallAction>();
+            if (action && action.IsMoving)
+                return false;
+
+            // Do not climb enemies
+            DaggerfallEnemy enemy = go.GetComponent<DaggerfallEnemy>();
+            if (enemy)
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -328,8 +352,6 @@ namespace DaggerfallWorkshop.Game
             Vector3 p2 = p1 + Vector3.up * controller.height;
 
             // decide what direction to look towards to get the ledge direction vector
-            Vector3 wallDirection;
-
             if (moveScanner.AboveBehindWall != null)
                 moveScanner.CutAndPasteAboveBehindWallTo(ref myLedgeDirection);
             else if (moveScanner.BelowBehindWall != null)
@@ -343,8 +365,22 @@ namespace DaggerfallWorkshop.Game
                 wallDirection = -cornerNormalRay.direction;
             // Cast character controller shape forward to see if it is about to hit anything.
             Debug.DrawRay(controller.transform.position, wallDirection, Color.gray);
-            if (Physics.CapsuleCast(p1, p2, controller.radius, wallDirection, out hit, 0.20f))
+            if (Physics.CapsuleCast(p1, p2, controller.radius, wallDirection, out hit, controller.radius + 0.1f))
             {
+                // Immediately stop climbing if object not valid
+                if (!IsClimable(hit.transform))
+                {
+                    StopClimbing();
+                    return;
+                }
+
+                // Show climbing message then disable further showing of climbing mode message until current climb attempt is stopped
+                if (showClimbingModeMessage)
+                {
+                    DaggerfallUI.AddHUDText(UserInterfaceWindows.HardStrings.climbingMode);
+                    showClimbingModeMessage = false;
+                }
+
                 // Get the negative horizontal component of the hitnormal, so gabled roofs don't mess it up
                 myLedgeDirection = Vector3.ProjectOnPlane(-hit.normal, Vector3.up).normalized;
 
@@ -489,12 +525,12 @@ namespace DaggerfallWorkshop.Game
                     }
                     #endregion
                     // need to add horizontal movement towards wall for collision
-                    moveDirection.x += myLedgeDirection.x * playerMotor.Speed;
-                    moveDirection.z += myLedgeDirection.z * playerMotor.Speed;
+                    moveDirection.x += wallDirection.x * playerMotor.Speed;
+                    moveDirection.z += wallDirection.z * playerMotor.Speed;
                 }
                 else // do normal climbing
                 {
-                    moveDirection = myLedgeDirection * playerMotor.Speed;
+                    moveDirection = wallDirection * playerMotor.Speed;
                     moveDirection.y = Vector3.up.y * climbScalar;
                 }  
             }
@@ -585,9 +621,9 @@ namespace DaggerfallWorkshop.Game
             float luckFactor = Mathf.Lerp(0, 10, luck * 0.01f);
 
             // Skill Check
-            float percentRolled = Mathf.Lerp(basePercentSuccess, 100, skill * .01f) + luckFactor;
+            float percentSuccess = Mathf.Lerp(basePercentSuccess, 100, skill * .01f) + luckFactor;
 
-            if (percentRolled < UnityEngine.Random.Range(1, 101)) // Failed Check?
+            if (Dice100.FailedRoll((int)percentSuccess))
             {
                 // Don't allow skill check to break climbing while swimming
                 // Water makes it easier to climb

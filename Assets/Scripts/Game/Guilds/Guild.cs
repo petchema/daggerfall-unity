@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -77,13 +77,14 @@ namespace DaggerfallWorkshop.Game.Guilds
                 int newRank = CalculateNewRank(playerEntity);
                 if (newRank != rank)
                 {
-                    if (newRank > rank)         // Promotion
+                    if (newRank > rank) {           // Promotion
                         tokens = TokensPromotion(newRank);
-                    else if (newRank < 0)       // Expulsion
+                    } else if (newRank < 0) {       // Expulsion
                         tokens = TokensExpulsion();
-                    else if (newRank < rank)    // Demotion
+                        GameManager.Instance.GuildManager.RemoveMembership(this);
+                    } else if (newRank < rank) {    // Demotion
                         tokens = TokensDemotion();
-
+                    }
                     rank = newRank;
                     lastRankChange = CalculateDaySinceZero(DaggerfallUnity.Instance.WorldTime.Now);
                 }
@@ -264,6 +265,8 @@ namespace DaggerfallWorkshop.Game.Guilds
                 case GuildServices.Identify:
                     return true;
                 case GuildServices.BuySpells:
+                    return false;
+                case GuildServices.BuySpellsMages:
                     return true;
                 case GuildServices.Donate:
                     return true;

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -450,7 +450,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
 
                 // Tooltip text
                 itemButtons[i].ToolTipText =
-                    (item.ItemGroup == ItemGroups.Books) ? DaggerfallUnity.Instance.ItemHelper.getBookNameByMessage(item.message, item.LongName) : item.LongName;
+                    (item.ItemGroup == ItemGroups.Books && !item.IsArtifact) ? DaggerfallUnity.Instance.ItemHelper.getBookNameByMessage(item.message, item.LongName) : item.LongName;
             }
         }
 
@@ -556,13 +556,19 @@ namespace DaggerfallWorkshop.Game.UserInterface
         void ItemsUpButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
             if (scroller)
+            {
                 itemListScrollBar.ScrollIndex--;
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+            }
         }
 
         void ItemsDownButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
             if (scroller)
+            {
                 itemListScrollBar.ScrollIndex++;
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+            }
         }
 
         void ItemsListPanel_OnMouseScrollUp(BaseScreenComponent sender)

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -338,12 +338,8 @@ namespace DaggerfallWorkshop
             // Assign mesh
             meshFilter.sharedMesh = mesh;
 
-            // Seek textures from mods
-            TextureReplacement.SetMobileBillboardImportedTextures(textureArchive, GetComponent<MeshFilter>(), ref importedTextures);
-
             // Create material
-            Material material = importedTextures.HasImportedTextures ?
-                MaterialReader.CreateStandardMaterial(MaterialReader.CustomBlendMode.Cutout) :
+            Material material = TextureReplacement.GetMobileBillboardMaterial(textureArchive, GetComponent<MeshFilter>(), ref importedTextures) ??
                 DaggerfallUnity.Instance.MaterialReader.GetMaterialAtlas(
                 textureArchive,
                 0,
@@ -442,7 +438,9 @@ namespace DaggerfallWorkshop
                     meshRenderer = GetComponent<MeshRenderer>();
 
                 // Assign imported texture
-                meshRenderer.sharedMaterial.mainTexture = importedTextures.Textures[record][currentFrame];
+                meshRenderer.sharedMaterial.mainTexture = importedTextures.Albedo[record][currentFrame];
+                if (importedTextures.IsEmissive)
+                    meshRenderer.material.SetTexture(Uniforms.EmissionMap, importedTextures.EmissionMaps[record][currentFrame]);
 
                 // Update UVs on mesh
                 Vector2[] uvs = new Vector2[4];

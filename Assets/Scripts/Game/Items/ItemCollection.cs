@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -226,9 +226,12 @@ namespace DaggerfallWorkshop.Game.Items
             }
             else
             {
-                // Check duplicate key
+                // Log and exit if duplicate key found
                 if (items.Contains(item.UID))
-                    throw new Exception("AddItem() encountered a duplicate item UID for " + item.LongName);
+                {
+                    UnityEngine.Debug.LogError("AddItem() encountered a duplicate item UID for " + item.LongName);
+                    return;
+                }
 
                 // Add the item
                 switch (position)
@@ -608,6 +611,7 @@ namespace DaggerfallWorkshop.Game.Items
                 if (checkItem != item && 
                     checkItem.ItemGroup == itemGroup && checkItem.GroupIndex == groupIndex &&
                     checkItem.PotionRecipeKey == item.PotionRecipeKey &&
+                    checkItem.IsSummoned == item.IsSummoned &&
                     checkItem.IsStackable())
                     return checkItem;
             }

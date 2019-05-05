@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -79,7 +79,6 @@ namespace DaggerfallWorkshop
         public bool Option_AddMeshColliders = true;
         public bool Option_AddNavmeshAgents = true;
         public bool Option_RMBGroundPlane = true;
-        public bool Option_CloseCityGates = false;
 
         // Prefab options
         public bool Option_ImportLightPrefabs = true;

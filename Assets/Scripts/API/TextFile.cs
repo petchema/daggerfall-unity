@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -150,6 +150,22 @@ namespace DaggerfallConnect.Arena2
             public string text;
             public int x;
             public int y;
+
+            public Token(Formatting formatting)
+            {
+                this.formatting = formatting;
+                text = string.Empty;
+                x = 0;
+                y = 0;
+            }
+
+            public Token(Formatting formatting, string text, int x = 0, int y = 0)
+            {
+                this.formatting = formatting;
+                this.text = text;
+                this.x = x;
+                this.y = y;
+            }
         }
 
         private struct TextRecordDatabaseHeader

@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -83,9 +83,12 @@ namespace DaggerfallWorkshop.Game.Questing.Actions
             // Check player clicked flag
             if (person.HasPlayerClicked)
             {
-                //person.RearmPlayerClick();
+                // Check if player has item
                 if (GameManager.Instance.PlayerEntity.Items.Contains(item))
                 {
+                    // Rearm person click after current task
+                    ParentQuest.ScheduleClickRearm(person);
+
                     // Show message popup, remove item, return true on trigger
                     ParentQuest.ShowMessagePopup(id);
                     GameManager.Instance.PlayerEntity.ReleaseQuestItemForReoffer(item.DaggerfallUnityItem);

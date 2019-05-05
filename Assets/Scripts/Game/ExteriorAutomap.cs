@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -439,7 +439,7 @@ namespace DaggerfallWorkshop.Game
                     Application.Quit();
             }
 
-            layerAutomap = LayerMask.NameToLayer("ExteriorAutomap");
+            layerAutomap = LayerMask.NameToLayer("Automap");
             if (layerAutomap == -1)
             {
                 DaggerfallUnity.LogMessage("Did not find Layer with name \"Automap\"! Defaulting to Layer 10\nIt is prefered that Layer \"Automap\" is set in Unity Editor under \"Edit/Project Settings/Tags and Layers!\"", true);
@@ -458,6 +458,7 @@ namespace DaggerfallWorkshop.Game
             PlayerEnterExit.OnTransitionInterior += OnTransitionToInterior;
             PlayerEnterExit.OnTransitionDungeonInterior += OnTransitionToDungeonInterior;
             SaveLoadManager.OnLoad += OnLoadEvent;
+            StartGameBehaviour.OnStartGame += StartGameBehaviour_OnStartGame;
         }
 
         void OnDestroy()
@@ -469,6 +470,7 @@ namespace DaggerfallWorkshop.Game
             PlayerEnterExit.OnTransitionInterior -= OnTransitionToInterior;
             PlayerEnterExit.OnTransitionDungeonInterior -= OnTransitionToDungeonInterior;
             SaveLoadManager.OnLoad -= OnLoadEvent;
+            StartGameBehaviour.OnStartGame -= StartGameBehaviour_OnStartGame;
         }
 
         #endregion
@@ -1641,6 +1643,28 @@ namespace DaggerfallWorkshop.Game
             location.Loaded = false;
         }
 
+        private void SetExteriorAutomapStateFromLoadGame()
+        {
+            if (!GameManager.Instance.IsPlayerInside)
+            {
+                gameobjectExteriorAutomap.SetActive(true);
+                DFPosition mapPixel = GameManager.Instance.PlayerGPS.CurrentMapPixel;
+                ContentReader.MapSummary mapSummary;
+                if (DaggerfallUnity.Instance.ContentReader.HasLocation(mapPixel.X, mapPixel.Y, out mapSummary))
+                {
+                    loadAndCreateLocationExteriorAutomap();
+                }
+            }
+            else
+            {
+                gameobjectExteriorAutomap.SetActive(false);
+            }
+        }
+
+        #endregion
+
+        #region event handling
+
         private void OnMapPixelChanged(DFPosition mapPixel)
         {
             ContentReader.MapSummary mapSummary;
@@ -1684,21 +1708,14 @@ namespace DaggerfallWorkshop.Game
 
         void OnLoadEvent(SaveData_v1 saveData)
         {
-            if (!GameManager.Instance.IsPlayerInside)
-            {
-                gameobjectExteriorAutomap.SetActive(true);
-                DFPosition mapPixel = GameManager.Instance.PlayerGPS.CurrentMapPixel;
-                ContentReader.MapSummary mapSummary;
-                if (DaggerfallUnity.Instance.ContentReader.HasLocation(mapPixel.X, mapPixel.Y, out mapSummary))
-                {
-                    loadAndCreateLocationExteriorAutomap();
-                }
-            }
-            else
-            {
-                gameobjectExteriorAutomap.SetActive(false);
-            }
+            SetExteriorAutomapStateFromLoadGame();
         }
+
+        public void StartGameBehaviour_OnStartGame(object sender, EventArgs e)
+        {
+            SetExteriorAutomapStateFromLoadGame();
+        }
+
         #endregion
 
         #region console_commands

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -48,6 +48,8 @@ namespace DaggerfallWorkshop.Game.Questing
         FactionFile.FactionData factionData;
         StaticNPC.NPCData questorData;
         bool discoveredThroughTalkManager = false;
+        bool isMuted = false;
+        bool isDestroyed = false;
 
         #endregion
 
@@ -133,6 +135,17 @@ namespace DaggerfallWorkshop.Game.Questing
         {
             get { return discoveredThroughTalkManager; }
             set { discoveredThroughTalkManager = value; }
+        }
+
+        public bool IsMuted
+        {
+            get { return isMuted; }
+            set { isMuted = value; }
+        }
+
+        public bool IsDestroyed
+        {
+            get { return isDestroyed; }
         }
 
         #endregion
@@ -423,6 +436,15 @@ namespace DaggerfallWorkshop.Game.Questing
             return false;
         }
 
+        /// <summary>
+        /// Set Person.IsDestroyed=true.
+        /// Person can no longer be placed or clicked.
+        /// </summary>
+        public void DestroyNPC()
+        {
+            isDestroyed = true;
+        }
+
         #endregion
 
         #region Private Methods
@@ -471,28 +493,10 @@ namespace DaggerfallWorkshop.Game.Questing
             // Use faction race only for individuals
             if (isIndividualNPC)
             {
-                FactionFile.FactionRaces factionRace = (FactionFile.FactionRaces)factionData.race;
-                if (factionRace != FactionFile.FactionRaces.None)
+                race = RaceTemplate.GetRaceFromFactionRace((FactionFile.FactionRaces)factionData.race);
+                if (race != Races.None)
                 {
-                    switch (factionRace)
-                    {
-                        case FactionFile.FactionRaces.Redguard:
-                            race = Races.Redguard;
-                            return;
-                        case FactionFile.FactionRaces.Nord:
-                            race = Races.Nord;
-                            return;
-                        case FactionFile.FactionRaces.DarkElf:
-                            race = Races.DarkElf;
-                            return;
-                        case FactionFile.FactionRaces.WoodElf:
-                            race = Races.WoodElf;
-                            return;
-                        case FactionFile.FactionRaces.Breton:
-                        default:
-                            race = Races.Breton;
-                            return;
-                    }
+                    return;
                 }
             }
 
@@ -573,7 +577,7 @@ namespace DaggerfallWorkshop.Game.Questing
 
             // For other NPCs use default scope and building type
             Place.Scopes scope = Place.Scopes.Remote;
-            string buildingTypeString = "house2";
+            string buildingTypeString = "house";
 
             // Adjust scope and building type based on faction hints
             int p1 = 0, p2 = 0, p3 = 0;
@@ -1013,7 +1017,7 @@ namespace DaggerfallWorkshop.Game.Questing
 
                 // Assign an NPC from current player region
                 case FactionFile.FactionTypes.Province:
-                    return GetCurrentRegionFaction();
+                    return GameManager.Instance.PlayerGPS.GetCurrentRegionFaction();
 
                 // Not all regions have a witches coven associated
                 // Just select a random coven for now
@@ -1042,7 +1046,7 @@ namespace DaggerfallWorkshop.Game.Questing
 
                 // Get "court of" current region
                 case FactionFile.FactionTypes.Courts:
-                    return GetCourtOfCurrentRegion();
+                    return GameManager.Instance.PlayerGPS.GetCourtOfCurrentRegion();
 
                 // Get "people of" current region
                 case FactionFile.FactionTypes.People:
@@ -1096,7 +1100,7 @@ namespace DaggerfallWorkshop.Game.Questing
                 case 14:
                     return genericTemple;                   // Generic Temple seems to link all the temples together
                 case 16:
-                    return GetCourtOfCurrentRegion();       // Not sure if "Noble" career maps to regional "court of" in classic
+                    return GameManager.Instance.PlayerGPS.GetCourtOfCurrentRegion();       // Not sure if "Noble" career maps to regional "court of" in classic
                 case 17:
                 case 18:
                 case 19:
@@ -1106,37 +1110,6 @@ namespace DaggerfallWorkshop.Game.Questing
                 default:                                    // Not sure if "Resident1-4" career really maps to regional "people of" in classic
                     return GameManager.Instance.PlayerGPS.GetPeopleOfCurrentRegion();
             }
-        }
-
-        int GetCurrentRegionFaction()
-        {
-            int oneBasedPlayerRegion = GameManager.Instance.PlayerGPS.CurrentRegionIndex;
-            FactionFile.FactionData[] factions = GameManager.Instance.PlayerEntity.FactionData.FindFactions(
-                (int)FactionFile.FactionTypes.Province, -1, -1, oneBasedPlayerRegion);
-
-            // Should always find a single region
-            if (factions == null || factions.Length != 1)
-                throw new Exception("GetCurrentRegionFaction() did not find exactly 1 match.");
-
-            return factions[0].id;
-        }
-
-        // Gets the noble court faction in current region
-        int GetCourtOfCurrentRegion()
-        {
-            // Find court in current region
-            int oneBasedPlayerRegion = GameManager.Instance.PlayerGPS.CurrentRegionIndex;
-            FactionFile.FactionData[] factions = GameManager.Instance.PlayerEntity.FactionData.FindFactions(
-                (int)FactionFile.FactionTypes.Courts,
-                (int)FactionFile.SocialGroups.Nobility,
-                (int)FactionFile.GuildGroups.Region,
-                oneBasedPlayerRegion);
-
-            // Should always find a single court
-            if (factions == null || factions.Length != 1)
-                throw new Exception("GetCourtOfCurrentRegion() did not find exactly 1 match.");
-
-            return factions[0].id;
         }
 
         int GetRandomFactionOfType(int factionType)
@@ -1175,6 +1148,8 @@ namespace DaggerfallWorkshop.Game.Questing
             public string factionTableKey;
             public StaticNPC.NPCData questorData;
             public bool discoveredThroughTalkManager;
+            public bool isMuted;
+            public bool isDestroyed;
         }
 
         public override object GetSaveData()
@@ -1197,6 +1172,8 @@ namespace DaggerfallWorkshop.Game.Questing
             data.factionTableKey = factionTableKey;
             data.questorData = questorData;
             data.discoveredThroughTalkManager = discoveredThroughTalkManager;
+            data.isMuted = isMuted;
+            data.isDestroyed = isDestroyed;
 
             return data;
         }
@@ -1229,6 +1206,8 @@ namespace DaggerfallWorkshop.Game.Questing
             factionTableKey = data.factionTableKey;
             questorData = data.questorData;
             discoveredThroughTalkManager = data.discoveredThroughTalkManager;
+            isMuted = data.isMuted;
+            isDestroyed = data.isDestroyed;
         }
 
         #endregion

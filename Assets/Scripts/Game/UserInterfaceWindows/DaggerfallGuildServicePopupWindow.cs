@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -21,6 +21,7 @@ using DaggerfallWorkshop.Game.Questing;
 using System;
 using DaggerfallWorkshop.Game.Guilds;
 using DaggerfallWorkshop.Game.Formulas;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {
@@ -209,7 +210,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     DaggerfallUnityItem magicItem = ItemBuilder.CreateItem(ItemGroups.MiscItems, (int)MiscItems.Soul_trap);
                     magicItem.value = 5000;
 
-                    if (UnityEngine.Random.Range(1, 101) >= 25)
+                    if (Dice100.FailedRoll(25))
                         magicItem.TrappedSoulType = MobileTypes.None;
                     else
                     {
@@ -307,13 +308,17 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     break;
 
                 case GuildServices.BuySpells:
+                case GuildServices.BuySpellsMages:
                     CloseWindow();
                     uiManager.PushWindow(new DaggerfallSpellBookWindow(uiManager, this, true));
                     break;
 
                 case GuildServices.MakeSpells:
                     CloseWindow();
-                    uiManager.PushWindow(DaggerfallUI.Instance.DfSpellMakerWindow);
+                    if (GameManager.Instance.PlayerEntity.Items.Contains(Items.ItemGroups.MiscItems, (int)Items.MiscItems.Spellbook))
+                        uiManager.PushWindow(DaggerfallUI.Instance.DfSpellMakerWindow);
+                    else
+                        DaggerfallUI.MessageBox(TextManager.Instance.GetText("ClassicEffects", "noSpellbook"));
                     break;
 
                 case GuildServices.BuyMagicItems:   // TODO: switch items depending on npcService?
@@ -565,7 +570,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 playerEntity.DeductGoldAmount(guild.GetTrainingPrice());
                 playerEntity.DecreaseFatigue(PlayerEntity.DefaultFatigueLoss * 180);
                 int skillAdvancementMultiplier = DaggerfallSkills.GetAdvancementMultiplier(skillToTrain);
-                short tallyAmount = (short)(UnityEngine.Random.Range(10, 21) * skillAdvancementMultiplier);
+                short tallyAmount = (short)(UnityEngine.Random.Range(10, 20 + 1) * skillAdvancementMultiplier);
                 playerEntity.TallySkill(skillToTrain, tallyAmount);
                 DaggerfallUI.MessageBox(TrainSkillId);
             }
@@ -602,7 +607,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                     // Change reputation
                     int rep = Math.Abs(playerEntity.FactionData.GetReputation(factionId));
-                    if (UnityEngine.Random.Range(1, 101) <= (2 * amount / rep + 1))
+                    if (Dice100.SuccessRoll(2 * amount / rep + 1))
                         playerEntity.FactionData.ChangeReputation(factionId, 1); // Does not propagate in classic
 
                     // Show thanks message

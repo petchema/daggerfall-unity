@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -98,7 +98,7 @@ namespace DaggerfallWorkshop.Game.Questing
 
             // Init spawn timer on first update
             if (lastSpawnTime == 0)
-                lastSpawnTime = gameSeconds + (uint)UnityEngine.Random.Range(0, spawnInterval);
+                lastSpawnTime = gameSeconds + (uint)UnityEngine.Random.Range(0, spawnInterval + 1);
 
             // Do nothing if max foes already spawned
             // This can be cleared on next set/rearm
@@ -124,8 +124,20 @@ namespace DaggerfallWorkshop.Game.Questing
                 if (UnityEngine.Random.Range(0f, 1f) > chance)
                     return;
 
+                // Get the Foe resource
+                Foe foe = ParentQuest.GetFoe(foeSymbol);
+                if (foe == null)
+                {
+                    SetComplete();
+                    throw new Exception(string.Format("create foe could not find Foe with symbol name {0}", Symbol.Name));
+                }
+
+                // Do not spawn if foe is hidden
+                if (foe.IsHidden)
+                    return;
+
                 // Start deploying GameObjects
-                CreatePendingFoeSpawn();
+                CreatePendingFoeSpawn(foe);
             }
 
             // Try to deploy a pending spawns
@@ -143,16 +155,8 @@ namespace DaggerfallWorkshop.Game.Questing
 
         #region Private Methods
 
-        void CreatePendingFoeSpawn()
+        void CreatePendingFoeSpawn(Foe foe)
         {
-            // Get the Foe resource
-            Foe foe = ParentQuest.GetFoe(foeSymbol);
-            if (foe == null)
-            {
-                SetComplete();
-                throw new Exception(string.Format("create foe could not find Foe with symbol name {0}", Symbol.Name));
-            }
-
             // Get foe GameObjects
             pendingFoeGameObjects = GameObjectHelper.CreateFoeGameObjects(Vector3.zero, foe.FoeType, foe.SpawnCount, MobileReactions.Hostile, foe);
             if (pendingFoeGameObjects == null || pendingFoeGameObjects.Length != foe.SpawnCount)

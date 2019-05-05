@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -78,7 +78,7 @@ namespace DaggerfallWorkshop.Game
             // Up/down
             Vector3 upDownVector = new Vector3 (0, 0, 0);
 
-            if (playerSwimming && GameManager.Instance.PlayerEntity.CarriedWeight * 4 > 250 && !climbingMotor.IsClimbing && !GameManager.Instance.PlayerEntity.GodMode)
+            if (playerSwimming && GameManager.Instance.PlayerEntity.CarriedWeight * 4 > 250 && !climbingMotor.IsClimbing && !GameManager.Instance.PlayerEntity.GodMode && !GameManager.Instance.PlayerEntity.IsWaterWalking)
                 upDownVector += Vector3.down;
             else if (InputManager.Instance.HasAction(InputManager.Actions.Jump) || InputManager.Instance.HasAction(InputManager.Actions.FloatUp))
                 upDownVector += Vector3.up;

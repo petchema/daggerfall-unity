@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -44,6 +44,14 @@ namespace DaggerfallWorkshop.Utility
         /// <param name="dfRand">Use Daggerfall rand() for random selection.</param>
         /// <returns>Text resource tokens.</returns>
         TextFile.Token[] GetRandomTokens(int id, bool dfRand = false);
+
+        /// <summary>
+        /// Creates a custom token array.
+        /// </summary>
+        /// <param name="formatting">Formatting of each line.</param>
+        /// <param name="lines">All text lines.</param>
+        /// <returns>Token array.</returns>
+        TextFile.Token[] CreateTokens(TextFile.Formatting formatting, params string[] lines);
 
         /// <summary>
         /// Gets random string from separated token array.
@@ -295,6 +303,21 @@ namespace DaggerfallWorkshop.Utility
             int index = UnityEngine.Random.Range(0, textItems.Count);
 
             return textItems[index];
+        }
+
+        public virtual TextFile.Token[] CreateTokens(TextFile.Formatting formatting, params string[] lines)
+        {
+            List<TextFile.Token> tokens = new List<TextFile.Token>();
+
+            foreach(string line in lines)
+            {
+                tokens.Add(new TextFile.Token(TextFile.Formatting.Text, line));
+                tokens.Add(new TextFile.Token(formatting));
+            }
+
+            tokens.Add(new TextFile.Token(TextFile.Formatting.EndOfRecord));
+
+            return tokens.ToArray();
         }
 
         public string GetWeaponMaterialName(WeaponMaterialTypes material)

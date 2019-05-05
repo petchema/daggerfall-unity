@@ -1,10 +1,10 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
 // Original Author: Hazelnut
-// Contributors:
+// Contributors:    Pango
 //
 // Notes:
 //
@@ -21,6 +21,7 @@ using DaggerfallWorkshop.Game.Items;
 using DaggerfallWorkshop.Game.Banking;
 using DaggerfallWorkshop.Game.Formulas;
 using DaggerfallWorkshop.Game.Guilds;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {
@@ -98,6 +99,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         bool usingWagon = false;
         int cost = 0;
         bool usingIdentifySpell = false;
+        DaggerfallUnityItem itemBeingRepaired;
 
         static Dictionary<DFLocation.BuildingTypes, List<ItemGroups>> storeBuysItemType = new Dictionary<DFLocation.BuildingTypes, List<ItemGroups>>()
         {
@@ -233,7 +235,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             UpdateAccessoryItemsDisplay();
             UpdateLocalTargetIcon();
             UpdateRemoteTargetIcon();
+            // UpdateRepairTimes(false);
             UpdateCostAndGold();
+            SelectWagon(false);
         }
 
         Color RepairItemBackgroundColourHandler(DaggerfallUnityItem item)
@@ -251,14 +255,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         string RepairItemLabelTextHandler(DaggerfallUnityItem item)
         {
-            if (item.RepairData.IsBeingRepaired())
-            {
-                if (item.RepairData.IsRepairFinished())
-                    return TextManager.Instance.GetText(textDatabase, "repairDone");
-                else
-                    return TextManager.Instance.GetText(textDatabase, "repairDays").Replace("%d", item.RepairData.DaysUntilRepaired().ToString());
-            }
-            return (item.currentCondition == item.maxCondition) ? TextManager.Instance.GetText(textDatabase, "repairDone") : String.Empty;
+            bool repairDone = item.RepairData.IsBeingRepaired() ? item.RepairData.IsRepairFinished() : item.currentCondition == item.maxCondition;
+            return repairDone ? 
+                    TextManager.Instance.GetText(textDatabase, "repairDone") : 
+                    TextManager.Instance.GetText(textDatabase, "repairDays").Replace("%d", item.RepairData.EstimatedDaysUntilRepaired().ToString());
         }
 
         void SetupCostAndGold()
@@ -271,8 +271,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         protected override void SetupActionButtons()
         {
-            wagonButton = DaggerfallUI.AddButton(wagonButtonRect, actionButtonsPanel);
-            wagonButton.OnMouseClick += WagonButton_OnMouseClick;
+            // Can happen using Identify spell https://forums.dfworkshop.net/viewtopic.php?f=24&t=1756
+            if (!GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon)
+            {
+                wagonButton = DaggerfallUI.AddButton(wagonButtonRect, actionButtonsPanel);
+                wagonButton.OnMouseClick += WagonButton_OnMouseClick;
+            }
 
             infoButton = DaggerfallUI.AddButton(infoButtonRect, actionButtonsPanel);
             infoButton.OnMouseClick += InfoButton_OnMouseClick;
@@ -319,8 +323,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             // Clear wagon button state
             if (wagonButton != null)
             {
-                usingWagon = false;
-                wagonButton.BackgroundTexture = wagonNotSelected;
+                SelectWagon(false);
             }
 
             // Refresh window
@@ -339,6 +342,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             base.Refresh(refreshPaperDoll);
 
+            UpdateRepairTimes(false);
             UpdateCostAndGold();
         }
 
@@ -348,21 +352,15 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void UpdateCostAndGold()
         {
+            bool modeActionEnabled = false;
             cost = 0;
-
-            // Identify spell remains free
-            if (usingIdentifySpell)
-            {
-                costLabel.Text = cost.ToString();
-                goldLabel.Text = PlayerEntity.GetGoldAmount().ToString();
-                return;
-            }
 
             if (windowMode == WindowModes.Buy && basketItems != null)
             {
                 for (int i = 0; i < basketItems.Count; i++)
                 {
                     DaggerfallUnityItem item = basketItems.GetItem(i);
+                    modeActionEnabled = true;
                     cost += FormulaHelper.CalculateCost(item.value, buildingDiscoveryData.quality) * item.stackCount;
                 }
             }
@@ -374,33 +372,113 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     switch (windowMode)
                     {
                         case WindowModes.Sell:
+                            modeActionEnabled = true;
                             cost += FormulaHelper.CalculateCost(item.value, buildingDiscoveryData.quality) * item.stackCount;
                             break;
                         case WindowModes.SellMagic: // TODO: Fencing base price higher and guild rep affects it. Implement new formula or can this be used?
+                            modeActionEnabled = true;
                             cost += FormulaHelper.CalculateCost(item.value, buildingDiscoveryData.quality);
                             break;
                         case WindowModes.Repair:
-                            cost += FormulaHelper.CalculateItemRepairCost(item.value, buildingDiscoveryData.quality, item.currentCondition, item.maxCondition, guild) * item.stackCount;
+                            if (!item.RepairData.IsBeingRepaired())
+                            {
+                                modeActionEnabled = true;
+                                cost += FormulaHelper.CalculateItemRepairCost(item.value, buildingDiscoveryData.quality, item.currentCondition, item.maxCondition, guild) * item.stackCount;
+                            }
                             break;
                         case WindowModes.Identify:
                             if (!item.IsIdentified)
-                                cost += FormulaHelper.CalculateItemIdentifyCost(item.value, guild);
+                            {
+                                modeActionEnabled = true;
+                                // Identify spell remains free
+                                if (!usingIdentifySpell)
+                                    cost += FormulaHelper.CalculateItemIdentifyCost(item.value, guild);
+                            }
                             break;
                     }
                 }
             }
             costLabel.Text = cost.ToString();
             goldLabel.Text = PlayerEntity.GetGoldAmount().ToString();
+            modeActionButton.Enabled = modeActionEnabled;
         }
 
         private int GetTradePrice()
         {
-            if (windowMode == WindowModes.Sell || windowMode == WindowModes.SellMagic)
-                return FormulaHelper.CalculateTradePrice(cost, buildingDiscoveryData.quality, true);
-            else if (windowMode == WindowModes.Identify)
-                return cost;
-            else
-                return FormulaHelper.CalculateTradePrice(cost, buildingDiscoveryData.quality, false);
+            switch (windowMode)
+            {
+                case WindowModes.Buy:
+                case WindowModes.Repair:
+                    return FormulaHelper.CalculateTradePrice(cost, buildingDiscoveryData.quality, false);
+
+                case WindowModes.Sell:
+                case WindowModes.SellMagic:
+                    return FormulaHelper.CalculateTradePrice(cost, buildingDiscoveryData.quality, true);
+
+                case WindowModes.Identify:
+                    return cost;
+            }
+            throw new Exception("Unexpected windowMode");
+        }
+
+        #endregion
+
+        #region Repairs
+
+        private void UpdateRepairTimes(bool commit)
+        {
+            if (windowMode != WindowModes.Repair || DaggerfallUnity.Settings.InstantRepairs)
+                return;
+
+            Debug.Log("UpdateRepairTimes called");
+            int totalRepairTime = 0, longestRepairTime = 0;
+            DaggerfallUnityItem itemLongestTime = null;
+            Dictionary<DaggerfallUnityItem, int> previousRepairTimes = new Dictionary<DaggerfallUnityItem, int>();
+            foreach (DaggerfallUnityItem item in remoteItemsFiltered)
+            {
+                bool repairDone = item.RepairData.IsBeingRepaired() ? item.RepairData.IsRepairFinished() : item.currentCondition == item.maxCondition;
+                if (repairDone)
+                    continue;
+
+                if (item.RepairData.IsBeingRepaired())
+                    previousRepairTimes.Add(item, item.RepairData.RepairTime);
+
+                int repairTime = FormulaHelper.CalculateItemRepairTime(item.currentCondition, item.maxCondition);
+                if (commit && !item.RepairData.IsBeingRepaired())
+                {
+                    item.RepairData.LeaveForRepair(repairTime);
+                    string note = string.Format(TextManager.Instance.GetText(textDatabase, "repairNote"), item.LongName, buildingDiscoveryData.displayName);
+                    GameManager.Instance.PlayerEntity.Notebook.AddNote(note);
+                }
+                totalRepairTime += repairTime;
+                if (repairTime > longestRepairTime)
+                {
+                    longestRepairTime = repairTime;
+                    itemLongestTime = item;
+                }
+                if (commit)
+                    item.RepairData.RepairTime = repairTime;
+                else
+                    item.RepairData.EstimatedRepairTime = repairTime;
+            }
+            if (itemLongestTime != null)
+            {
+                int modifiedLongestTime = longestRepairTime + ((totalRepairTime - longestRepairTime) / 2);
+                if (commit)
+                    itemLongestTime.RepairData.RepairTime = modifiedLongestTime;
+                else
+                    itemLongestTime.RepairData.EstimatedRepairTime = modifiedLongestTime;
+            }
+
+            // Don't allow repair times to decrease (when removing other now repaired items)
+            // https://forums.dfworkshop.net/viewtopic.php?f=24&t=2053
+            foreach (KeyValuePair<DaggerfallUnityItem, int> entry in previousRepairTimes)
+            {
+                if (commit)
+                    entry.Key.RepairData.RepairTime = Mathf.Max(entry.Key.RepairData.RepairTime, entry.Value);
+                else
+                    entry.Key.RepairData.EstimatedRepairTime = Mathf.Max(entry.Key.RepairData.EstimatedRepairTime, entry.Value);
+            }
         }
 
         #endregion
@@ -444,10 +522,21 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                         item.RepairData.Collect();
                     }
                 }
+                // UpdateRepairTimes(false);
             }
             else
             {   // Return items to player inventory. 
                 // Note: ignoring weight here, like classic. Priority is to not lose any items.
+                if (usingWagon)
+                {
+                    // Always clear transport items into player's inventory
+                    for (int i = remoteItems.Count; i-- > 0;)
+                    {
+                        DaggerfallUnityItem item = remoteItems.GetItem(i);
+                        if (item.ItemGroup == ItemGroups.Transportation)
+                            TransferItem(item, remoteItems, PlayerEntity.Items);
+                    }
+                }
                 localItems.TransferAll(remoteItems);
             }
         }
@@ -546,12 +635,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                             item.currentCondition = item.maxCondition;
                     }
                 }
+                UpdateRepairTimes(false);
             }
             else
                 base.FilterRemoteItems();
         }
 
-        protected void ShowWagon(bool show)
+        protected void SelectWagon(bool show)
         {
             if (show)
             {   // Switch to wagon
@@ -565,7 +655,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             }
             usingWagon = show;
             localItemListScroller.ResetScroll();
-            Refresh(false);
+            // Caller must now use Refresh
+            // Refresh(false);
         }
 
         protected override void LoadTextures()
@@ -604,7 +695,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     case WindowModes.Sell:
                     case WindowModes.SellMagic:
                         if (remoteItems != null)
+                        {
+                            // Are we trying to sell the non empty wagon?
+                            if (item.ItemGroup == ItemGroups.Transportation && PlayerEntity.WagonItems.Count > 0)
+                            {
+                                DaggerfallUnityItem usedWagon = PlayerEntity.Items.GetItem(ItemGroups.Transportation, (int)Transportation.Small_cart);
+                                if (usedWagon.Equals(item))
+                                    return;
+                            }
                             TransferItem(item, localItems, remoteItems);
+                        }
                         break;
 
                     case WindowModes.Buy:
@@ -619,7 +719,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                         if (item.IsEnchanted)
                             DaggerfallUI.MessageBox(magicItemsCannotBeRepairedTextId);
                         else if ((item.currentCondition < item.maxCondition) && item.TemplateIndex != (int)Weapons.Arrow)
+                        {
                             TransferItem(item, localItems, remoteItems);
+                            // UpdateRepairTimes(false);
+                        }
                         else
                             DaggerfallUI.MessageBox(doesNotNeedToBeRepairedTextId);
                         break;
@@ -646,16 +749,42 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 if (windowMode == WindowModes.Buy)
                     TransferItem(item, remoteItems, basketItems, CanCarryAmount(item), equip: !item.IsAStack());
+                else if (windowMode == WindowModes.Repair)
+                {
+                    if (item.RepairData.IsBeingRepaired() && !item.RepairData.IsRepairFinished())
+                    {
+                        itemBeingRepaired = item;
+                        String strInterruptRepair = TextManager.Instance.GetText(textDatabase, "interruptRepair");
+                        DaggerfallMessageBox confirmInterruptRepairBox = new DaggerfallMessageBox(uiManager, DaggerfallMessageBox.CommonMessageBoxButtons.YesNo, strInterruptRepair, this);
+                        confirmInterruptRepairBox.OnButtonClick += ConfirmInterruptRepairBox_OnButtonClick;
+                        confirmInterruptRepairBox.Show();
+                    }
+                    else
+                        TakeItemFromRepair(item);
+                }
                 else
-                    TransferItem(item, remoteItems, localItems, usingWagon ? WagonCanHoldAmount(item) : CanCarryAmount(item));
-
-                if (windowMode == WindowModes.Repair)
-                    item.RepairData.Collect();
+                    TransferItem(item, remoteItems, localItems, usingWagon ? WagonCanHoldAmount(item) : CanCarryAmount(item), blockTransport: usingWagon);
             }
             else if (selectedActionMode == ActionModes.Info)
             {
                 ShowInfoPopup(item);
             }
+        }
+
+        private void ConfirmInterruptRepairBox_OnButtonClick(DaggerfallMessageBox sender, DaggerfallMessageBox.MessageBoxButtons messageBoxButton)
+        {
+            sender.CloseWindow();
+            if (messageBoxButton == DaggerfallMessageBox.MessageBoxButtons.Yes)
+            {
+                TakeItemFromRepair(itemBeingRepaired);
+            }
+        }
+
+        private void TakeItemFromRepair(DaggerfallUnityItem item)
+        {
+            TransferItem(item, remoteItems, localItems, usingWagon ? WagonCanHoldAmount(item) : CanCarryAmount(item));
+            item.RepairData.Collect();
+            // UpdateRepairTimes(false);
         }
 
         #endregion
@@ -665,7 +794,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         private void WagonButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
             if (PlayerEntity.Items.Contains(ItemGroups.Transportation, (int) Transportation.Small_cart))
-                ShowWagon(!usingWagon);
+            {
+                SelectWagon(!usingWagon);
+                Refresh(false);
+            }
         }
 
         private void InfoButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
@@ -684,19 +816,19 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 // Calculate the weight of all items picked from shelves, then get chance of shoplifting success.
                 int weightAndNumItems = (int) basketItems.GetWeight() + basketItems.Count;
-                int chance = FormulaHelper.CalculateShopliftingChance(PlayerEntity, null, buildingDiscoveryData.quality, weightAndNumItems);
+                int chanceBeingDetected = FormulaHelper.CalculateShopliftingChance(PlayerEntity, null, buildingDiscoveryData.quality, weightAndNumItems);
                 PlayerEntity.TallySkill(DFCareer.Skills.Pickpocket, 1);
 
-                if (UnityEngine.Random.Range(0, 101) > chance)
+                if (Dice100.FailedRoll(chanceBeingDetected))
                 {
-                    DaggerfallUI.AddHUDText(TextManager.Instance.GetText(textDatabase, "youAreSuccessful"), 2);
+                    DaggerfallUI.AddHUDText(TextManager.Instance.GetText(textDatabase, "stealSuccess"), 2);
                     RaiseOnTradeHandler(basketItems.GetNumItems(), 0);
                     PlayerEntity.Items.TransferAll(basketItems);
                     PlayerEntity.TallyCrimeGuildRequirements(true, 1);
                 }
                 else
                 {   // Register crime and start spawning guards.
-                    DaggerfallUI.AddHUDText(TextManager.Instance.GetText(textDatabase, "youAreNotSuccessful"), 2);
+                    DaggerfallUI.AddHUDText(TextManager.Instance.GetText(textDatabase, "stealFailure"), 2);
                     RaiseOnTradeHandler(0, 0);
                     PlayerEntity.CrimeCommitted = PlayerEntity.Crimes.Theft;
                     PlayerEntity.SpawnCityGuards(true);
@@ -713,7 +845,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     remoteItems.GetItem(i).IdentifyItem();
                 DaggerfallUI.MessageBox(TextManager.Instance.GetText(textDatabase, "itemsIdentified"));
             }
-            else if (cost > 0 || ((windowMode == WindowModes.Repair || windowMode == WindowModes.Identify) && remoteItems.Count > 0))
+            else
                 ShowTradePopup();
         }
 
@@ -725,6 +857,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void ConfirmTrade_OnButtonClick(DaggerfallMessageBox sender, DaggerfallMessageBox.MessageBoxButtons messageBoxButton)
         {
+            bool receivedLetterOfCredit = false;
             if (messageBoxButton == DaggerfallMessageBox.MessageBoxButtons.Yes)
             {
                 // Proceed with trade.
@@ -743,6 +876,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                             DaggerfallUnityItem loc = ItemBuilder.CreateItem(ItemGroups.MiscItems, (int)MiscItems.Letter_of_credit);
                             loc.value = tradePrice;
                             GameManager.Instance.PlayerEntity.Items.AddItem(loc, Items.ItemCollection.AddPosition.Front);
+                            receivedLetterOfCredit = true;
                         }
                         RaiseOnTradeHandler(remoteItems.GetNumItems(), tradePrice);
                         remoteItems.Clear();
@@ -763,33 +897,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                         }
                         else
                         {
-                            int totalRepairTime = 0, longestRepairTime = 0;
-                            DaggerfallUnityItem itemLongestTime = null;
-                            foreach (DaggerfallUnityItem item in remoteItemsFiltered)
-                            {
-                                int repairTime = FormulaHelper.CalculateItemRepairTime(item.currentCondition, item.maxCondition);
-                                if (!item.RepairData.IsBeingRepaired())
-                                {
-                                    item.RepairData.LeaveForRepair(repairTime);
-                                    string note = string.Format(TextManager.Instance.GetText(textDatabase, "repairNote"), item.LongName, buildingDiscoveryData.displayName);
-                                    GameManager.Instance.PlayerEntity.Notebook.AddNote(note);
-                                }
-                                totalRepairTime += repairTime;
-                                if (repairTime > longestRepairTime)
-                                {
-                                    longestRepairTime = repairTime;
-                                    itemLongestTime = item;
-                                }
-                                item.RepairData.RepairTime = repairTime;
-                            }
-                            if (itemLongestTime != null)
-                                itemLongestTime.RepairData.RepairTime = longestRepairTime + ((totalRepairTime - longestRepairTime) / 2);
+                            UpdateRepairTimes(true);
                         }
                         RaiseOnTradeHandler(remoteItems.GetNumItems(), tradePrice);
                         break;
 
                     case WindowModes.Identify:
-                        PlayerEntity.DeductGoldAmount(GetTradePrice());
+                        PlayerEntity.DeductGoldAmount(tradePrice);
                         for (int i = 0; i < remoteItems.Count; i++)
                         {
                             DaggerfallUnityItem item = remoteItems.GetItem(i);
@@ -798,11 +912,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                         RaiseOnTradeHandler(remoteItems.GetNumItems(), tradePrice);
                         break;
                 }
-                DaggerfallUI.Instance.PlayOneShot(SoundClips.GoldPieces);
+                if (receivedLetterOfCredit)
+                    DaggerfallUI.Instance.PlayOneShot(SoundClips.ParchmentScratching);
+                else
+                    DaggerfallUI.Instance.PlayOneShot(SoundClips.GoldPieces);
                 PlayerEntity.TallySkill(DFCareer.Skills.Mercantile, 1);
                 Refresh();
             }
             CloseWindow();
+            if (receivedLetterOfCredit)
+                DaggerfallUI.MessageBox(TextManager.Instance.GetText(textDatabase, "letterOfCredit"));
         }
 
         #endregion

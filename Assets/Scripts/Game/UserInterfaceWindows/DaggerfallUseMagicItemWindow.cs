@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -9,11 +9,11 @@
 // Notes:
 //
 
-using UnityEngine;
-using DaggerfallWorkshop.Game.UserInterface;
-using DaggerfallWorkshop.Game.Items;
 using System.Collections.Generic;
 using DaggerfallConnect.FallExe;
+using DaggerfallWorkshop.Game.Items;
+using DaggerfallWorkshop.Game.UserInterface;
+using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {
@@ -71,13 +71,23 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         void Refresh()
         {
+            ListBox.ClearItems();
+            foreach (DaggerfallUnityItem magicUseItem in magicUseItems)
+            {
+                ListBox.AddItem(magicUseItem.LongName);
+            }
+        }
+
+        public int UpdateUsableMagicItems()
+        {
+            magicUseItems.Clear();
             ItemCollection playerItems = GameManager.Instance.PlayerEntity.Items;
             for (int i = 0; i < playerItems.Count; i++)
             {
                 DaggerfallUnityItem item = playerItems.GetItem(i);
                 if (item.IsEnchanted)
                 {
-                    foreach(DaggerfallEnchantment enchantment in item.Enchantments)
+                    foreach (DaggerfallEnchantment enchantment in item.LegacyEnchantments)
                         if (enchantment.type == EnchantmentTypes.CastWhenUsed)
                         {
                             magicUseItems.Add(item);
@@ -89,17 +99,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     magicUseItems.Add(item);
                 }
             }
-
-            if (magicUseItems.Count > 0)
-            {
-                ListBox.ClearItems();
-                foreach (DaggerfallUnityItem magicUseItem in magicUseItems)
-                {
-                    ListBox.AddItem(magicUseItem.LongName);
-                }
-            }
-            else
-                CloseWindow();
+            return magicUseItems.Count;
         }
 
         #endregion
@@ -121,7 +121,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 GameManager.Instance.PlayerEntity.Items.RemoveOne(itemToUse);
             }
             else if (itemToUse.IsEnchanted)
-                GameManager.Instance.PlayerEffectManager.UseItem(itemToUse, GameManager.Instance.PlayerEntity.Items);
+                GameManager.Instance.PlayerEffectManager.DoItemEnchantmentPayloads(MagicAndEffects.EnchantmentPayloadFlags.Used, itemToUse, GameManager.Instance.PlayerEntity.Items);
 
             CloseWindow();
         }

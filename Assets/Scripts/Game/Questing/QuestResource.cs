@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Entity;
 using System.Text.RegularExpressions;
@@ -160,6 +160,10 @@ namespace DaggerfallWorkshop.Game.Questing
                 if (this is Foe)
                     return;
 
+                // A destroyed NPC is always hidden
+                if (this is Person && (this as Person).IsDestroyed)
+                    (this as Person).IsHidden = true;
+
                 // Show or hide GameObject mapped to this QuestResource based on hidden flag
                 // This can conflict with other code that has disabled GameObject for other reasons
                 questResourceBehaviour.gameObject.SetActive(!IsHidden);
@@ -258,13 +262,19 @@ namespace DaggerfallWorkshop.Game.Questing
         /// </summary>
         public void SetPlayerClicked()
         {
+            if (this is Person && ((this as Person).IsMuted || (this as Person).IsDestroyed))
+            {
+                QuestMachine.LogFormat("Ignoring click on muted or destroyed Person {0}.", Symbol.Original);
+                return;
+            }
+
             hasPlayerClicked = true;
         }
 
         /// <summary>
         /// Rearm click so player can click again if quest allows it.
         /// </summary>
-        private void RearmPlayerClick()
+        public void RearmPlayerClick()
         {
             hasPlayerClicked = false;
         }
@@ -332,13 +342,9 @@ namespace DaggerfallWorkshop.Game.Questing
 
         void SetHidden(bool value)
         {
-            // Do not allow this for Foes
-            // They are a one-to-many virtual resource unlike Items and NPCs which are one-to-one once instantiated in world
-            if (this is Foe)
-                return;
-
-            // Set hidden flag for other resources
-            isHidden = true;
+            // Set hidden flag
+            // NOTE: Foes are a one-to-many resource - hiding a Foe will remove ALL spawned instances of that Foe
+            isHidden = value;
         }
 
         #endregion

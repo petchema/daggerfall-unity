@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -80,6 +80,8 @@ namespace DaggerfallWorkshop.Game.Player
             startingLevelUpSkillSum = 0;
             faceIndex = 0;
             skillUses = new short[DaggerfallSkills.Count];
+            skillsRaisedThisLevel1 = 0;
+            skillsRaisedThisLevel2 = 0;
             for (int i = 0; i < armorValues.Length; i++)
             {
                 armorValues[i] = 100;

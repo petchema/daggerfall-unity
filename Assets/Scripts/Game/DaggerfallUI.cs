@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -18,6 +18,7 @@ using DaggerfallConnect.Utility;
 using DaggerfallConnect.Save;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Utility.AssetInjection;
+using DaggerfallWorkshop.Game.Utility;
 using DaggerfallWorkshop.Game.UserInterface;
 using DaggerfallWorkshop.Game.UserInterfaceWindows;
 using DaggerfallWorkshop.Game.MagicAndEffects;
@@ -124,6 +125,8 @@ namespace DaggerfallWorkshop.Game
 
         public Material PixelFontMaterial { get { return pixelFontMaterial; } set { pixelFontMaterial = value; } }
         public Material SDFFontMaterial { get { return sdfFontMaterial; } set { sdfFontMaterial = value; } }
+
+        PaperDollRenderer paperDollRenderer;
 
         public UserInterfaceRenderTarget CustomRenderTarget
         {
@@ -248,6 +251,11 @@ namespace DaggerfallWorkshop.Game
             get { return Path.Combine(Application.streamingAssetsPath, fontsFolderName); }
         }
 
+        public PaperDollRenderer PaperDollRenderer
+        {
+            get { return paperDollRenderer; }
+        }
+
         public enum PopupStyle
         {
             Parchment,
@@ -298,6 +306,12 @@ namespace DaggerfallWorkshop.Game
             dfExteriorAutomapWindow = new DaggerfallExteriorAutomapWindow(uiManager);
 
             Questing.Actions.GivePc.OnOfferPending += GivePc_OnOfferPending;
+
+            // TEST: 4x scale paper doll renderer
+            // This will be used to display visual paper doll during testing
+            // Old paper doll still refreshed and used for mouse-over picking
+            // Will switch back to old method if any significant issues found with new paper doll rendering
+            paperDollRenderer = new PaperDollRenderer(4);
 
             SetupSingleton();
         }
@@ -410,6 +424,7 @@ namespace DaggerfallWorkshop.Game
 
         void ProcessMessages()
         {
+            RacialOverrideEffect racialOverride = null;
             switch (uiManager.GetMessage())
             {
                 case DaggerfallUIMessages.dfuiSetupGameWizard:
@@ -452,13 +467,19 @@ namespace DaggerfallWorkshop.Game
                     }
                     break;
                 case DaggerfallUIMessages.dfuiOpenUseMagicItemWindow:
-                    uiManager.PushWindow(dfUseMagicItemWindow);
+                    if (dfUseMagicItemWindow.UpdateUsableMagicItems() > 0)
+                        uiManager.PushWindow(dfUseMagicItemWindow);
+                    else
+                        AddHUDText(TextManager.Instance.GetText("SpellmakerUI", "noItemToActivate"));
                     break;
                 case DaggerfallUIMessages.dfuiOpenCourtWindow:
                     uiManager.PushWindow(dfCourtWindow);
                     break;
                 case DaggerfallUIMessages.dfuiOpenSpellMakerWindow:
                     uiManager.PushWindow(dfSpellMakerWindow);
+                    break;
+                case DaggerfallUIMessages.dfuiOpenItemMakerWindow:
+                    uiManager.PushWindow(dfItemMakerWindow);
                     break;
                 case DaggerfallUIMessages.dfuiOpenTravelMapWindow:
                     if (GameManager.Instance.IsPlayerInside)
@@ -474,7 +495,13 @@ namespace DaggerfallWorkshop.Game
                         else
                         {
                             if (!GiveOffer())
+                            {
+                                racialOverride = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect(); // Allow custom race to block fast travel (e.g. vampire during day)
+                                if (racialOverride != null && !racialOverride.CheckFastTravel(GameManager.Instance.PlayerEntity))
+                                    return;
+
                                 uiManager.PushWindow(dfTravelMapWindow);
+                            }
                         }
                     }
                     break;
@@ -512,7 +539,13 @@ namespace DaggerfallWorkshop.Game
                     else
                     {
                         if (!GiveOffer())
+                        {
+                            racialOverride = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect(); // Allow custom race to block rest (e.g. vampire not sated)
+                            if (racialOverride != null && !racialOverride.CheckStartRest(GameManager.Instance.PlayerEntity))
+                                return;
+
                             uiManager.PushWindow(new DaggerfallRestWindow(uiManager));
+                        }
                     }
                     break;
                 case DaggerfallUIMessages.dfuiOpenTransportWindow:
@@ -978,9 +1011,9 @@ namespace DaggerfallWorkshop.Game
             if (!dfUnity.IsReady || !dfUnity.IsPathValidated)
                 return null;
 
-            ImgFile imgFile = new ImgFile(Path.Combine(dfUnity.Arena2Path, name), FileUsage.UseMemory, readOnly);
+            ImgFile imgFile = new ImgFile(Path.Combine(dfUnity.Arena2Path, name), FileUsage.UseMemory, true);
             Texture2D texture;
-            if (!TextureReplacement.TryImportImage(name, out texture))
+            if (!TextureReplacement.TryImportImage(name, readOnly, out texture))
             {
                 imgFile.LoadPalette(Path.Combine(dfUnity.Arena2Path, imgFile.PaletteName));
                 texture = GetTextureFromImg(imgFile, format, readOnly);
@@ -1030,7 +1063,7 @@ namespace DaggerfallWorkshop.Game
 
             CifRciFile cifRciFile = new CifRciFile(Path.Combine(dfUnity.Arena2Path, name), FileUsage.UseMemory, true);
             Texture2D texture;
-            if (!TextureReplacement.TryImportCifRci(name, record, frame, out texture))
+            if (!TextureReplacement.TryImportCifRci(name, record, frame, true, out texture))
             {
                 cifRciFile.LoadPalette(Path.Combine(dfUnity.Arena2Path, cifRciFile.PaletteName));
                 DFBitmap bitmap = cifRciFile.GetDFBitmap(record, frame);
@@ -1066,7 +1099,7 @@ namespace DaggerfallWorkshop.Game
         public static Texture2D GetTextureFromResources(string name)
         {
             Texture2D tex;
-            return TextureReplacement.TryImportTexture(name, out tex) ? tex : Resources.Load<Texture2D>(name);
+            return TextureReplacement.TryImportTexture(name, true, out tex) ? tex : Resources.Load<Texture2D>(name);
         }
 
         /// <summary>

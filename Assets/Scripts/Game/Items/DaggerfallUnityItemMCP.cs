@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -99,7 +99,7 @@ namespace DaggerfallWorkshop.Game.Items
 
             public override string Worth()
             {
-                return parent.value.ToString();
+                return (parent.value * parent.stackCount).ToString();
             }
 
             public override string Material()

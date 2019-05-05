@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -471,7 +471,7 @@ namespace DaggerfallWorkshop
                 return false;
 
             if (factionFile == null)
-                factionFile = new FactionFile(Path.Combine(dfUnity.Arena2Path, FactionFile.Filename), FileUsage.UseMemory, true);
+                factionFile = new FactionFile(dfUnity.ContentReader.GetFactionFilePath(), FileUsage.UseMemory, true);
 
             if (saveGames == null || saveTrees == null || saveNames == null)
             {

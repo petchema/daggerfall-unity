@@ -162,7 +162,7 @@ Q0C4XY04, Witches, N, 4, X,
 -A0C00Y00, Commoners, N, 0, 0, FAILED. Cannot get rid of popup 1013 after entering the _inn_.
 -A0C00Y04, Commoners, N, 0, 0, BROKEN. QRC file is missing in DF+DFQFIX
 -A0C00Y06, Commoners, N, 0, 0, FAILED. No master npc in the shop indicated
-A0C00Y07, Commoners, N, 0, 0,
+A0C00Y07, Commoners, N, 0, 0, Passed with issues. Does not check victory condition correctly. Does not confine enemy spawns to target building.
 A0C00Y08, Commoners, N, 0, 0, Passed. questgiver name is incorrect (almost like a codename)
 A0C00Y10, Commoners, N, 0, 0,
 A0C00Y11, Commoners, N, 0, 0, Passed in quest debugger. Some quest NPCs do not appear in "where is.../people" dialog.
@@ -197,17 +197,16 @@ K0C0XY01, Merchants, N, 0, X,
 K0C30Y03, Merchants, N, 3, 0,
 
 -- Vampires
-P0A01L00, Vampires, P, 0, 1,
-P0B00L01, Vampires, M, 0, 0,
-P0B00L03, Vampires, M, 0, 0,
-P0B00L04, Vampires, M, 0, 0,
-P0B00L06, Vampires, M, 0, 0,
-P0B01L02, Vampires, M, 0, 1,
-P0B10L07, Vampires, M, 1, 0,
--P0B10L08, Vampires, M, 1, 0, In vanilla DF P0B10L08.QBN file is missing but P0B1XL08.QBN is used instead.
-P0B10L10, Vampires, M, 1, 0,
--P0B1XL08, Vampires, M, 1, X, BROKEN. QBN file is a counterpart of P0B10L08.QRC
-P0B20L09, Vampires, M, 2, 0,
+P0A01L00, Vampires, P, 0, 1, Passed
+P0B00L01, Vampires, M, 0, 0, Passed
+P0B00L03, Vampires, M, 0, 0, Passed
+P0B00L04, Vampires, M, 0, 0, Passed
+P0B00L06, Vampires, M, 0, 0, Passed
+P0B01L02, Vampires, M, 0, 1, Passed
+P0B10L07, Vampires, M, 1, 0, Passed
+P0B10L08, Vampires, M, 1, 0, Passed. Needs support for ==daedra_
+P0B10L10, Vampires, M, 1, 0, Passed
+P0B20L09, Vampires, M, 2, 0, Passed
 
 -- Nobility
 R0C10Y00, Nobility, N, 1, 0,

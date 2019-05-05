@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -168,6 +168,7 @@ namespace DaggerfallWorkshop.Game.Serialization
         public int currentBreath;
         public short[] skillUses;
         public uint timeOfLastSkillIncreaseCheck;
+        public uint[] skillsRecentlyRaised;
         public int startingLevelUpSkillSum;
         public ulong[] equipTable;
         public ItemData_v1[] items;
@@ -201,6 +202,7 @@ namespace DaggerfallWorkshop.Game.Serialization
         public short reputationNobility;
         public short reputationScholars;
         public short reputationUnderworld;
+        public VampireClans previousVampireClan;
     }
 
     [fsObject("v1")]
@@ -240,7 +242,7 @@ namespace DaggerfallWorkshop.Game.Serialization
         public string name;
         public int mapID;
         public int buildingKey;
-        public Vector3 allocatedBed;
+        public int allocatedBedIndex;
         public ulong expiryTime;
     }
 
@@ -277,6 +279,7 @@ namespace DaggerfallWorkshop.Game.Serialization
         public Poisons poisonType = Poisons.None;
         public int potionRecipe;
         public ItemRepairData_v1 repairData;
+        public uint timeForItemToDisappear;
     }
 
     [fsObject("v1")]
@@ -357,6 +360,9 @@ namespace DaggerfallWorkshop.Game.Serialization
         public ulong[] equipTable;
         public QuestResourceBehaviour.QuestResourceSaveData_v1 questResource;
         public EntityEffectManager.EffectBundleSaveData_v1[] instancedEffectBundles;
+        public bool alliedToPlayer;
+        public int questFoeSpellQueueIndex;
+        public bool wabbajackActive;
     }
 
     #endregion

@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -22,6 +22,7 @@ using DaggerfallConnect.Utility;
 using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Utility.AssetInjection;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop
 {
@@ -251,7 +252,7 @@ namespace DaggerfallWorkshop
             summary.StateAnims = GetStateAnims(summary.EnemyState);
             if (summary.EnemyState == MobileStates.PrimaryAttack)
             {
-                int random = UnityEngine.Random.Range(1, 101);
+                int random = Dice100.Roll();
 
                 if (random <= summary.Enemy.ChanceForAttack2)
                     summary.StateAnimFrames = summary.Enemy.PrimaryAttackAnimFrames2;
@@ -307,6 +308,14 @@ namespace DaggerfallWorkshop
                 // Set back to idle (which every enemy has in one form or another)
                 summary.EnemyState = MobileStates.Idle;
                 summary.StateAnims = GetStateAnims(summary.EnemyState);
+            }
+
+            // One of the frost daedra's sets of attack frames starts with the hit frame (-1), so we need to check for that right away before updating orientation.
+            if (currentFrame == -1 && summary.EnemyState == MobileStates.PrimaryAttack)
+            {
+                doMeleeDamage = true;
+                if (frameIterator < summary.StateAnimFrames.Length)
+                    currentFrame = summary.StateAnimFrames[frameIterator++];
             }
 
             // Orient enemy relative to camera
@@ -420,7 +429,9 @@ namespace DaggerfallWorkshop
                     meshRenderer = GetComponent<MeshRenderer>();
 
                 // Assign imported texture
-                meshRenderer.material.mainTexture = summary.ImportedTextures.Textures[record][currentFrame];
+                meshRenderer.material.mainTexture = summary.ImportedTextures.Albedo[record][currentFrame];
+                if (summary.ImportedTextures.IsEmissive)
+                    meshRenderer.material.SetTexture(Uniforms.EmissionMap, summary.ImportedTextures.EmissionMaps[record][currentFrame]);
 
                 // Update UVs on mesh
                 Vector2[] uvs = new Vector2[4];
@@ -637,18 +648,9 @@ namespace DaggerfallWorkshop
             // Assign mesh
             meshFilter.sharedMesh = mesh;
 
-            // Seek textures from mods
-            TextureReplacement.SetMobileBillboardImportedTextures(archive, GetComponent<MeshFilter>(), ref summary.ImportedTextures);
-
             // Create material
-            Material material;
-            if (summary.ImportedTextures.HasImportedTextures)
-            {
-                material = MaterialReader.CreateStandardMaterial(MaterialReader.CustomBlendMode.Cutout);
-            }
-            else
-            {
-                material = dfUnity.MaterialReader.GetMaterialAtlas(
+            Material material = TextureReplacement.GetMobileBillboardMaterial(archive, GetComponent<MeshFilter>(), ref summary.ImportedTextures) ??
+                dfUnity.MaterialReader.GetMaterialAtlas(
                 archive,
                 0,
                 4,
@@ -660,7 +662,6 @@ namespace DaggerfallWorkshop
                 0,
                 false,
                 true);
-            }
 
             // Set new enemy material
             GetComponent<MeshRenderer>().sharedMaterial = material;

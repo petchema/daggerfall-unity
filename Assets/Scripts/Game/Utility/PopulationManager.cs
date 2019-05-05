@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -176,6 +176,9 @@ namespace DaggerfallWorkshop.Game.Utility
             {
                 PoolItem poolItem = populationPool[i];
 
+                // Get distance to player
+                poolItem.distanceToPlayer = Vector3.Distance(playerGPS.transform.position, poolItem.npc.Motor.transform.position);
+
                 // Show pending mobiles when available
                 if (poolItem.active &&
                     poolItem.scheduleEnable &&
@@ -192,9 +195,6 @@ namespace DaggerfallWorkshop.Game.Utility
                     if (Mathf.Abs(size.y - 2f) > 0.1f)
                         poolItem.npc.Billboard.transform.Translate(0, (size.y - 2f) * 0.52f, 0);
                 }
-
-                // Get distance to player
-                poolItem.distanceToPlayer = Vector3.Distance(playerGPS.transform.position, poolItem.npc.Motor.transform.position);
 
                 // Mark for recycling
                 if (poolItem.npc.Motor.SeekCount > 4 ||

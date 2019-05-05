@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -22,6 +22,7 @@ using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Game.Items;
 using DaggerfallWorkshop.Utility;
 using DaggerfallConnect.Save;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Game.Formulas
 {
@@ -34,6 +35,7 @@ namespace DaggerfallWorkshop.Game.Formulas
     public static class FormulaHelper
     {
         // Delegate method signatures for overriding default formula
+        public delegate int Formula_NoParams();
         public delegate int Formula_1i(int a);
         public delegate int Formula_2i(int a, int b);
         public delegate int Formula_3i(int a, int b, int c);
@@ -43,6 +45,7 @@ namespace DaggerfallWorkshop.Game.Formulas
         public delegate bool Formula_1pe_1sk(PlayerEntity pe, DFCareer.Skills sk);
 
         // Registries for overridden formula
+        public static Dictionary<string, Formula_NoParams>  formula_noparams = new Dictionary<string, Formula_NoParams>();
         public static Dictionary<string, Formula_1i>        formula_1i = new Dictionary<string, Formula_1i>();
         public static Dictionary<string, Formula_2i>        formula_2i = new Dictionary<string, Formula_2i>();
         public static Dictionary<string, Formula_3i>        formula_3i = new Dictionary<string, Formula_3i>();
@@ -116,6 +119,29 @@ namespace DaggerfallWorkshop.Game.Formulas
             // Original Daggerfall seems to have a bug where negative endurance modifiers on healing rate
             // are applied as modifier + 1. Not recreating that here.
             return (int)Mathf.Floor((float)endurance / 10f) - 5;
+        }
+
+        public static int MaxStatValue()
+        {
+            Formula_NoParams del;
+            if (formula_noparams.TryGetValue("MaxStatValue", out del))
+                return del();
+            else
+                return 100;
+        }
+
+        public static int BonusPool()
+        {
+            Formula_NoParams del;
+            if (formula_noparams.TryGetValue("BonusPool", out del))
+                return del();
+
+            const int minBonusPool = 4;        // The minimum number of free points to allocate on level up
+            const int maxBonusPool = 6;        // The maximum number of free points to allocate on level up
+
+            // Roll bonus pool for player to distribute
+            // Using maxBonusPool + 1 for inclusive range
+            return UnityEngine.Random.Range(minBonusPool, maxBonusPool + 1);
         }
 
         #endregion
@@ -269,8 +295,8 @@ namespace DaggerfallWorkshop.Game.Formulas
                 return del(player);
 
             int minRoll = player.Career.HitPointsPerLevel / 2;
-            int maxRoll = player.Career.HitPointsPerLevel + 1; // Adding +1 as Unity Random.Range(int,int) is exclusive of maximum value
-            int addHitPoints = UnityEngine.Random.Range(minRoll, maxRoll);
+            int maxRoll = player.Career.HitPointsPerLevel;
+            int addHitPoints = UnityEngine.Random.Range(minRoll, maxRoll + 1); // Adding +1 as Unity Random.Range(int,int) is exclusive of maximum value
             addHitPoints += HitPointsModifier(player.Stats.LiveEndurance);
             if (addHitPoints < 1)
                 addHitPoints = 1;
@@ -298,12 +324,17 @@ namespace DaggerfallWorkshop.Game.Formulas
             }
             chance += GameManager.Instance.WeaponManager.Sheathed ? 10 : -25;
 
+            // Add chance from Comprehend Languages effect if present
+            ComprehendLanguages languagesEffect = (ComprehendLanguages)GameManager.Instance.PlayerEffectManager.FindIncumbentEffect<ComprehendLanguages>();
+            if (languagesEffect != null)
+                chance += languagesEffect.ChanceValue();
+
             int roll = UnityEngine.Random.Range(0, 200);
             bool success = (roll < chance);
-            if (success)
-                player.TallySkill(languageSkill, 1);
-            else if (languageSkill != DFCareer.Skills.Etiquette && languageSkill != DFCareer.Skills.Streetwise)
-                player.TallySkill(languageSkill, 1);
+            //if (success)
+            //    player.TallySkill(languageSkill, 1);
+            //else if (languageSkill != DFCareer.Skills.Etiquette && languageSkill != DFCareer.Skills.Streetwise)
+            //    player.TallySkill(languageSkill, 1);
 
             Debug.LogFormat("Pacification {3} using {0} skill: chance= {1}  roll= {2}", languageSkill, chance, roll, success ? "success" : "failure");
             return success;
@@ -316,77 +347,34 @@ namespace DaggerfallWorkshop.Game.Formulas
         }
 
         // Gets vampire clan based on region
-        public static VampireClans GetVampireClan(DaggerfallRegions region)
+        public static VampireClans GetVampireClan(int regionIndex)
         {
-            // Clan assignment according to UESP https://en.uesp.net/wiki/Daggerfall:Vampirism
-            switch (region)
+            FactionFile.FactionData factionData;
+            GameManager.Instance.PlayerEntity.FactionData.GetRegionFaction(regionIndex, out factionData);
+            switch ((FactionFile.FactionIDs) factionData.vam)
             {
-                // Anthotis
-                case DaggerfallRegions.AlikrDesert:
-                case DaggerfallRegions.Antiphyllos:
-                case DaggerfallRegions.Bergama:
-                case DaggerfallRegions.Dakfron:
-                case DaggerfallRegions.Tigonus:
-                    return VampireClans.Anthotis;
-
-                // Garlythi
-                case DaggerfallRegions.Northmoor:
-                case DaggerfallRegions.Phrygias:
-                    return VampireClans.Garlythi;
-
-                // Haarvenu
-                case DaggerfallRegions.Anticlere:
-                case DaggerfallRegions.IlessanHills:
-                case DaggerfallRegions.Shalgora:
-                    return VampireClans.Haarvenu;
-
-                // Khulari
-                case DaggerfallRegions.DragontailMountains:
-                case DaggerfallRegions.Ephesus:
-                case DaggerfallRegions.Kozanset:
-                case DaggerfallRegions.Santaki:
-                case DaggerfallRegions.Totambu:
-                    return VampireClans.Khulari;
-
-                // Lyrezi (default bloodline)
-                default:
-                    return VampireClans.Lyrezi;
-
-                // Montalion
-                case DaggerfallRegions.Bhoraine:
-                case DaggerfallRegions.Gavaudon:
-                case DaggerfallRegions.Lainlyn:
-                case DaggerfallRegions.Mournoth:
-                case DaggerfallRegions.Satakalaam:
-                case DaggerfallRegions.Wayrest:
-                    return VampireClans.Montalion;
-
-                // Selenu
-                case DaggerfallRegions.AbibonGora:
-                case DaggerfallRegions.Ayasofya:
-                case DaggerfallRegions.Cybiades:
-                case DaggerfallRegions.Kairou:
-                case DaggerfallRegions.Myrkwasa:
-                case DaggerfallRegions.Pothago:
-                case DaggerfallRegions.Sentinel:
-                    return VampireClans.Selenu;
-
-                // Thrafey
-                case DaggerfallRegions.Daenia:
-                case DaggerfallRegions.Dwynnen:
-                case DaggerfallRegions.Ykalon:
-                case DaggerfallRegions.Urvaius:
-                    return VampireClans.Thrafey;
-
-                // Vraseth
-                case DaggerfallRegions.Betony:
-                case DaggerfallRegions.Daggerfall:
-                case DaggerfallRegions.Glenpoint:
-                case DaggerfallRegions.GlenumbraMoors:
-                case DaggerfallRegions.Kambria:
-                case DaggerfallRegions.Tulune:
+                case FactionFile.FactionIDs.The_Vraseth:
                     return VampireClans.Vraseth;
+                case FactionFile.FactionIDs.The_Haarvenu:
+                    return VampireClans.Haarvenu;
+                case FactionFile.FactionIDs.The_Thrafey:
+                    return VampireClans.Thrafey;
+                case FactionFile.FactionIDs.The_Lyrezi:
+                    return VampireClans.Lyrezi;
+                case FactionFile.FactionIDs.The_Montalion:
+                    return VampireClans.Montalion;
+                case FactionFile.FactionIDs.The_Khulari:
+                    return VampireClans.Khulari;
+                case FactionFile.FactionIDs.The_Garlythi:
+                    return VampireClans.Garlythi;
+                case FactionFile.FactionIDs.The_Anthotis:
+                    return VampireClans.Anthotis;
+                case FactionFile.FactionIDs.The_Selenu:
+                    return VampireClans.Selenu;
             }
+
+            // The Lyrezi are the default like in classic
+            return VampireClans.Lyrezi;
         }
 
         #endregion
@@ -670,7 +658,7 @@ namespace DaggerfallWorkshop.Game.Formulas
             if (formula_2i.TryGetValue("CalculateBackstabDamage", out del))
                 return del(damage, backstabbingLevel);
 
-            if (backstabbingLevel > 1 && UnityEngine.Random.Range(1, 100 + 1) <= backstabbingLevel)
+            if (backstabbingLevel > 1 && Dice100.SuccessRoll(backstabbingLevel))
             {
                 damage *= 3;
                 string backstabMessage = UserInterfaceWindows.HardStrings.successfulBackstab;
@@ -754,18 +742,18 @@ namespace DaggerfallWorkshop.Game.Formulas
             byte[] diseaseListA = { 1 };
             byte[] diseaseListB = { 1, 3, 5 };
             byte[] diseaseListC = { 1, 2, 3, 4, 5, 6, 8, 9, 11, 13, 14 };
-
+            float random;
             switch (attacker.CareerIndex)
             {
                 case (int)MonsterCareers.Rat:
                     // In classic rat can only give plague (diseaseListA), but DF Chronicles says plague, stomach rot and brain fever (diseaseListB).
                     // Don't know which was intended. Using B since it has more variety.
-                    if (UnityEngine.Random.Range(1, 100 + 1) <= 5)
+                    if (Dice100.SuccessRoll(5))
                         InflictDisease(target, diseaseListB);
                     break;
                 case (int)MonsterCareers.GiantBat:
                     // Classic uses 2% chance, but DF Chronicles says 5% chance. Not sure which was intended.
-                    if (UnityEngine.Random.Range(1, 100 + 1) <= 2)
+                    if (Dice100.SuccessRoll(2))
                         InflictDisease(target, diseaseListB);
                     break;
                 case (int)MonsterCareers.Spider:
@@ -783,37 +771,52 @@ namespace DaggerfallWorkshop.Game.Formulas
                     }
                     break;
                 case (int)MonsterCareers.Werewolf:
-                    //uint random = DFRandom.rand();
-                    //if (random < 400)
-                    //  InflictLycanthropy (werewolf version)
+                    random = UnityEngine.Random.Range(0f, 100f);
+                    if (random <= 0.6f)
+                    {
+                        // TODO: Werewolf
+                        //EntityEffectBundle bundle = GameManager.Instance.PlayerEffectManager.CreateWerewolfDisease();
+                        //GameManager.Instance.PlayerEffectManager.AssignBundle(bundle);
+                        //Debug.Log("Player infected by werewolf.");
+                    }
                     break;
                 case (int)MonsterCareers.Nymph:
                     FatigueDamage(target, damage);
                     break;
                 case (int)MonsterCareers.Wereboar:
-                    //uint random = DFRandom.rand();
-                    //if (random < 400)
-                    //  InflictLycanthropy (wereboar version)
+                    random = UnityEngine.Random.Range(0f, 100f);
+                    if (random <= 0.6f)
+                    {
+                        // TODO: Wereboar
+                        //EntityEffectBundle bundle = GameManager.Instance.PlayerEffectManager.CreateWereboarDisease();
+                        //GameManager.Instance.PlayerEffectManager.AssignBundle(bundle);
+                        //Debug.Log("Player infected by wereboar.");
+                    }
                     break;
                 case (int)MonsterCareers.Zombie:
                     // Nothing in classic. DF Chronicles says 2% chance of disease, which seems like it was probably intended.
                     // Diseases listed in DF Chronicles match those of mummy (except missing cholera, probably a mistake)
-                    if (UnityEngine.Random.Range(1, 100 + 1) <= 2)
+                    if (Dice100.SuccessRoll(2))
                         InflictDisease(target, diseaseListC);
                     break;
                 case (int)MonsterCareers.Mummy:
-                    if (UnityEngine.Random.Range(1, 100 + 1) <= 5)
+                    if (Dice100.SuccessRoll(5))
                         InflictDisease(target, diseaseListC);
                     break;
                 case (int)MonsterCareers.Vampire:
                 case (int)MonsterCareers.VampireAncient:
-                    uint random = DFRandom.rand();
-                    if (random >= 400 && UnityEngine.Random.Range(1, 100 + 1) <= 2)
+                    random = UnityEngine.Random.Range(0f, 100f);
+                    if (random <= 0.6f)
+                    {
+                        // Inflict stage one vampirism disease
+                        EntityEffectBundle bundle = GameManager.Instance.PlayerEffectManager.CreateVampirismDisease();
+                        GameManager.Instance.PlayerEffectManager.AssignBundle(bundle, AssignBundleFlags.SpecialInfection);
+                        Debug.Log("Player infected by vampire.");
+                    }
+                    else if (random <= 2.0f)
+                    {
                         InflictDisease(target, diseaseListA);
-                    // else
-                    //{
-                    //    InflictVampirism
-                    //}
+                    }
                     break;
                 case (int)MonsterCareers.Lamia:
                     // Nothing in classic, but DF Chronicles says 2 pts of fatigue damage per health damage
@@ -880,7 +883,7 @@ namespace DaggerfallWorkshop.Game.Formulas
             chanceToHit -= (target.Skills.GetLiveSkillValue(DFCareer.Skills.Dodging) / 4);
 
             // Apply critical strike modifier.
-            if (UnityEngine.Random.Range(0, 100 + 1) < attacker.Skills.GetLiveSkillValue(DFCareer.Skills.CriticalStrike))
+            if (Dice100.SuccessRoll(attacker.Skills.GetLiveSkillValue(DFCareer.Skills.CriticalStrike)))
             {
                 chanceToHit += (attacker.Skills.GetLiveSkillValue(DFCareer.Skills.CriticalStrike) / 10);
             }
@@ -896,9 +899,7 @@ namespace DaggerfallWorkshop.Game.Formulas
 
             Mathf.Clamp(chanceToHit, 3, 97);
 
-            int roll = UnityEngine.Random.Range(0, 100 + 1);
-
-            if (roll <= chanceToHit)
+            if (Dice100.SuccessRoll(chanceToHit))
                 return 1;
             else
                 return 0;
@@ -990,7 +991,7 @@ namespace DaggerfallWorkshop.Game.Formulas
                 {
                     // Infect target
                     EntityEffectBundle bundle = GameManager.Instance.PlayerEffectManager.CreatePoison(poisonType);
-                    effectManager.AssignBundle(bundle);
+                    effectManager.AssignBundle(bundle, AssignBundleFlags.BypassSavingThrows);
                 }
             }
             else
@@ -1005,7 +1006,7 @@ namespace DaggerfallWorkshop.Game.Formulas
             if (target.HasResistanceFlag(elementType))
             {
                 int chance = target.GetResistanceChance(elementType);
-                if (UnityEngine.Random.Range(1, 100 + 1) <= chance)
+                if (Dice100.SuccessRoll(chance))
                     return 0;
             }
 
@@ -1072,7 +1073,7 @@ namespace DaggerfallWorkshop.Game.Formulas
             savingThrow = Mathf.Clamp(savingThrow, 5, 95);
 
             int percentDamageOrDuration = 0;
-            int roll = UnityEngine.Random.Range(1, 100 + 1);
+            int roll = Dice100.Roll();
 
             if (roll <= savingThrow)
             {
@@ -1234,7 +1235,7 @@ namespace DaggerfallWorkshop.Game.Formulas
                 // Infect player
                 Diseases diseaseType = (Diseases)diseaseList[diseaseIndex];
                 EntityEffectBundle bundle = GameManager.Instance.PlayerEffectManager.CreateDisease(diseaseType);
-                GameManager.Instance.PlayerEffectManager.AssignBundle(bundle);
+                GameManager.Instance.PlayerEffectManager.AssignBundle(bundle, AssignBundleFlags.BypassSavingThrows);
 
                 Debug.LogFormat("Infected player with disease {0}", diseaseType.ToString());
             }
@@ -1470,7 +1471,7 @@ namespace DaggerfallWorkshop.Game.Formulas
         public static void RandomizeInitialRegionalPrices(ref PlayerEntity.RegionDataRecord[] regionData)
         {
             for (int i = 0; i < regionData.Length; i++)
-                regionData[i].PriceAdjustment = (ushort)(UnityEngine.Random.Range(0, 501) + 750);
+                regionData[i].PriceAdjustment = (ushort)(UnityEngine.Random.Range(0, 500 + 1) + 750);
         }
 
         public static void UpdateRegionalPrices(ref PlayerEntity.RegionDataRecord[] regionData, int times)
@@ -1489,7 +1490,7 @@ namespace DaggerfallWorkshop.Game.Formulas
                     {
                         int chanceOfPriceRise = ((merchantsFaction.power) - (regionFaction.power)) / 5
                             + 50 - (regionData[i].PriceAdjustment - 1000) / 25;
-                        if (UnityEngine.Random.Range(0, 101) >= chanceOfPriceRise)
+                        if (Dice100.FailedRoll(chanceOfPriceRise))
                             regionData[i].PriceAdjustment = (ushort)(49 * regionData[i].PriceAdjustment / 50);
                         else
                             regionData[i].PriceAdjustment = (ushort)(51 * regionData[i].PriceAdjustment / 50);
@@ -1510,6 +1511,29 @@ namespace DaggerfallWorkshop.Game.Formulas
                     }
                 }
             }
+        }
+
+        public static float BonusChanceToKnowWhereIs(float bonusPerBlockLess = 0.0078f)
+        {
+            const int maxArea = 64;
+
+            // Must be in a location
+            if (!GameManager.Instance.PlayerGPS.HasCurrentLocation)
+                return 0;
+
+            // Get area of current location
+            DFLocation location = GameManager.Instance.PlayerGPS.CurrentLocation;
+            int locationArea = location.Exterior.ExteriorData.Width * location.Exterior.ExteriorData.Height;
+
+            // The largest possible location has an area of 64 (e.g. Daggerfall/Wayrest/Sentinel)
+            // The smallest possible location has an area of 1 (e.g. a tavern town)
+            // In a big city NPCs could be ignorant of all buildings, but in a small town it's unlikely they don't know the local tavern or smith
+            // So we apply a bonus that INCREASES the more city area size DECREASES
+            // With default inputs, a tiny 1x1 town NPC will get a +0.4914 to the default 0.5 chance for a total of 0.9914 chance to know building
+            // This is a big help as small towns also have less NPCs, and it gets frustrating when multiple NPCs don't knows where something is
+            float bonus = (maxArea - locationArea) * bonusPerBlockLess;
+
+            return bonus;
         }
 
         #endregion
@@ -1932,6 +1956,130 @@ namespace DaggerfallWorkshop.Game.Formulas
 
         // Just makes formulas more readable
         static int trunc(double value) { return (int)Math.Truncate(value); }
+
+        #endregion
+
+        #region Enchanting
+
+        /// <summary>
+        /// Gets the maximum enchantment capacity for any item.
+        /// </summary>
+        /// <param name="item">Source item.</param>
+        /// <returns>Item max enchantment power.</returns>
+        public static int GetItemEnchantmentPower(DaggerfallUnityItem item)
+        {
+            if (item == null)
+                throw new Exception("GetItemEnchantmentPower: item is null");
+
+            if (item.ItemGroup == ItemGroups.Weapons)
+                return GetWeaponEnchantmentPower(item);
+            else if (item.ItemGroup == ItemGroups.Armor)
+                return GetArmorEnchantmentPower(item);
+            else
+                return item.ItemTemplate.enchantmentPoints;
+        }
+
+        public static int GetWeaponEnchantmentPower(DaggerfallUnityItem item)
+        {
+            if (item == null || item.ItemGroup != ItemGroups.Weapons)
+                throw new Exception("GetWeaponEnchantmentPower: item is null or not a weapon type");
+
+            // UESP lists regular material power progression in weapon matrix: https://en.uesp.net/wiki/Daggerfall:Enchantment_Power#Weapons
+            // Enchantment power values for staves are inaccurate in UESP weapon matrix (confirmed in classic)
+            // The below yields correct enchantment power for staves matching classic
+            float multiplier;
+            switch((WeaponMaterialTypes)item.NativeMaterialValue)
+            {
+                default:       
+                case WeaponMaterialTypes.Steel:         // Steel uses base enchantment power
+                    multiplier = 0;
+                    break;
+                case WeaponMaterialTypes.Iron:          // Iron is -25% from base
+                    multiplier = -0.25f;
+                    break;
+                case WeaponMaterialTypes.Silver:        // Silver is +75% from base
+                    multiplier = 0.75f;
+                    break;
+                case WeaponMaterialTypes.Elven:         // Elven is +25% from base
+                    multiplier = 0.25f;
+                    break;
+                case WeaponMaterialTypes.Dwarven:       // Dwarven is +50% from base
+                    multiplier = 0.5f;
+                    break;
+                case WeaponMaterialTypes.Mithril:       // Mithril is +25% from base
+                    multiplier = 0.25f;
+                    break;
+                case WeaponMaterialTypes.Adamantium:    // Adamantium is +75% from base
+                    multiplier = 0.75f;
+                    break;
+                case WeaponMaterialTypes.Ebony:         // Ebony is +100% from base
+                    multiplier = 1.0f;
+                    break;
+                case WeaponMaterialTypes.Orcish:        // Orcish is +150% from base
+                    multiplier = 1.5f;
+                    break;
+                case WeaponMaterialTypes.Daedric:       // Daedric is +200% from base
+                    multiplier = 2.0f;
+                    break;
+            }
+
+            // Final enchantment power is basePower + basePower*multiplier (rounded down)
+            int basePower = item.ItemTemplate.enchantmentPoints;
+            return basePower + Mathf.FloorToInt(basePower * multiplier);
+        }
+
+        public static int GetArmorEnchantmentPower(DaggerfallUnityItem item)
+        {
+            if (item == null || item.ItemGroup != ItemGroups.Armor)
+                throw new Exception("GetArmorEnchantmentPower: item is null or not an armour type");
+
+            // UESP lists highly variable material power progression in armour matrix: https://en.uesp.net/wiki/Daggerfall:Enchantment_Power#Armor
+            // This indicates certain armour types don't follow the same general material progression patterns for enchantment point multipliers
+            // Yet to confirm this in classic - but not entirely confident in accuracy of UESP information here either
+            // For now using consistent progression for enchantment point multipliers and can improve later if required
+            float multiplier;
+            switch ((ArmorMaterialTypes)item.NativeMaterialValue)
+            {
+                default:
+                case ArmorMaterialTypes.Leather:        // Leather/Chain/Steel all use base enchantment power
+                case ArmorMaterialTypes.Chain:
+                case ArmorMaterialTypes.Chain2:
+                case ArmorMaterialTypes.Steel:
+                    multiplier = 0;
+                    break;
+                case ArmorMaterialTypes.Iron:           // Iron is -25% from base
+                    multiplier = -0.25f;
+                    break;
+                case ArmorMaterialTypes.Silver:         // Silver is +75% from base
+                    multiplier = 0.75f;
+                    break;
+                case ArmorMaterialTypes.Elven:          // Elven is +25% from base
+                    multiplier = 0.25f;
+                    break;
+                case ArmorMaterialTypes.Dwarven:        // Dwarven is +50% from base
+                    multiplier = 0.5f;
+                    break;
+                case ArmorMaterialTypes.Mithril:        // Mithril is +25% from base
+                    multiplier = 0.25f;
+                    break;
+                case ArmorMaterialTypes.Adamantium:     // Adamantium is +75% from base
+                    multiplier = 0.75f;
+                    break;
+                case ArmorMaterialTypes.Ebony:          // Ebony is +100% from base
+                    multiplier = 1.0f;
+                    break;
+                case ArmorMaterialTypes.Orcish:         // Orcish is +150% from base
+                    multiplier = 1.5f;
+                    break;
+                case ArmorMaterialTypes.Daedric:        // Daedric is +200% from base
+                    multiplier = 2.0f;
+                    break;
+            }
+
+            // Final enchantment power is basePower + basePower*multiplier (rounded down)
+            int basePower = item.ItemTemplate.enchantmentPoints;
+            return basePower + Mathf.FloorToInt(basePower * multiplier);
+        }
 
         #endregion
     }

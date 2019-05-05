@@ -1,10 +1,10 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
 // Original Author: Michael Rauter (Nystul)
-// Contributors: Numidium
+// Contributors:    Numidium, TheExceptionist
 // 
 // Notes:
 //
@@ -340,7 +340,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
         {
             // Load npc portrait
             string imageName = facePortraitArchive == FacePortraitArchive.CommonFaces ? portraitImgName : facesImgName;
-            if (!TextureReplacement.TryImportCifRci(imageName, recordId, 0, out texturePortrait))
+            if (!TextureReplacement.TryImportCifRci(imageName, recordId, 0, false, out texturePortrait))
             {
                 CifRciFile rciFile = new CifRciFile(Path.Combine(DaggerfallUnity.Instance.Arena2Path, imageName), FileUsage.UseMemory, false);
                 rciFile.LoadPalette(Path.Combine(DaggerfallUnity.Instance.Arena2Path, rciFile.PaletteName));
@@ -1248,9 +1248,9 @@ namespace DaggerfallWorkshop.Game.UserInterface
             // guard execution - this is important because I encountered a issue with listbox and double-click:
             // when changing listbox content and updating the listbox in the double click event callback the
             // corresponding item (at the screen position) of the newly created and set content will receive
-            // the same double-click event and thus trigger its callback - which is a) unwanted and b) can lead
+            // the same double-click event and thus trigger its callback - which is (a) unwanted and (b) can lead -
             // in the case where the click position is a group item in first list and a "previous list" item
-            // in linked second list to an infinite loop (e.g. location list with group item on first position and
+            // in linked second list - to an infinite loop (e.g. location list with group item on first position and
             // "previous" item on linked second list)
             // SIDE NOTE: don't use return inside this function (or if you do, don't forget to set
             // inListboxTopicContentUpdate to false again before!)

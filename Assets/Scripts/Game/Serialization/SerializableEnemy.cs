@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -118,6 +118,9 @@ namespace DaggerfallWorkshop.Game.Serialization
             data.items = entity.Items.SerializeItems();
             data.equipTable = entity.ItemEquipTable.SerializeEquipTable();
             data.instancedEffectBundles = GetComponent<EntityEffectManager>().GetInstancedBundlesSaveData();
+            data.alliedToPlayer = mobileEnemy.Summary.Enemy.Team == MobileTeams.PlayerAlly;
+            data.questFoeSpellQueueIndex = entity.QuestFoeSpellQueueIndex;
+            data.wabbajackActive = entity.WabbajackActive;
 
             // Add quest resource data if present
             QuestResourceBehaviour questResourceBehaviour = GetComponent<QuestResourceBehaviour>();
@@ -147,7 +150,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             if (entity == null || entity.EntityType != data.entityType || entity.CareerIndex != data.careerIndex)
             {
                 SetupDemoEnemy setupEnemy = enemy.GetComponent<SetupDemoEnemy>();
-                setupEnemy.ApplyEnemySettings(data.entityType, data.careerIndex, data.mobileGender, data.isHostile);
+                setupEnemy.ApplyEnemySettings(data.entityType, data.careerIndex, data.mobileGender, data.isHostile, alliedToPlayer: data.alliedToPlayer);
                 setupEnemy.AlignToGround();
 
                 if (entity == null)
@@ -160,6 +163,8 @@ namespace DaggerfallWorkshop.Game.Serialization
             // Restore enemy data
             entityBehaviour.gameObject.name = data.gameObjectName;
             enemy.transform.rotation = data.currentRotation;
+            entity.QuestFoeSpellQueueIndex = data.questFoeSpellQueueIndex;
+            entity.WabbajackActive = data.wabbajackActive;
             entity.Items.DeserializeItems(data.items);
             entity.ItemEquipTable.DeserializeEquipTable(data.equipTable, entity.Items);
             entity.MaxHealth = data.startingHealth;

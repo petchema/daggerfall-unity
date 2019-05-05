@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -113,6 +113,21 @@ namespace DaggerfallWorkshop.Game.Guilds
         {
             guild.Join();
             memberships[guildGroup] = guild;
+        }
+
+        public void RemoveMembership(Guild guild)
+        {
+            FactionFile.GuildGroups guildGroup = FactionFile.GuildGroups.None;
+            foreach (FactionFile.GuildGroups group in memberships.Keys)
+            {
+                if (memberships[group] == guild)
+                {
+                    guildGroup = group;
+                    break;
+                }
+            }
+            if (guildGroup != FactionFile.GuildGroups.None)
+                memberships.Remove(guildGroup);
         }
 
         public bool HasJoined(FactionFile.GuildGroups guildGroup)

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -197,12 +197,12 @@ namespace DaggerfallWorkshop.Game.Questing
                 if (scope == Scopes.Local)
                 {
                     // Get a local site from same town quest was issued
-                    SetupLocalSite();
+                    SetupLocalSite(line);
                 }
                 else if (scope == Scopes.Remote)
                 {
                     // Get a remote site in same region quest was issued
-                    SetupRemoteSite();
+                    SetupRemoteSite(line);
                 }
                 else if (scope == Scopes.Fixed && p1 > 0x4500)
                 {
@@ -483,14 +483,14 @@ namespace DaggerfallWorkshop.Game.Questing
         /// Example of how this can happen is issuing a quest to a local palace in a town with no palace.
         /// Use remote palace instead to ensure quest can select from entire region.
         /// </summary>
-        void SetupLocalSite()
+        void SetupLocalSite(string line)
         {
             // Daggerfall has no local dungeons but some quests (e.g. Sx007) can request one
             // This is used to stash a resource somewhere player cannot find it
             // Setup a remote dungeon instead
             if (p1 == 1)
             {
-                SetupRemoteSite();
+                SetupRemoteSite(line);
                 return;
             }
 
@@ -501,8 +501,10 @@ namespace DaggerfallWorkshop.Game.Questing
 
             // Get list of valid sites
             SiteDetails[] foundSites = null;
-            if (p2 == -1)
+            if (p2 == -1 && p3 == 0)
                 foundSites = CollectQuestSitesOfBuildingType(location, DFLocation.BuildingTypes.AllValid, p3);
+            else if (p2 == -1 && p3 == 1)
+                foundSites = CollectQuestSitesOfBuildingType(location, DFLocation.BuildingTypes.AnyHouse, p3);
             else
                 foundSites = CollectQuestSitesOfBuildingType(location, (DFLocation.BuildingTypes)p2, p3);
 
@@ -522,22 +524,27 @@ namespace DaggerfallWorkshop.Game.Questing
         /// <summary>
         /// Get a remote site in the same region as player.
         /// </summary>
-        void SetupRemoteSite()
+        void SetupRemoteSite(string line)
         {
+            bool result = false;
             switch(p1)
             {
                 case 0:
-                    SelectRemoteTownSite((DFLocation.BuildingTypes)p2);
+                    result = SelectRemoteTownSite((DFLocation.BuildingTypes)p2);
                     break;
                 case 1:
-                    SelectRemoteDungeonSite(p2);
+                    result = SelectRemoteDungeonSite(p2);
                     break;
                 case 2:
-                    SelectRemoteLocationExteriorSite(p2);
+                    result = SelectRemoteLocationExteriorSite(p2);
                     break;
                 default:
                     throw new Exception(string.Format("An unknown P1 value of {0} was encountered for Place {1}", p1, Symbol.Original));
             }
+
+            // Throw exception when remote place could not be selected, e.g. a dungeon of that type does not exist in this region
+            if (!result)
+                throw new Exception(string.Format("Search failed to locate matching remote site for Place {0} in region {1}. Resource source: '{2}'", Symbol.Original, GameManager.Instance.PlayerGPS.CurrentRegionName, line));
         }
 
         /// <summary>
@@ -594,11 +601,10 @@ namespace DaggerfallWorkshop.Game.Questing
 
                 // Get list of valid sites
                 SiteDetails[] foundSites = null;
-                if (p2 == -1)
-                {
-                    // Collect random building sites
+                if (p2 == -1 && p3 == 0)
                     foundSites = CollectQuestSitesOfBuildingType(location, DFLocation.BuildingTypes.AllValid, p3);
-                }
+                else if (p2 == -1 && p3 == 1)
+                    foundSites = CollectQuestSitesOfBuildingType(location, DFLocation.BuildingTypes.AnyHouse, p3);
                 else
                 {
                     // Check if town contains specified building type in MAPS.BSA directory
@@ -878,6 +884,7 @@ namespace DaggerfallWorkshop.Game.Questing
         {
             // Valid building types for valid search
             int[] validBuildingTypes = { 0, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15, 17, 18, 19, 20 };
+            int[] validHouseTypes = { 18, 19, 20 };
 
             List<SiteDetails> foundSites = new List<SiteDetails>();
 
@@ -895,17 +902,28 @@ namespace DaggerfallWorkshop.Game.Questing
                     BuildingSummary[] buildingSummary = RMBLayout.GetBuildingData(blocks[index], x, y);
                     for (int i = 0; i < buildingSummary.Length; i++)
                     {
-                        // When enumAllValid is specified accept all valid building types
                         bool wildcardFound = false;
-                        DFLocation.BuildingTypes wildcardType = DFLocation.BuildingTypes.AllValid;
+                        DFLocation.BuildingTypes wildcardType = DFLocation.BuildingTypes.None;
                         if (buildingType == DFLocation.BuildingTypes.AllValid)
                         {
-                            for(int j = 0; j < validBuildingTypes.Length; j++)
+                            for (int j = 0; j < validBuildingTypes.Length; j++)
                             {
                                 if (validBuildingTypes[j] == (int)buildingSummary[i].BuildingType)
                                 {
                                     wildcardFound = true;
                                     wildcardType = (DFLocation.BuildingTypes)validBuildingTypes[j];
+                                    break;
+                                }
+                            }
+                        }
+                        else if (buildingType == DFLocation.BuildingTypes.AnyHouse)
+                        {
+                            for (int j = 0; j < validHouseTypes.Length; j++)
+                            {
+                                if (validHouseTypes[j] == (int)buildingSummary[i].BuildingType)
+                                {
+                                    wildcardFound = true;
+                                    wildcardType = (DFLocation.BuildingTypes)validHouseTypes[j];
                                     break;
                                 }
                             }

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -59,6 +59,19 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
     }
 
     /// <summary>
+    /// Defines flags for additional feature support at item maker.
+    /// </summary>
+    [Flags]
+    public enum ItemMakerFlags
+    {
+        None = 0,
+        AllowMultiplePrimaryInstances = 1,
+        AllowMultipleSecondaryInstances = 2,
+        AlphaSortSecondaryList = 4,
+        WeaponOnly = 8,
+    }
+
+    /// <summary>
     /// Supported bundle types.
     /// This helps determine lifetime and usage of a bundle.
     /// </summary>
@@ -108,5 +121,36 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         Dementia = 14,
         Chrondiasis = 15,
         WizardFever = 16,
+    }
+
+    /// <summary>
+    /// Flags to modify behaviour of assigning effect bundles.
+    /// </summary>
+    [Flags]
+    public enum AssignBundleFlags
+    {
+        None = 0,
+        ShowNonPlayerFailures = 1,
+        BypassSavingThrows = 2,
+        SpecialInfection = 4,
+    }
+
+    /// <summary>
+    /// Flags to inform magic framework when enchantment effect should receive callbacks to execute its payload.
+    /// As Daggerfall Unity supports custom effects there is more granularity to payload execution than classic.
+    /// Note these are distinct from "cast when used", "cast when held", etc. Rather, the CastWhenUsed and CastWhenHeld
+    /// effects will deliver their payload from callbacks related to these flags.
+    /// </summary>
+    [Flags]
+    public enum EnchantmentPayloadFlags
+    {
+        None = 0,
+        Enchanted = 1,      // Payload executed only once when item is enchanted at item maker
+        Used = 2,           // Payload executed when item is used from inventory or "use item" UI
+        Equipped = 4,       // Payload executed when item is equipped - i.e. payload will execute once every time item is equipped
+        Unequipped = 8,     // Payload executed when item is unequipped - i.e. payload will execute once every time item is unequipped
+        Held = 16,          // Payload executed for duration item is equipped - i.e. effect bundle will be persistently attached to entity until unequipped
+        Strikes = 32,       // Payload executed when a weapon item strikes another entity
+        Breaks = 64,        // Payload executed when item breaks after durability reaches zero or less
     }
 }

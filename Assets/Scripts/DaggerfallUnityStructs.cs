@@ -1,10 +1,10 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
 // Original Author: Gavin Clayton (interkarma@dfworkshop.net)
-// Contributors:    
+// Contributors:    Hazelnut
 // 
 // Notes:
 //
@@ -13,10 +13,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Collections;
 using DaggerfallConnect;
 using DaggerfallConnect.Arena2;
 using DaggerfallConnect.Utility;
-using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Game.Items;
@@ -145,6 +145,7 @@ namespace DaggerfallWorkshop
         public int height;                      // Original image height
         public DFBitmap dfBitmap;               // Original indexed bitmap
         public Texture2D texture;               // Generated texture
+        public Texture2D maskTexture;           // Generated mask texture
         public Texture2D[] animatedTextures;    // Array of animation frames if this is an animated texture
         public DFPosition offset;               // Custom Daggerfall offset position for paper doll inventory, etc.
         public DFSize scale;                    // Custom Daggerfall size for scaling sprites
@@ -370,12 +371,27 @@ namespace DaggerfallWorkshop
         public float averageHeight;                 // Average height of terrain for location placement
         public float maxHeight;                     // Max height of terrain for location placement
         public Rect locationRect;                   // Rect of location tiles in sample are
-        
+
         [HideInInspector, NonSerialized]
-        public TilemapSample[,] tilemapSamples;     // Tilemap samples for terrain
+        public byte[,] tilemapSamples;              // Tilemap samples for terrain
 
         [HideInInspector, NonSerialized]
         public float[,] heightmapSamples;           // Heightmap samples for terrain - indexed [y,x] for Terrain.SetHeights
+
+        [HideInInspector, NonSerialized]
+        public NativeArray<float> heightmapData;    // Heightmap data for terrain jobs (unmanaged memory)
+
+        [HideInInspector, NonSerialized]
+        public NativeArray<byte> tilemapData;       // Tilemap data for terrain jobs (unmanaged memory)
+
+        [HideInInspector, NonSerialized]
+        public NativeArray<Color32> tileMap;        // Tilemap color data for shader (unmanaged memory)
+
+        [HideInInspector, NonSerialized]
+        public NativeArray<float> avgMaxHeight;     // Average and max height of terrain for location placement (unmanaged memory)
+
+        [HideInInspector, NonSerialized]
+        public List<IDisposable> nativeArrayList;   // List of temp working native arrays (unmanaged memory) for disposal when jobs complete
     }
 
     /// <summary>
@@ -448,18 +464,6 @@ namespace DaggerfallWorkshop
         public int dungeonZ;                        // Dungeon block Z position in location
         public int buildingKey;                     // Building key if a building site
         public ulong markerID;                      // Marker ID for dungeon markers
-    }
-
-    /// <summary>
-    /// Describes a single tilemap sample.
-    /// </summary>
-    public struct TilemapSample
-    {
-        public int record;                          // Record index into texture atlas
-        public bool flip;                           // Flip texture UVs
-        public bool rotate;                         // Rotate texture UVs
-        public bool location;                       // True if location tile present
-        public int nature;                          // Index of nature flat at this point (0 is nothing)
     }
 
     /// <summary>

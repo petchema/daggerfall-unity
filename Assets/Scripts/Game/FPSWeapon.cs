@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -193,7 +193,7 @@ namespace DaggerfallWorkshop.Game
             if (dfAudioSource)
             {
                 PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
-                SoundClips sound = DaggerfallEntity.GetRaceGenderAttackSound(playerEntity.Race, playerEntity.Gender);
+                SoundClips sound = DaggerfallEntity.GetRaceGenderAttackSound(playerEntity.Race, playerEntity.Gender, true);
                 float pitch = dfAudioSource.AudioSource.pitch;
                 dfAudioSource.AudioSource.pitch = pitch + UnityEngine.Random.Range(0, 0.3f);
                 dfAudioSource.PlayOneShot(sound, 0, 1f);
@@ -377,7 +377,7 @@ namespace DaggerfallWorkshop.Game
                 if (player != null)
                 {
                     if (WeaponType == WeaponTypes.Bow)
-                        time = Entity.PlayerEntity.ClassicUpdateInterval;
+                        time = GameManager.classicUpdateInterval;
                     else
                     {
                         speed = 3 * (115 - player.Stats.LiveSpeed);
@@ -487,7 +487,7 @@ namespace DaggerfallWorkshop.Game
                     textures.Add(GetWeaponTexture2D(filename, record, frame, metalType, out rect, border, dilate));
 
                     Texture2D tex;
-                    if (TextureReplacement.TryImportCifRci(filename, record, frame, metalType, out tex))
+                    if (TextureReplacement.TryImportCifRci(filename, record, frame, metalType, true, out tex))
                     {
                         tex.filterMode = dfUnity.MaterialReader.MainFilterMode;
                         customTextures.Add(MaterialReader.MakeTextureKey(0, (byte)record, (byte)frame), tex);

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -210,7 +210,7 @@ namespace DaggerfallWorkshop.Game.Guilds
                 ArmorMaterialTypes material = ArmorMaterialTypes.Iron + rank;
                 for (int i = UnityEngine.Random.Range(3, 7); i >= 0; i--)
                 {
-                    Armor armor = (Armor)UnityEngine.Random.Range(102, 109);
+                    Armor armor = (Armor)UnityEngine.Random.Range(102, 108 + 1);
                     rewardArmor.AddItem(ItemBuilder.CreateArmor(playerEntity.Gender, playerEntity.Race, armor, material));
                 }
                 flags = flags | ArmorFlagMask;

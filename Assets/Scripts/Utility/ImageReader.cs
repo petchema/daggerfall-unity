@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -303,7 +303,7 @@ namespace DaggerfallWorkshop.Utility
                     imageData.size = imgFile.GetSize(0);
 
                     // Texture pack support
-                    if (createTexture && AssetInjection.TextureReplacement.TryImportImage(filename, out imageData.texture))
+                    if (createTexture && AssetInjection.TextureReplacement.TryImportImage(filename, false, out imageData.texture))
                         createTexture = false;
 
                     break;
@@ -318,7 +318,7 @@ namespace DaggerfallWorkshop.Utility
                     imageData.size = cifFile.GetSize(record);
 
                     // Texture pack support
-                    if (createTexture && AssetInjection.TextureReplacement.TryImportCifRci(filename, record, frame, out imageData.texture))
+                    if (createTexture && AssetInjection.TextureReplacement.TryImportCifRci(filename, record, frame, false, out imageData.texture))
                         createTexture = false;
 
                     break;
@@ -333,7 +333,7 @@ namespace DaggerfallWorkshop.Utility
                     imageData.size = cfaFile.GetSize(record);
 
                     // Texture pack support
-                    if (createTexture && AssetInjection.TextureReplacement.TryImportCifRci(filename, record, frame, out imageData.texture))
+                    if (createTexture && AssetInjection.TextureReplacement.TryImportCifRci(filename, record, frame, false, out imageData.texture))
                         createTexture = false;
 
                     break;
@@ -404,6 +404,25 @@ namespace DaggerfallWorkshop.Utility
 
             // Create new Texture2D
             imageData.texture = GetTexture(colors, imageData.width, imageData.height);
+        }
+
+        /// <summary>
+        /// Updates mask texture.
+        /// The assigned Texture2D will have alpha 0 for unmasked areas and alpha 1 for masked areas.
+        /// If source DFBitmap has no mask indices then mask texture will simply be all clear.
+        /// </summary>
+        /// <param name="imageData">Source ImageData.</param>
+        public static void UpdateMaskTexture(ref ImageData imageData)
+        {
+            Color maskColor = new Color(0, 0, 0, 1);
+
+            // Get colors array without mask
+            Color32[] colors = imageData.dfBitmap.GetColor32(imageData.alphaIndex, 0xff, maskColor, true);
+            if (colors == null)
+                return;
+
+            // Create new Texture2D from mask
+            imageData.maskTexture = GetTexture(colors, imageData.width, imageData.height);
         }
 
         #endregion

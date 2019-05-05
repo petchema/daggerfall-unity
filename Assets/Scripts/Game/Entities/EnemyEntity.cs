@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -12,16 +12,17 @@
 using UnityEngine;
 using DaggerfallConnect;
 using DaggerfallWorkshop.Game.Formulas;
-using DaggerfallWorkshop.Game.Player;
 using DaggerfallConnect.Save;
+using DaggerfallConnect.FallExe;
 using DaggerfallWorkshop.Game.MagicAndEffects;
+using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
+using DaggerfallWorkshop.Game.Utility;
+using DaggerfallWorkshop.Game.Items;
 
 namespace DaggerfallWorkshop.Game.Entity
 {
     /// <summary>
     /// Implements DaggerfallEntity with properties specific to enemies.
-    /// Currently enemy setup is bridging between old "demo" components and newer "game" systems.
-    /// TODO: Migrate completely to "game" methods and simplify enemy instantiation and setup.
     /// </summary>
     public class EnemyEntity : DaggerfallEntity
     {
@@ -31,6 +32,7 @@ namespace DaggerfallWorkshop.Game.Entity
         EntityTypes entityType = EntityTypes.None;
         MobileEnemy mobileEnemy;
         bool pickpocketByPlayerAttempted = false;
+        int questFoeSpellQueueIndex = -1;
 
         // From FALL.EXE offset 0x1C0F14
         static byte[] ImpSpells            = { 0x07, 0x0A, 0x1D, 0x2C };
@@ -73,6 +75,16 @@ namespace DaggerfallWorkshop.Game.Entity
             set { pickpocketByPlayerAttempted = value; }
         }
 
+        public int QuestFoeSpellQueueIndex
+        {
+            get { return questFoeSpellQueueIndex; }
+            set { questFoeSpellQueueIndex = value; }
+        }
+
+        public bool SoulTrapActive { get; set; }
+
+        public bool WabbajackActive { get; set; }
+
         #endregion
 
         #region Constructors
@@ -91,6 +103,91 @@ namespace DaggerfallWorkshop.Game.Entity
         /// </summary>
         public override void SetEntityDefaults()
         {
+        }
+
+        /// <summary>
+        /// Custom handling of SetHealth() for enemies to support soul trap.
+        /// </summary>
+        public override int SetHealth(int amount, bool restoreMode = false)
+        {
+            // Just do base if no soul trap active
+            if (!SoulTrapActive)
+                return base.SetHealth(amount, restoreMode);
+
+            // Reduce health
+            currentHealth = Mathf.Clamp(amount, 0, MaxHealth);
+            if (currentHealth <= 0)
+            {
+                // Attempt soul trap and allow entity to die based on outcome
+                if (AttemptSoulTrap())
+                    return base.SetHealth(amount, restoreMode);
+            }
+
+            return currentHealth;
+        }
+
+        /// <summary>
+        /// Attempt to trap a soul.
+        /// </summary>
+        /// <returns>True if entity is allowed to die after trap attempt.</returns>
+        bool AttemptSoulTrap()
+        {
+            // Must have a peered DaggerfallEntityBehaviour and EntityEffectManager
+            EntityEffectManager manager = (EntityBehaviour) ? EntityBehaviour.GetComponent<EntityEffectManager>() : null;
+            if (!manager)
+                return true;
+
+            // Find the soul trap incumbent
+            SoulTrap soulTrapEffect = (SoulTrap)manager.FindIncumbentEffect<SoulTrap>();
+            if (soulTrapEffect == null)
+                return true;
+
+            // Roll chance for trap, or always succeed if Azura's Star is equipped.
+            // If trap fails then entity should die as normal without trapping a soul
+            // If trap succeeds and player has a free soul gem then entity should die after storing soul
+            // If trap succeeds and player has no free soul gems then entity will not die until effect expires or fails
+            bool azurasStarEquipped = false;
+            DaggerfallUnityItem azurasStar = GameManager.Instance.PlayerEntity.ItemEquipTable.GetItem(EquipSlots.Amulet0);
+            if (azurasStar != null && azurasStar.ContainsEnchantment(EnchantmentTypes.SpecialArtifactEffect, (short)ArtifactsSubTypes.Azuras_Star))
+            {
+                azurasStarEquipped = true;
+            }
+            else
+            {
+                azurasStar = GameManager.Instance.PlayerEntity.ItemEquipTable.GetItem(Game.Items.EquipSlots.Amulet1);
+                if (azurasStar != null && azurasStar.ContainsEnchantment(EnchantmentTypes.SpecialArtifactEffect, (short)ArtifactsSubTypes.Azuras_Star))
+                    azurasStarEquipped = true;
+            }
+
+            if (azurasStarEquipped || soulTrapEffect.RollTrapChance())
+            {
+                // Attempt to fill an empty soul trap
+                if (soulTrapEffect.FillEmptyTrapItem((MobileTypes)mobileEnemy.ID))
+                {
+                    // Trap filled, allow entity to die normally
+                    DaggerfallUI.AddHUDText(TextManager.Instance.GetText("ClassicEffects", "trapSuccess"), 1.5f);
+                    return true;
+                }
+                else
+                {
+                    // No empty gems, keep entity tethered to life - player is alerted so they know what's happening
+                    currentHealth = 1;
+                    DaggerfallUI.AddHUDText(TextManager.Instance.GetText("ClassicEffects", "trapNoneEmpty"));
+                    return false;
+                }
+            }
+            else
+            {
+                // Trap failed
+                DaggerfallUI.AddHUDText(TextManager.Instance.GetText("ClassicEffects", "trapFail"), 1.5f);
+                return true;
+            }
+        }
+
+        public override void ClearConstantEffects()
+        {
+            base.ClearConstantEffects();
+            SoulTrapActive = false;
         }
 
         /// <summary>
@@ -138,6 +235,7 @@ namespace DaggerfallWorkshop.Game.Entity
             this.entityType = entityType;
             name = career.Name;
             minMetalToHit = mobileEnemy.MinMetalToHit;
+            team = mobileEnemy.Team;
 
             short skillsLevel = (short)((level * 5) + 30);
             if (skillsLevel > 100)
@@ -242,14 +340,14 @@ namespace DaggerfallWorkshop.Game.Entity
 
                 // left-hand shield
                 item = UnityEngine.Random.Range((int)Game.Items.Armor.Buckler, (int)(Game.Items.Armor.Round_Shield) + 1);
-                if (UnityEngine.Random.Range(1, 101) <= chance)
+                if (Dice100.SuccessRoll(chance))
                 {
                     Items.DaggerfallUnityItem armor = Game.Items.ItemBuilder.CreateArmor(playerGender, race, (Items.Armor)item, Game.Items.ItemBuilder.RandomArmorMaterial(itemLevel));
                     ItemEquipTable.EquipItem(armor, true, false);
                     items.AddItem(armor);
                 }
                 // left-hand weapon
-                else if (UnityEngine.Random.Range(1, 101) <= chance)
+                else if (Dice100.SuccessRoll(chance))
                 {
                     item = UnityEngine.Random.Range((int)Game.Items.Weapons.Dagger, (int)(Game.Items.Weapons.Shortsword) + 1);
                     weapon = Game.Items.ItemBuilder.CreateWeapon((Items.Weapons)item, Game.Items.ItemBuilder.RandomMaterial(itemLevel));
@@ -271,42 +369,42 @@ namespace DaggerfallWorkshop.Game.Entity
                     chance = 90;
             }
             // helm
-            if (UnityEngine.Random.Range(1, 101) <= chance)
+            if (Dice100.SuccessRoll(chance))
             {
                 Items.DaggerfallUnityItem armor = Game.Items.ItemBuilder.CreateArmor(playerGender, race, Game.Items.Armor.Helm, Game.Items.ItemBuilder.RandomArmorMaterial(itemLevel));
                 ItemEquipTable.EquipItem(armor, true, false);
                 items.AddItem(armor);
             }
             // right pauldron
-            if (UnityEngine.Random.Range(1, 101) <= chance)
+            if (Dice100.SuccessRoll(chance))
             {
                 Items.DaggerfallUnityItem armor = Game.Items.ItemBuilder.CreateArmor(playerGender, race, Game.Items.Armor.Right_Pauldron, Game.Items.ItemBuilder.RandomArmorMaterial(itemLevel));
                 ItemEquipTable.EquipItem(armor, true, false);
                 items.AddItem(armor);
             }
             // left pauldron
-            if (UnityEngine.Random.Range(1, 101) <= chance)
+            if (Dice100.SuccessRoll(chance))
             {
                 Items.DaggerfallUnityItem armor = Game.Items.ItemBuilder.CreateArmor(playerGender, race, Game.Items.Armor.Left_Pauldron, Game.Items.ItemBuilder.RandomArmorMaterial(itemLevel));
                 ItemEquipTable.EquipItem(armor, true, false);
                 items.AddItem(armor);
             }
             // cuirass
-            if (UnityEngine.Random.Range(1, 101) <= chance)
+            if (Dice100.SuccessRoll(chance))
             {
                 Items.DaggerfallUnityItem armor = Game.Items.ItemBuilder.CreateArmor(playerGender, race, Game.Items.Armor.Cuirass, Game.Items.ItemBuilder.RandomArmorMaterial(itemLevel));
                 ItemEquipTable.EquipItem(armor, true, false);
                 items.AddItem(armor);
             }
             // greaves
-            if (UnityEngine.Random.Range(1, 101) <= chance)
+            if (Dice100.SuccessRoll(chance))
             {
                 Items.DaggerfallUnityItem armor = Game.Items.ItemBuilder.CreateArmor(playerGender, race, Game.Items.Armor.Greaves, Game.Items.ItemBuilder.RandomArmorMaterial(itemLevel));
                 ItemEquipTable.EquipItem(armor, true, false);
                 items.AddItem(armor);
             }
             // boots
-            if (UnityEngine.Random.Range(1, 101) <= chance)
+            if (Dice100.SuccessRoll(chance))
             {
                 Items.DaggerfallUnityItem armor = Game.Items.ItemBuilder.CreateArmor(playerGender, race, Game.Items.Armor.Boots, Game.Items.ItemBuilder.RandomArmorMaterial(itemLevel));
                 ItemEquipTable.EquipItem(armor, true, false);
@@ -367,10 +465,10 @@ namespace DaggerfallWorkshop.Game.Entity
                     if (mobileEnemy.ID == (int)MobileTypes.Assassin)
                         chanceToPoison = 60;
 
-                    if (UnityEngine.Random.Range(1, 101) < chanceToPoison)
+                    if (Dice100.SuccessRoll(chanceToPoison))
                     {
                         // Apply poison
-                        weapon.poisonType = (Items.Poisons)UnityEngine.Random.Range(128, 136);
+                        weapon.poisonType = (Items.Poisons)UnityEngine.Random.Range(128, 135 + 1);
                     }
                 }
             }

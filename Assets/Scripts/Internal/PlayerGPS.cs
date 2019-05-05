@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -257,6 +257,7 @@ namespace DaggerfallWorkshop
         {
             StartGameBehaviour.OnNewGame += StartGameBehaviour_OnNewGame;
             SaveLoadManager.OnStartLoad += SaveLoadManager_OnStartLoad;
+            DaggerfallTravelPopUp.OnPostFastTravel += DaggerfallTravelPopUp_OnPostFastTravel;
         }
 
         #endregion
@@ -329,6 +330,12 @@ namespace DaggerfallWorkshop
             ResetState();
         }
 
+        private void DaggerfallTravelPopUp_OnPostFastTravel()
+        {
+            // Reset state after fast travelling
+            ResetState();
+        }
+
         void ResetState()
         {
             isPlayerInLocationRect = false;
@@ -349,34 +356,15 @@ namespace DaggerfallWorkshop
 
         /// <summary>
         /// Gets NameHelper.BankType in player's current region.
-        /// In practice this will always be Redguard/Breton/Nord.
-        /// Supporting a few other name banks for possible diversity later.
+        /// In practice this will always be Redguard/Breton.
+        /// Supporting other name banks for possible diversity later.
         /// </summary>
         public NameHelper.BankTypes GetNameBankOfCurrentRegion()
         {
-            DFLocation.ClimateSettings settings = MapsFile.GetWorldClimateSettings(climateSettings.WorldClimate);
-            NameHelper.BankTypes bankType;
-            switch (settings.Names)
-            {
-                case FactionFile.FactionRaces.Redguard:
-                    bankType = NameHelper.BankTypes.Redguard;
-                    break;
-                case FactionFile.FactionRaces.Nord:
-                    bankType = NameHelper.BankTypes.Nord;
-                    break;
-                case FactionFile.FactionRaces.DarkElf:
-                    bankType = NameHelper.BankTypes.DarkElf;
-                    break;
-                case FactionFile.FactionRaces.WoodElf:
-                    bankType = NameHelper.BankTypes.WoodElf;
-                    break;
-                default:
-                case FactionFile.FactionRaces.Breton:
-                    bankType = NameHelper.BankTypes.Breton;
-                    break;
-            }
+            if (GameManager.Instance.PlayerGPS.CurrentRegionIndex > -1)
+                return (NameHelper.BankTypes) MapsFile.RegionRaces[GameManager.Instance.PlayerGPS.CurrentRegionIndex];
 
-            return bankType;
+            return NameHelper.BankTypes.Breton;
         }
 
         /// <summary>
@@ -426,22 +414,17 @@ namespace DaggerfallWorkshop
         /// <summary>
         /// Gets the factionID of player's current region.
         /// </summary>
-        int GetCurrentRegionFaction()
+        public int GetCurrentRegionFaction()
         {
-            FactionFile.FactionData[] factions = GameManager.Instance.PlayerEntity.FactionData.FindFactions(
-                (int)FactionFile.FactionTypes.Province, -1, -1, CurrentRegionIndex);
-
-            // Should always find a single region
-            if (factions == null || factions.Length != 1)
-                throw new Exception("GetCurrentRegionFaction() did not find exactly 1 match.");
-
-            return factions[0].id;
+            FactionFile.FactionData factionData;
+            GameManager.Instance.PlayerEntity.FactionData.GetRegionFaction(CurrentRegionIndex, out factionData);
+            return factionData.id;
         }
 
         /// <summary>
         /// Gets the factionID of noble court in player's current region 
         /// </summary>
-        int GetCourtOfCurrentRegion()
+        public int GetCourtOfCurrentRegion()
         {
             // Find court in current region
             FactionFile.FactionData[] factions = GameManager.Instance.PlayerEntity.FactionData.FindFactions(
@@ -746,19 +729,19 @@ namespace DaggerfallWorkshop
             if (entity.EntityType == EntityTypes.EnemyClass || entity.EntityType == EntityTypes.EnemyMonster)
             {
                 result |= NearbyObjectFlags.Enemy;
-                EnemyEntity enemyEntity = entity.Entity as EnemyEntity;
-                switch (enemyEntity.MobileEnemy.Affinity)
+                DFCareer.EnemyGroups enemyGroup = (entity.Entity as EnemyEntity).GetEnemyGroup();
+                switch (enemyGroup)
                 {
-                    case MobileAffinity.Undead:
+                    case DFCareer.EnemyGroups.Undead:
                         result |= NearbyObjectFlags.Undead;
                         break;
-                    case MobileAffinity.Daedra:
+                    case DFCareer.EnemyGroups.Daedra:
                         result |= NearbyObjectFlags.Daedra;
                         break;
-                    case MobileAffinity.Human:
+                    case DFCareer.EnemyGroups.Humanoid:
                         result |= NearbyObjectFlags.Humanoid;
                         break;
-                    case MobileAffinity.Animal:
+                    case DFCareer.EnemyGroups.Animals:
                         result |= NearbyObjectFlags.Animal;
                         break;
                 }

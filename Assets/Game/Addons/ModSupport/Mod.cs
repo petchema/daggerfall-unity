@@ -1,5 +1,5 @@
 ﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -686,109 +686,5 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         }
 
         #endregion
-
-        /// <summary>
-        /// Uses serialized data from asset bundle to setup prefab
-        /// </summary>
-        /// <param name="prefabName">name of prefab asset</param>
-        /// <param name="serializedDataName">name of serialized data txt asset</param>
-        /// <returns></returns>
-        public GameObject SetupPrefabHelper(string prefabName, string serializedDataName = null)
-        {
-            GameObject prefab = GetAsset<GameObject>(prefabName, false);
-
-            if(prefab == null)
-            {
-                if (!prefabName.EndsWith(".prefab"))
-                {
-                    prefabName = prefabName + ".prefab";
-                    prefab = GetAsset<GameObject>(prefabName);
-                }
-                if (prefab == null)
-                {
-                    Debug.LogError(string.Format("Failed to locate prefab in mod file: {0} {1}", this.Title, prefabName));
-                    return null;
-                }
-            }
-
-            //if serializedDataName is null, defaults to checking for prefabName.serialized.prefab.txt
-            if (string.IsNullOrEmpty(serializedDataName))
-                serializedDataName = prefabName.Substring(0, prefabName.Length-7) + ".serialized" + ".prefab" + ".txt";
-
-            string serializedData = "";
-
-            try
-            {
-                serializedData = GetAsset<TextAsset>(serializedDataName).text;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError(string.Format("Failed to load serializedData: {0} {1} {2} {3}", this.Title, prefabName, serializedDataName, ex.Message));
-                return null;
-            }
-
-            if (string.IsNullOrEmpty(serializedData))
-            {
-                Debug.LogError(string.Format("Failed to locate serialized data for prefab in mod file: {0} {1} {2}", this.Title, prefabName, serializedDataName));
-                return null;
-            }
-
-            object deserialized = null;
-            FullSerializer.fsData data = FullSerializer.fsJsonParser.Parse(serializedData);
-            ModManager._serializer.TryDeserialize(data, typeof(Dictionary<string, List<SerializedRecord>>), ref deserialized).AssertSuccessWithoutWarnings();
-
-
-            if (deserialized != null)
-                return SetupPrefabHelper(prefab, deserialized as Dictionary<string, List<SerializedRecord>>);
-            else
-                return null;
-        }
-
-        /// <summary>
-        /// Helper function that uses serialized data from asset bundle to setup prefab
-        /// </summary>
-        /// <param name="prefab">prefab object to setup</param>
-        /// <param name="recordDictionary">serialized data</param>
-        /// <returns></returns>
-        public GameObject SetupPrefabHelper(GameObject prefab, Dictionary<string, List<SerializedRecord>> recordDictionary)
-        {
-            if (prefab == null || recordDictionary == null)
-            {
-                Debug.LogError("Failed to setup prefab - either the prefab or the deserialized dictionary was null - stopping");
-                return null;
-            }
-
-            List<Transform> transforms = new List<Transform>();
-            ModManager.GetAllChildren(prefab.transform, ref transforms);
-
-            for (int i = 0; i < transforms.Count; i++)
-            {
-                GameObject go = transforms[i].gameObject;
-
-                if (recordDictionary.ContainsKey(go.name))
-                {
-                    List<SerializedRecord> records = recordDictionary[go.name];
-
-                    for (int j = 0; j < records.Count; j++)
-                    {
-                        SerializedRecord sr = records[j];
-                        Component co = go.AddComponent(sr.componentType);
-                        Idfmod_Serializable isCustomSerializable = co as Idfmod_Serializable;
-
-                        if (isCustomSerializable == null)
-                            continue;
-                        if (sr.serializedObjects == null || sr.serializedObjects.Length < 1)
-                            continue;
-
-                        isCustomSerializable.Deseralized(sr.serializedObjects);
-                    }
-                }
-            }
-            return prefab;
-
-        }
-
-
     }
-
 }

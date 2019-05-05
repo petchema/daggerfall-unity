@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -21,6 +21,8 @@ using DaggerfallWorkshop.Game.Items;
 using DaggerfallWorkshop.Game.Serialization;
 using DaggerfallWorkshop.Game.Utility;
 using DaggerfallWorkshop.Game.MagicAndEffects;
+using DaggerfallWorkshop.Utility;
+using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
 
 namespace DaggerfallWorkshop.Game.Entity
 {
@@ -56,6 +58,7 @@ namespace DaggerfallWorkshop.Game.Entity
         protected int currentBreath;
         protected WeaponMaterialTypes minMetalToHit;
         protected sbyte[] armorValues = new sbyte[NumberBodyParts];
+        protected MobileTeams team;
 
         bool quiesce = false;
         bool isParalyzed = false;
@@ -70,7 +73,7 @@ namespace DaggerfallWorkshop.Game.Entity
 
         #region Properties
 
-        // Entity magic effect flags
+        // Entity magic effect properties
         // Note: These properties are intentionally not serialized. They should only be set by live effects.
         public bool IsImmuneToParalysis { get; set; }
         public bool IsImmuneToDisease { get; set; }
@@ -81,6 +84,10 @@ namespace DaggerfallWorkshop.Game.Entity
         public bool IsEnhancedClimbing { get; set; }
         public bool IsEnhancedJumping { get; set; }
         public bool IsSlowFalling { get; set; }
+        public bool IsAbsorbingSpells { get; set; }
+        public int MaxMagickaModifier { get; private set; }
+        public float IncreasedWeightAllowanceMultiplier { get; private set; }
+
 
         /// <summary>
         /// Gets the DaggerfallEntityBehaviour related to this DaggerfallEntity.
@@ -247,18 +254,20 @@ namespace DaggerfallWorkshop.Game.Entity
         public float CurrentHealthPercent { get { return GetCurrentHealth() / (float)maxHealth; } }
         public int MaxFatigue { get { return (stats.LiveStrength + stats.LiveEndurance) * 64; } }
         public int CurrentFatigue { get { return GetCurrentFatigue(); } set { SetFatigue(value); } }
-        public int MaxMagicka { get { return (this == GameManager.Instance.PlayerEntity ? FormulaHelper.SpellPoints(stats.LiveIntelligence, career.SpellPointMultiplierValue) : maxMagicka); } set { maxMagicka = value; } }
+        public int MaxMagicka { get { return GetMaxMagicka(); } set { maxMagicka = value; } }
+        public int RawMaxMagicka { get { return GetRawMaxMagicka(); } }
         public int CurrentMagicka { get { return GetCurrentMagicka(); } set { SetMagicka(value); } }
         public int MaxBreath { get { return stats.LiveEndurance / 2; } }
         public int CurrentBreath { get { return currentBreath; } set { SetBreath(value); } }
         public WeaponMaterialTypes MinMetalToHit { get { return minMetalToHit; } set { minMetalToHit = value; } }
         public sbyte[] ArmorValues { get { return armorValues; } set { armorValues = value; } }
         public int DamageModifier { get { return FormulaHelper.DamageModifier(stats.LiveStrength); } }
-        public int MaxEncumbrance { get { return FormulaHelper.MaxEncumbrance(stats.LiveStrength); } }
+        public int MaxEncumbrance { get { return GetMaxEncumbrance(); } }
         public int MagicResist { get { return FormulaHelper.MagicResist(stats.LiveWillpower); } }
         public int ToHitModifier { get { return FormulaHelper.ToHitModifier(stats.LiveAgility); } }
         public int HitPointsModifier { get { return FormulaHelper.HitPointsModifier(stats.LiveEndurance); } }
         public int HealingRateModifier { get { return FormulaHelper.HealingRateModifier(stats.LiveEndurance); } }
+        public MobileTeams Team { get { return team; } set { team = value; } }
 
         #endregion
 
@@ -296,6 +305,19 @@ namespace DaggerfallWorkshop.Game.Entity
 
         public int DecreaseHealth(int amount)
         {
+            // Allow an active shield effect to mitigate incoming damage from all sources
+            // Testing classic shows that Shield will mitigate physical, magical, and fall damage
+            if (EntityBehaviour)
+            {
+                EntityEffectManager manager = EntityBehaviour.GetComponent<EntityEffectManager>();
+                if (manager)
+                {
+                    Shield shield = (Shield)manager.FindIncumbentEffect<Shield>();
+                    if (shield != null)
+                        amount = shield.DamageShield(amount);
+                }
+            }
+
             return SetHealth(currentHealth - amount);
         }
 
@@ -356,6 +378,18 @@ namespace DaggerfallWorkshop.Game.Entity
             return currentMagicka;
         }
 
+        public void ChangeMaxMagickaModifier(int amount)
+        {
+            MaxMagickaModifier += amount;
+        }
+
+        public void SetIncreasedWeightAllowanceMultiplier(float amount)
+        {
+            // Increased weight allowance does not stack, only effect with the highest multiplier used
+            if (IncreasedWeightAllowanceMultiplier < amount)
+                IncreasedWeightAllowanceMultiplier = amount;
+        }
+
         public virtual int SetBreath(int amount)
         {
             currentBreath = Mathf.Clamp(amount, 0, MaxBreath);
@@ -382,7 +416,40 @@ namespace DaggerfallWorkshop.Game.Entity
 
         int GetCurrentMagicka()
         {
+            if (currentMagicka > MaxMagicka)
+                currentMagicka = MaxMagicka;
+
             return currentMagicka;
+        }
+
+        // Gets maximum magicka with effect modifier
+        int GetMaxMagicka()
+        {
+            int effectiveMagicka = GetRawMaxMagicka() + MaxMagickaModifier;
+            if (effectiveMagicka < 0)
+                effectiveMagicka = 0;
+
+            return effectiveMagicka;
+        }
+
+        // Gets raw maximum magicka without modifier
+        int GetRawMaxMagicka()
+        {
+            // Player's maximum magicka determined by career and intelligence, enemies are set by level elsewhere
+            if (career != null && this == GameManager.Instance.PlayerEntity)
+                return FormulaHelper.SpellPoints(stats.LiveIntelligence, career.SpellPointMultiplierValue);
+            else
+                return maxMagicka;
+        }
+
+        // Get standard encumbrance and add any increased weight allowance multiplier from effects
+        int GetMaxEncumbrance()
+        {
+            int amount = FormulaHelper.MaxEncumbrance(stats.LiveStrength);
+            if (IncreasedWeightAllowanceMultiplier > 0)
+                amount += (int)(amount * IncreasedWeightAllowanceMultiplier);
+
+            return amount;
         }
 
         #endregion
@@ -597,11 +664,42 @@ namespace DaggerfallWorkshop.Game.Entity
             return spellbook.ToArray();
         }
 
+        public void SwapSpells(int indexA, int indexB)
+        {
+            if (indexA < 0 || indexA >= spellbook.Count || indexB < 0 || indexB >= spellbook.Count || indexA == indexB)
+                return;
+            var tempSpell = spellbook[indexA];
+            spellbook[indexA] = spellbook[indexB];
+            spellbook[indexB] = tempSpell;
+        }
+
         public void SortSpellsAlpha()
         {
             List<EffectBundleSettings> sortedSpellbook = spellbook.OrderBy(x => x.Name).ToList();
             if (sortedSpellbook.Count == spellbook.Count)
                 spellbook = sortedSpellbook;
+        }
+
+        public void SortSpellsPointCost()
+        {
+            List<EffectBundleSettings> sortedSpellbook = spellbook
+                .OrderBy((EffectBundleSettings spell) =>
+                {
+                    int goldCost, spellPointCost;
+                    FormulaHelper.CalculateTotalEffectCosts(spell.Effects, spell.TargetType, out goldCost, out spellPointCost, null, spell.MinimumCastingCost);
+                    return spellPointCost;
+                })
+            .ToList();
+            if (sortedSpellbook.Count == spellbook.Count)
+                spellbook = sortedSpellbook;
+        }
+
+        public void SetSpell(int index, EffectBundleSettings spell)
+        {
+            if (index < 0 || index > spellbook.Count - 1)
+                return;
+
+            spellbook[index] = spell;
         }
 
         public void AddSpell(EffectBundleSettings spell)
@@ -631,12 +729,27 @@ namespace DaggerfallWorkshop.Game.Entity
             if (otherSpellbook == null || otherSpellbook.Length == 0)
                 return;
 
+            // Migrate from old spell icon index
+            // The old icon index will be changed into a SpellIcon with a null pack key
+            for (int i = 0; i < otherSpellbook.Length; i++)
+            {
+                if (string.IsNullOrEmpty(otherSpellbook[i].Icon.key) && otherSpellbook[i].Icon.index == 0)
+                    otherSpellbook[i].Icon.index = otherSpellbook[i].IconIndex;
+            }
+
             spellbook.AddRange(otherSpellbook);
         }
 
         #endregion
 
         #region Helpers
+
+        /// <summary>
+        /// Called by DaggerfallEntityBehaviour at regular intervals.
+        /// </summary>
+        public virtual void FixedUpdate()
+        {
+        }
 
         /// <summary>
         /// Called by DaggerfallEntityBehaviour each frame.
@@ -661,6 +774,9 @@ namespace DaggerfallWorkshop.Game.Entity
             IsEnhancedClimbing = false;
             IsEnhancedJumping = false;
             IsSlowFalling = false;
+            IsAbsorbingSpells = false;
+            MaxMagickaModifier = 0;
+            IncreasedWeightAllowanceMultiplier = 0;
             IsResistingFire = false;
             IsResistingFrost = false;
             IsResistingDiseaseOrPoison = false;
@@ -746,8 +862,17 @@ namespace DaggerfallWorkshop.Game.Entity
             return monsterFile.GetMonsterClass((int)career);
         }
 
-        public static SoundClips GetRaceGenderAttackSound(Races race, Genders gender)
+        public static SoundClips GetRaceGenderAttackSound(Races race, Genders gender, bool isPlayerAttack = false)
         {
+            // Check for racial override attack sound for player only
+            if (isPlayerAttack)
+            {
+                SoundClips customSound;
+                RacialOverrideEffect racialOverride = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
+                if (racialOverride != null && racialOverride.GetCustomRaceGenderAttackSoundData(GameManager.Instance.PlayerEntity, out customSound))
+                    return customSound;
+            }
+
             if (gender == Genders.Male)
             {
                 switch (race)

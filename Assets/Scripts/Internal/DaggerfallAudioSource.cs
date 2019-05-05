@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -28,8 +28,6 @@ namespace DaggerfallWorkshop
     [RequireComponent(typeof(AudioSource))]
     public class DaggerfallAudioSource : MonoBehaviour
     {
-        const float audioClipMaxDelay = 0.150f; //give up if sound takes longer to load
-
         const int minIndex = 0;
         const int maxIndex = 458;
 
@@ -59,7 +57,6 @@ namespace DaggerfallWorkshop
         // Sets looping sound to only play randomly and on a slower update matched to classic.
         // Only used for animal sounds.
         private bool playRandomly = false;
-        private float classicUpdateTimer = 0f;
 
         public bool IsReady
         {
@@ -97,21 +94,8 @@ namespace DaggerfallWorkshop
                 audioSource.volume = DaggerfallUnity.Settings.SoundVolume;
 
                 // Handle random play
-                if (audioSource.enabled && playRandomly)
-                {
-                    bool classicUpdate = false;
-
-                    if (classicUpdateTimer < Game.Entity.PlayerEntity.ClassicUpdateInterval)
-                        classicUpdateTimer += Time.deltaTime;
-                    else
-                    {
-                        classicUpdateTimer = 0;
-                        classicUpdate = true;
-                    }
-
-                    if (classicUpdate && DFRandom.rand() <= 100)
-                        audioSource.Play();
-                }
+                if (audioSource.enabled && playRandomly && Game.GameManager.ClassicUpdate && DFRandom.rand() <= 100)
+                    audioSource.Play();
             }
         }
 
@@ -129,7 +113,7 @@ namespace DaggerfallWorkshop
                 PreviewID = (int)dfUnity.SoundReader.GetSoundID(PreviewIndex);
                 PreviewClip = (SoundClips)PreviewIndex;
                 AudioClip clip = dfUnity.SoundReader.GetAudioClip(PreviewIndex);
-                DaggerfallUnity.Instance.StartCoroutine(PlayOneShotWhenReady(clip, 1.0f));
+                audioSource.PlayOneShotWhenReady(clip, 1.0f);
             }
         }
 
@@ -209,23 +193,9 @@ namespace DaggerfallWorkshop
                 if (clip)
                 {
                     audioSource.spatialBlend = spatialBlend;
-                    DaggerfallUnity.Instance.StartCoroutine(PlayOneShotWhenReady(clip, volumeScale * DaggerfallUnity.Settings.SoundVolume));
+                    audioSource.PlayOneShotWhenReady(clip, volumeScale);
                 }
             }
-        }
-
-        private IEnumerator PlayOneShotWhenReady(AudioClip audioClip, float volume)
-        {
-            float loadWaitTimer = 0f;
-            while (audioClip.loadState == AudioDataLoadState.Unloaded ||
-                   audioClip.loadState == AudioDataLoadState.Loading)
-            {
-                loadWaitTimer += Time.deltaTime;
-                if (loadWaitTimer > audioClipMaxDelay)
-                    yield break;
-                yield return null;
-            }
-            audioSource.PlayOneShot(audioClip, volume);
         }
 
         /// <summary>

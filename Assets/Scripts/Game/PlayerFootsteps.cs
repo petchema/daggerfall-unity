@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -12,6 +12,7 @@
 using UnityEngine;
 using System.Collections;
 using DaggerfallWorkshop.Utility;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -296,7 +297,7 @@ namespace DaggerfallWorkshop.Game
         // Capture this message so we can play pain voice
         public void RemoveHealth(int amount)
         {
-            if (dfAudioSource && DaggerfallUnity.Settings.CombatVoices && Random.Range(1, 101) <= 40)
+            if (dfAudioSource && DaggerfallUnity.Settings.CombatVoices && Dice100.SuccessRoll(40))
             {
                 Entity.PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
                 bool heavyDamage = amount >= playerEntity.MaxHealth / 4;

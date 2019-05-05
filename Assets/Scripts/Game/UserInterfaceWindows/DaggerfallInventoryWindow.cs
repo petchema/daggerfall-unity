@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -152,6 +152,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         Color questItemBackgroundColor = new Color(0f, 0.25f, 0f, 0.5f);
         Color lightSourceBackgroundColor = new Color(0.6f, 0.5f, 0f, 0.5f);
+        Color summonedItemBackgroundColor = new Color(0.18f, 0.32f, 0.48f, 0.5f);
 
         PlayerEntity playerEntity;
 
@@ -187,7 +188,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         ItemCollection.AddPosition preferredOrder = ItemCollection.AddPosition.DontCare;
 
         KeyCode toggleClosedBinding;
-        bool controlPressed = false;
         private int maxAmount;
 
         #endregion
@@ -323,10 +323,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         public override void Update()
         {
             base.Update();
-            if (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))
-                controlPressed = true;
-            else if (Input.GetKeyUp(KeyCode.LeftControl) || Input.GetKeyUp(KeyCode.RightControl))
-                controlPressed = false;
 
             // Toggle window closed with same hotkey used to open it
             if (Input.GetKeyUp(toggleClosedBinding))
@@ -369,11 +365,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         protected virtual Color ItemBackgroundColourHandler(DaggerfallUnityItem item)
         {
-            // TEST: Set green background for remote quest items
+            // Set background for special items
             if (item.IsQuestItem)
                 return questItemBackgroundColor;
             else if (playerEntity.LightSource == item)
                 return lightSourceBackgroundColor;
+            else if (item.IsSummoned)
+                return summonedItemBackgroundColor;
             else
                 return Color.clear;
         }
@@ -917,8 +915,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 panel.BackgroundTexture = image.texture;
                 panel.Size = new Vector2(image.width, image.height);
                 button.ToolTipText = item.LongName;
-                if (item.IsEnchanted)
-                    button.AnimatedBackgroundTextures = magicAnimation.animatedTextures;
+                button.AnimatedBackgroundTextures = (item.IsEnchanted) ? magicAnimation.animatedTextures : null;
             }
         }
 
@@ -1309,6 +1306,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             if (blockTransport && item.ItemGroup == ItemGroups.Transportation)
                 return;
 
+            // Block transfer of summoned items
+            if (item.IsSummoned)
+            {
+                DaggerfallUI.MessageBox(TextManager.Instance.GetText(textDatabase, "cannotRemoveItem"));
+                return;
+            }
+
             // Handle map items
             if (item.IsOfTemplate(ItemGroups.MiscItems, (int)MiscItems.Map))
             {
@@ -1347,6 +1351,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 return;
 
             bool splitRequired = maxAmount < item.stackCount;
+            bool controlPressed = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
             if (splitRequired || controlPressed)
             {
                 if (allowSplitting && item.IsAStack())
@@ -1356,9 +1361,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     stackTo = to;
                     stackEquip = equip;
                     string defaultValue = controlPressed ? "0" : this.maxAmount.ToString();
-
-                    // Key will probably be released while messagebox is open
-                    controlPressed = false;
 
                     // Show message box
                     DaggerfallInputMessageBox mb = new DaggerfallInputMessageBox(uiManager, this);
@@ -1503,25 +1505,31 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 // Get the Item resource from quest
                 Item questItem = quest.GetItem(item.QuestItemSymbol);
 
-                // If item not already used, and is being watched, then pop back to HUD so quest system has first shot at it
-                // On second pass the normal message popup will display instead
+                // Use quest item
                 if (!questItem.UseClicked && questItem.ActionWatching)
                 {
                     questItem.UseClicked = true;
-                    DaggerfallUI.Instance.PopToHUD();
-                    return;
+
+                    // Non-parchment items pop back to HUD so quest system has first shot at a custom click action in game world
+                    // This is usually the case when actioning most quest items (e.g. a painting, bell, holy item, etc.)
+                    // But when clicking a parchment item this behaviour is usually incorrect (e.g. a letter to read)
+                    if (!questItem.DaggerfallUnityItem.IsParchment)
+                    {
+                        DaggerfallUI.Instance.PopToHUD();
+                        return;
+                    }
                 }
 
                 // Check for an on use value
                 if (questItem.UsedMessageID != 0)
                 {
                     // Display the message popup
-                    quest.ShowMessagePopup(questItem.UsedMessageID);
+                    quest.ShowMessagePopup(questItem.UsedMessageID, true);
                 }
             }
 
             // Handle local items
-            if (item.ItemGroup == ItemGroups.Books)
+            if (item.ItemGroup == ItemGroups.Books && !item.IsArtifact)
             {
                 DaggerfallUI.Instance.BookReaderWindow.BookTarget = item;
                 DaggerfallUI.PostMessage(DaggerfallUIMessages.dfuiOpenBookReaderWindow);
@@ -1610,8 +1618,11 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             // Will see what feedback is like and revert to classic behaviour if widely preferred
             if (item.IsEnchanted)
             {
-                GameManager.Instance.PlayerEffectManager.UseItem(item, collection);
-                DaggerfallUI.Instance.PopToHUD();
+                GameManager.Instance.PlayerEffectManager.DoItemEnchantmentPayloads(MagicAndEffects.EnchantmentPayloadFlags.Used, item, collection);
+
+                // Only pop the inventory window. Some artifacts (Azura's Star, the Oghma Infinium) create windows on use and we don't want to pop those.
+                if (DaggerfallUI.Instance.UserInterfaceManager.TopWindow.GetType() == typeof(DaggerfallInventoryWindow))
+                  DaggerfallUI.Instance.UserInterfaceManager.PopWindow();
                 return;
             }
         }

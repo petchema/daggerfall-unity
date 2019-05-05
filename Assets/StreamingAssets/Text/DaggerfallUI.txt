@@ -4,22 +4,25 @@ schema: *key,text
 
 - Journal window:
 
-dialogButtonInfo,   Switch between: Active Quests :: Finished Quests :: Notebook
+dialogButtonInfo,   Switch between: Active Quests; Finished Quests; Notebook; Messages
 activeQuests,       Active Quests
 activeQuestsInfo,   Click on an active quest that has a target location to initiate travel.
 finishedQuests,     Finished Quests
 finishedQuestsInfo, Click on an entry to move it. Right click to delete.
 notebook,           Notebook
 notebookInfo,       Click a note to move. Right click to delete. Click in-between to add a new note.
-selectedEntry,      Selected entry:
+messages,           Messages
+messagesInfo,       History of messages recently shown on screen
+confirmMoveHead,    Move entry
 confirmMove,        Do you want to change the position of this entry?
 confirmMove2,       (It will be moved to before the next entry clicked)
+confirmRemoveHead,  Delete entry
 confirmRemove,      Are you sure you want to remove this entry?
 confirmRemove2,     (It will be deleted permanently and cannot be restored)
-selectedPlace,      Selected location:
-confirmFind,        Do you want to open the world map and prepare to travel to this place?
-confirmFind2,       (Note: you can still cancel the travel from the map)
-enterNote,          Enter your note below:
+confirmFindHead,    Travel to location
+confirmFind,        Do you want to open the world map to travel to:
+confirmFind2,       (Note: you can cancel travel from the world map)
+enterNote,          Enter your note:
 completedQuest,     completed
 failedQuest,        failed
 finishQuestHeader,  {0} {1} at {2}:
@@ -37,8 +40,10 @@ wagonFullGold,      Your wagon could only hold {0} gold pieces.
 itemsIdentified,    Items identified.
 repairDone,         DONE
 repairDays,         %d days
+interruptRepair,    Take back that item before it's repaired?
 repairNote,         Left my {0} for repair at {1}.
 doesntNeedIdentify, This does not need to be identified.
+letterOfCredit,     You are paid with a letter of credit.
 stealSuccess,       You are successful.
 stealFailure,       You are not successful...
 cannotRemoveItem,   You cannot remove this item.
@@ -67,3 +72,8 @@ noRecipes,          You have no recipes.
 potionMixed,        Your potion has been mixed.
 potionFailed,       Those ingredients did not concoct an effective potion.
 reqIngredients,     You do not have the ingredients required.
+
+- Icon picker window:
+
+classicIcons,       Classic
+suggestedIcons,     Suggested

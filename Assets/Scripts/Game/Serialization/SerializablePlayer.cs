@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -122,6 +122,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             data.playerEntity.currentBreath = entity.CurrentBreath;
             data.playerEntity.skillUses = entity.SkillUses;
             data.playerEntity.timeOfLastSkillIncreaseCheck = entity.TimeOfLastSkillIncreaseCheck;
+            data.playerEntity.skillsRecentlyRaised = entity.SkillsRecentlyRaised;
             data.playerEntity.timeOfLastSkillTraining = entity.TimeOfLastSkillTraining;
             data.playerEntity.startingLevelUpSkillSum = entity.StartingLevelUpSkillSum;
             data.playerEntity.equipTable = entity.ItemEquipTable.SerializeEquipTable();
@@ -152,6 +153,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             data.playerEntity.reputationScholars = entity.SGroupReputations[(int)FactionFile.SocialGroups.Scholars];
             data.playerEntity.reputationNobility = entity.SGroupReputations[(int)FactionFile.SocialGroups.Nobility];
             data.playerEntity.reputationUnderworld = entity.SGroupReputations[(int)FactionFile.SocialGroups.Underworld];
+            data.playerEntity.previousVampireClan = entity.PreviousVampireClan;
 
             data.playerEntity.regionData = entity.RegionData;
             data.playerEntity.rentedRooms = entity.RentedRooms.ToArray();
@@ -269,6 +271,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             entity.SetMagicka(data.playerEntity.currentMagicka, true);
             entity.CurrentBreath = data.playerEntity.currentBreath;
             entity.SkillUses = data.playerEntity.skillUses;
+            entity.SkillsRecentlyRaised = (data.playerEntity.skillsRecentlyRaised != null ? data.playerEntity.skillsRecentlyRaised : new uint[2]);
             entity.TimeOfLastSkillIncreaseCheck = data.playerEntity.timeOfLastSkillIncreaseCheck;
             entity.TimeOfLastSkillTraining = data.playerEntity.timeOfLastSkillTraining;
             entity.StartingLevelUpSkillSum = data.playerEntity.startingLevelUpSkillSum;
@@ -301,6 +304,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             entity.SGroupReputations[(int)FactionFile.SocialGroups.Scholars] = data.playerEntity.reputationScholars;
             entity.SGroupReputations[(int)FactionFile.SocialGroups.Nobility] = data.playerEntity.reputationNobility;
             entity.SGroupReputations[(int)FactionFile.SocialGroups.Underworld] = data.playerEntity.reputationUnderworld;
+            entity.PreviousVampireClan = data.playerEntity.previousVampireClan;
 
             entity.RentedRooms = (data.playerEntity.rentedRooms != null) ? data.playerEntity.rentedRooms.ToList() : new List<RoomRental_v1>();
 

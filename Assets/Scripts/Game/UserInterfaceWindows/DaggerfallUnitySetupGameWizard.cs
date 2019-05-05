@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -26,6 +26,7 @@ using DaggerfallWorkshop.Game.Player;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Items;
 using DaggerfallWorkshop.Game.Utility.ModSupport;
+using DaggerfallWorkshop.Utility.AssetInjection;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {
@@ -151,6 +152,14 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             }
 
             moveNextStage = true;
+
+            // Override cursor
+            Texture2D tex;
+            if (TextureReplacement.TryImportTexture("Cursor", true, out tex))
+            {
+                Cursor.SetCursor(tex, Vector2.zero, CursorMode.Auto);
+                Debug.Log("Cursor texture overridden by mods.");
+            }
         }
 
         public override void Update()

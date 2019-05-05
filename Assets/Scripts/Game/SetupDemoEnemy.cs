@@ -17,6 +17,7 @@ namespace DaggerfallWorkshop.Game
         public MobileTypes EnemyType = MobileTypes.SkeletalWarrior;
         public MobileReactions EnemyReaction = MobileReactions.Hostile;
         public MobileGender EnemyGender = MobileGender.Unspecified;
+        public bool AlliedToPlayer = false;
         public byte ClassicSpawnDistanceType = 0;
 
         DaggerfallEntityBehaviour entityBehaviour;
@@ -47,6 +48,8 @@ namespace DaggerfallWorkshop.Game
             DaggerfallUnity dfUnity = DaggerfallUnity.Instance;
             Dictionary<int, MobileEnemy> enemyDict = GameObjectHelper.EnemyDict;
             MobileEnemy mobileEnemy = enemyDict[(int)EnemyType];
+            if (AlliedToPlayer)
+                mobileEnemy.Team = MobileTeams.PlayerAlly;
 
             // Find mobile unit in children
             DaggerfallMobileUnit dfMobile = GetMobileBillboardChild();
@@ -70,11 +73,16 @@ namespace DaggerfallWorkshop.Game
                     if (dfMobile.Summary.Enemy.Behaviour == MobileBehaviour.Flying)
                         controller.height /= 2f;
 
-                    // Uncomment below lines to limit maximum controller height
-                    // Some particularly tall sprites (e.g. giants) require this hack to get through doors
-                    // However they will appear sunken into ground as a result
-                    //if (controller.height > 1.9f)
-                    //    controller.height = 1.9f;
+                    // Limit minimum controller height
+                    // Stops very short characters like rats from being walked upon
+                    if (controller.height < 1.6f)
+                    {
+                        // Adjust center to match new height
+                        Vector3 newCenter = controller.center;
+                        newCenter.y += (1.6f - controller.height) / 2;
+                        controller.center = newCenter;
+                        controller.height = 1.6f;
+                    }
 
                     controller.gameObject.layer = LayerMask.NameToLayer("Enemies");
                 }
@@ -120,18 +128,19 @@ namespace DaggerfallWorkshop.Game
         /// Change enemy settings and configure in a single call.
         /// </summary>
         /// <param name="enemyType">Enemy type.</param>
-        public void ApplyEnemySettings(MobileTypes enemyType, MobileReactions enemyReaction, MobileGender gender, byte classicSpawnDistanceType = 0)
+        public void ApplyEnemySettings(MobileTypes enemyType, MobileReactions enemyReaction, MobileGender gender, byte classicSpawnDistanceType = 0, bool alliedToPlayer = false)
         {
             EnemyType = enemyType;
             EnemyReaction = enemyReaction;
             ClassicSpawnDistanceType = classicSpawnDistanceType;
+            AlliedToPlayer = alliedToPlayer;
             ApplyEnemySettings(gender);
         }
 
         /// <summary>
         /// Change enemy settings and configure in a single call.
         /// </summary>
-        public void ApplyEnemySettings(EntityTypes entityType, int careerIndex, MobileGender gender, bool isHostile = true)
+        public void ApplyEnemySettings(EntityTypes entityType, int careerIndex, MobileGender gender, bool isHostile = true, bool alliedToPlayer = false)
         {
             // Get mobile type based on entity type and career index
             MobileTypes mobileType;
@@ -145,7 +154,7 @@ namespace DaggerfallWorkshop.Game
             MobileReactions enemyReaction = (isHostile) ? MobileReactions.Hostile : MobileReactions.Passive;
             MobileGender enemyGender = gender;
 
-            ApplyEnemySettings(mobileType, enemyReaction, enemyGender);
+            ApplyEnemySettings(mobileType, enemyReaction, enemyGender, alliedToPlayer: alliedToPlayer);
         }
 
         public void AlignToGround()

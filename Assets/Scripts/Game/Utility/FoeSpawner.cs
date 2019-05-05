@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -13,6 +13,7 @@ using System;
 using UnityEngine;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.UserInterfaceWindows;
+using DaggerfallWorkshop.Game.Entity;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
@@ -36,6 +37,7 @@ namespace DaggerfallWorkshop.Game.Utility
         public float MaxDistance = 20f;
         public Transform Parent = null;
         public bool LineOfSightCheck = true;
+        public bool AlliedToPlayer = false;
 
         public MobileTypes lastFoeType = MobileTypes.None;
         GameObject[] pendingFoeGameObjects;
@@ -48,7 +50,7 @@ namespace DaggerfallWorkshop.Game.Utility
             if (FoeType != MobileTypes.None && FoeType != lastFoeType && SpawnCount > 0)
             {
                 DestroyOldFoeGameObjects(pendingFoeGameObjects);
-                SetFoeGameObjects(GameObjectHelper.CreateFoeGameObjects(Vector3.zero, FoeType, SpawnCount));
+                SetFoeGameObjects(GameObjectHelper.CreateFoeGameObjects(Vector3.zero, FoeType, SpawnCount, alliedToPlayer: AlliedToPlayer));
                 lastFoeType = FoeType;
             }
 
@@ -130,7 +132,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
             // Set parent if none specified already
             if (!gameObjects[pendingFoesSpawned].transform.parent)
-                gameObjects[pendingFoesSpawned].transform.parent = GetBestParent();
+                gameObjects[pendingFoesSpawned].transform.parent = GameObjectHelper.GetBestParent();
 
             // Get roation of spawn ray
             Quaternion rotation;
@@ -147,7 +149,7 @@ namespace DaggerfallWorkshop.Game.Utility
             else
             {
                 // Don't care about player's field of view (e.g. at rest)
-                rotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 361), 0);
+                rotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
             }
 
             // Get direction vector and create a new ray
@@ -225,30 +227,6 @@ namespace DaggerfallWorkshop.Game.Utility
             foreach(GameObject go in gameObjects)
             {
                 Destroy(go);
-            }
-        }
-
-        // Gets best parent for spawn at create time
-        Transform GetBestParent()
-        {
-            PlayerEnterExit playerEnterExit = GameManager.Instance.PlayerEnterExit;
-
-            // Place in world near player depending on local area
-            if (playerEnterExit.IsPlayerInsideBuilding)
-            {
-                return playerEnterExit.Interior.transform;
-            }
-            else if (playerEnterExit.IsPlayerInsideDungeon)
-            {
-                return playerEnterExit.Dungeon.transform;
-            }
-            else if (!playerEnterExit.IsPlayerInside && GameManager.Instance.PlayerGPS.IsPlayerInLocationRect)
-            {
-                return GameManager.Instance.StreamingWorld.CurrentPlayerLocationObject.transform;
-            }
-            else
-            {
-                return null;
             }
         }
 

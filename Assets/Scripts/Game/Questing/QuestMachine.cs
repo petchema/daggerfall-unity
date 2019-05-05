@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -29,10 +29,6 @@ namespace DaggerfallWorkshop.Game.Questing
     /// Running quests can perform actions in the world (e.g. spawn enemies and play sounds).
     /// Or they can provide data to external systems like the NPC dialog interface (e.g. 'tell me about' and 'rumors').
     /// Quest support is considered to be in very early prototype stages and may change at any time.
-    /// 
-    /// Notes:
-    ///  * Quests are not serialized at this time.
-    ///  * Some data, such as reserved sites, need to be serialized from QuestMachine.
     /// </summary>
     public class QuestMachine : MonoBehaviour
     {
@@ -321,6 +317,7 @@ namespace DaggerfallWorkshop.Game.Questing
             RegisterAction(new WhenNpcIsAvailable(null));
             RegisterAction(new WhenReputeWith(null));
             RegisterAction(new WhenSkillLevel(null));
+            RegisterAction(new WhenAttributeLevel(null));
             RegisterAction(new WhenTask(null));
             RegisterAction(new ClickedNpc(null));
             RegisterAction(new ClickedItem(null));
@@ -377,11 +374,10 @@ namespace DaggerfallWorkshop.Game.Questing
             RegisterAction(new CurePcDisease(null));
             RegisterAction(new CastSpellDo(null));
             RegisterAction(new CastEffectDo(null));
-
-            // Stubs - these actions are not complete yet
-            // Just setting up so certain quests compile for now
-            //RegisterAction(new MuteNpc(null));
-            //RegisterAction(new LegalRepute(null));
+            RegisterAction(new RemoveFoe(null));
+            RegisterAction(new LegalRepute(null));
+            RegisterAction(new MuteNpc(null));
+            RegisterAction(new DestroyNpc(null));
 
             // Raise event for custom actions to be registered
             RaiseOnRegisterCustomerActionsEvent();
@@ -420,10 +416,18 @@ namespace DaggerfallWorkshop.Game.Questing
                 }
                 catch (Exception ex)
                 {
-                    LogFormat(quest, "Error in quest follows. Terminating quest runtime.");
-                    LogFormat(ex.Message);
-                    RaiseOnQuestErrorTerminationEvent(quest);
-                    questsToRemove.Add(quest);
+                    if (IsProtectedQuest(quest))
+                    {
+                        LogFormat(quest, "Exception in protected quest. Logging only.");
+                        LogFormat(ex.Message);
+                    }
+                    else
+                    {
+                        LogFormat(quest, "Error in quest follows. Terminating quest runtime.");
+                        LogFormat(ex.Message);
+                        RaiseOnQuestErrorTerminationEvent(quest);
+                        questsToRemove.Add(quest);
+                    }
                 }
 
                 // Schedule completed quests for tombstoning
@@ -452,6 +456,17 @@ namespace DaggerfallWorkshop.Game.Questing
 
             // Fire tick event
             RaiseOnTickEvent();
+        }
+
+        /// <summary>
+        /// Checks if a quest is protected from ending prematurely.
+        /// </summary>
+        /// <returns>True if quest is protected.</returns>
+        public static bool IsProtectedQuest(Quest quest)
+        {
+            return string.Compare(quest.QuestName, "S0000999", true) == 0 ||
+                   string.Compare(quest.QuestName, "S0000977", true) == 0 ||
+                   string.Compare(quest.QuestName, "_BRISIEN", true) == 0;
         }
 
         /// <summary>
@@ -1138,6 +1153,32 @@ namespace DaggerfallWorkshop.Game.Questing
             }
 
             return stage;
+        }
+
+        /// <summary>
+        /// Unmutes all quest NPCs.
+        /// Supports console command workaround for "mute npc" bug present up to 0.7.36.
+        /// </summary>
+        public int UnmuteQuestNPCs()
+        {
+            int count = 0;
+            foreach (Quest quest in quests.Values)
+            {
+                QuestResource[] persons = quest.GetAllResources(typeof(Person));
+                if (persons == null || persons.Length == 0)
+                    continue;
+
+                foreach (Person person in persons)
+                {
+                    if (person.IsMuted)
+                    {
+                        person.IsMuted = false;
+                        count++;
+                    }
+                }
+            }
+
+            return count;
         }
 
         #endregion

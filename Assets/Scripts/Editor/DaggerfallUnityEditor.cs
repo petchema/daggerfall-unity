@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -166,14 +166,13 @@ namespace DaggerfallWorkshop
                 // Import options
                 var propAddMeshColliders = Prop("Option_AddMeshColliders");
                 var propRMBGroundPlane = Prop("Option_RMBGroundPlane");
-                var propCloseCityGates = Prop("Option_CloseCityGates");
+                //var propCloseCityGates = Prop("Option_CloseCityGates");
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Import Options");
                 GUILayoutHelper.Indent(() =>
                 {
                     propAddMeshColliders.boolValue = EditorGUILayout.Toggle(new GUIContent("Add Colliders", "Add colliders where appropriate when building scenes. Decorative billboards will not receive colliders."), propAddMeshColliders.boolValue);
                     propRMBGroundPlane.boolValue = EditorGUILayout.Toggle(new GUIContent("RMB Ground Plane", "Adds RMB ground plane to imported city block (ignored by terrain system)."), propRMBGroundPlane.boolValue);
-                    propCloseCityGates.boolValue = EditorGUILayout.Toggle(new GUIContent("Close City Gates", "In walled cities use this flag to start city gates in closed position."), propCloseCityGates.boolValue);
                 });
 
                 // Prefab options

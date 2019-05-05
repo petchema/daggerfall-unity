@@ -1,5 +1,5 @@
 ﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -114,28 +114,6 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         }
     }
 
-    [Serializable]
-    public struct SerializedRecord
-    {
-        public readonly string gameObjectName;
-        public readonly Type componentType;
-        public readonly object[] serializedObjects;
-
-        public SerializedRecord(string goName, Component compType, params object[] toSerialize)
-        {
-            this.gameObjectName = goName;
-            this.componentType = compType.GetType();
-            this.serializedObjects = toSerialize;
-        }
-    }
-
-    public interface Idfmod_Serializable
-    {
-        System.Object[] ToSerialize();
-        void Deseralized(params System.Object[] obj);
-        bool Ignore { get; set; }
-    }
-
     /// <summary>
     /// Takes part of load/save logic.
     /// </summary>
@@ -145,6 +123,14 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         object NewSaveData();                           // Make empty/default save data.
         object GetSaveData();                           // Gets data to be serialized or null.
         void RestoreSaveData(object saveData);          // Apply deserialized data.
+    }
+
+    //used by mod builder window
+    public enum ModCompressionOptions
+    {
+        LZ4=0,
+        LZMA=1,
+        Uncompressed=2,
     }
 
     public delegate void DFModMessageReceiver(string message, object data, DFModMessageCallback callBack);

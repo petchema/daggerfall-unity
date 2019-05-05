@@ -1,5 +1,5 @@
 ﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -163,7 +163,9 @@ namespace DaggerfallWorkshop.Game.Questing
             if (expandMacros)
             {
                 QuestMacroHelper macroHelper = new QuestMacroHelper();
-                macroHelper.ExpandQuestMessage(ParentQuest, ref tokens);
+
+                // note Nystul: reveal dialog linked resources here on purpose (quest popups should reveal them: see this issue: https://forums.dfworkshop.net/viewtopic.php?f=24&t=1678&p=22069#p22069)                
+                macroHelper.ExpandQuestMessage(ParentQuest, ref tokens, true);
             }
 
             return tokens;

@@ -1,5 +1,5 @@
 ﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -183,7 +183,7 @@ namespace DaggerfallWorkshop.Game
             for (int record = 0; record < cifFile.RecordCount; record++)
             {
                 Texture2D texture;
-                if (!TextureReplacement.TryImportCifRci(filename, record, 0, out texture))
+                if (!TextureReplacement.TryImportCifRci(filename, record, 0, false, out texture))
                 {
                     // Get Color32 array
                     DFSize sz;

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -136,9 +136,9 @@ namespace DaggerfallConnect.Arena2
             BinaryReader reader = bookFile.GetReader();
 
             header = new BookHeader();
-            header.Title = bookFile.ReadCStringSkip(reader, 0, 64);
-            header.Author = bookFile.ReadCStringSkip(reader, 0, 64);
-            header.IsNaughty = (bookFile.ReadCStringSkip(reader, 0, 8) == naughty);
+            header.Title = FileProxy.ReadCStringSkip(reader, 0, 64);
+            header.Author = FileProxy.ReadCStringSkip(reader, 0, 64);
+            header.IsNaughty = (FileProxy.ReadCStringSkip(reader, 0, 8) == naughty);
             header.NullValues = reader.ReadBytes(88);
             header.Price = reader.ReadUInt32();
             header.Unknown1 = reader.ReadUInt16();

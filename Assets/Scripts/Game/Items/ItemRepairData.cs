@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -26,9 +26,19 @@ namespace DaggerfallWorkshop.Game.Items
 
         public int RepairTime { get; set; }
 
+        public int EstimatedRepairTime { get; set; }
+
         public ulong GetTimeDone()
         {
             return timeStarted + (uint)RepairTime;
+        }
+
+        public ulong GetEstimatedTimeDone()
+        {
+            if (IsBeingRepaired())
+                return timeStarted + (uint)EstimatedRepairTime;
+            else
+                return DaggerfallUnity.Instance.WorldTime.Now.ToSeconds() + (uint)EstimatedRepairTime;
         }
 
         public bool IsBeingRepaired()
@@ -67,8 +77,18 @@ namespace DaggerfallWorkshop.Game.Items
 
         public int DaysUntilRepaired()
         {
+            return GetDaysLeftUntil(GetTimeDone());
+        }
+
+        public int EstimatedDaysUntilRepaired()
+        {
+            return GetDaysLeftUntil(GetEstimatedTimeDone());
+        }
+
+        private int GetDaysLeftUntil(ulong time)
+        {
             ulong timeNow = DaggerfallUnity.Instance.WorldTime.Now.ToSeconds();
-            float timeLeft = GetTimeDone() - timeNow;
+            float timeLeft = time - timeNow;
             return (int)Mathf.Ceil(timeLeft / DaggerfallDateTime.SecondsPerDay);
         }
 

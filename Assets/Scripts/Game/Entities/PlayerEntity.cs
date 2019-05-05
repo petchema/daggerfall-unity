@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -45,7 +45,7 @@ namespace DaggerfallWorkshop.Game.Entity
         bool preventNormalizingReputations = false;
         bool isResting = false;
 
-        bool hasStartedInitialVampireQuest = false;
+        //bool hasStartedInitialVampireQuest = false;
         //byte vampireClan = 0;
         //uint lastTimeVampireNeedToKillSatiated = 0;
 
@@ -64,8 +64,7 @@ namespace DaggerfallWorkshop.Game.Entity
         protected PlayerNotebook notebook = new PlayerNotebook();
 
         protected short[] skillUses;
-        protected uint skillsRaisedThisLevel1 = 0;
-        protected uint skillsRaisedThisLevel2 = 0;
+        protected uint[] skillsRecentlyRaised = new uint[2];
         protected uint timeOfLastSkillIncreaseCheck = 0;
         protected uint timeOfLastSkillTraining = 0;
 
@@ -74,6 +73,7 @@ namespace DaggerfallWorkshop.Game.Entity
         protected int startingLevelUpSkillSum = 0;
         protected int currentLevelUpSkillSum = 0;
         protected bool readyToLevelUp = false;
+        protected bool oghmaLevelUp = false;
 
         protected short[] sGroupReputations = new short[5];
 
@@ -109,8 +109,6 @@ namespace DaggerfallWorkshop.Game.Entity
         public const int SwimmingFatigueLoss = 44;
         public const int JumpingFatigueLoss = 11;
 
-        private float classicUpdateTimer = 0f;
-        public const float ClassicUpdateInterval = 0.0625f; // Update every 1/16 of a second. An approximation of classic's update loop, which varies with framerate.
         private int breathUpdateTally = 0;
         private int runningTallyCounter = 0;
         private float guardsArriveCountdown = 0;
@@ -123,6 +121,9 @@ namespace DaggerfallWorkshop.Game.Entity
         protected uint lastGameMinutes = 0;         // Being tracked in order to perform updates based on changes in the current game minute
         private bool gameStarted = false;
         bool displayingExhaustedPopup = false;
+
+        const int socialGroupCount = 11;
+        int[] reactionMods = new int[socialGroupCount];     // Indices map to FactionFile.SocialGroups 0-10 - do not serialize, set by live effects
 
         #endregion
 
@@ -146,12 +147,14 @@ namespace DaggerfallWorkshop.Game.Entity
         public PersistentGlobalVars GlobalVars { get { return globalVars; } }
         public PlayerNotebook Notebook { get { return notebook; } }
         public short[] SkillUses { get { return skillUses; } set { skillUses = value; } }
+        public uint[] SkillsRecentlyRaised { get { return skillsRecentlyRaised; } set { skillsRecentlyRaised = value; } }
         public uint TimeOfLastSkillIncreaseCheck { get { return timeOfLastSkillIncreaseCheck; } set { timeOfLastSkillIncreaseCheck = value; } }
         public uint TimeOfLastSkillTraining { get { return timeOfLastSkillTraining; } set { timeOfLastSkillTraining = value; } }
         public uint TimeOfLastStealthCheck { get { return timeOfLastStealthCheck; } set { timeOfLastStealthCheck = value; } }
         public int StartingLevelUpSkillSum { get { return startingLevelUpSkillSum; } set { startingLevelUpSkillSum = value; } }
         public int CurrentLevelUpSkillSum { get { return currentLevelUpSkillSum; } }
         public bool ReadyToLevelUp { get { return readyToLevelUp; } set { readyToLevelUp = value; } }
+        public bool OghmaLevelUp { get { return oghmaLevelUp; } set { oghmaLevelUp = value; } }
         public short[] SGroupReputations { get { return sGroupReputations; } set { sGroupReputations = value; } }
         public int BiographyResistDiseaseMod { get { return biographyResistDiseaseMod; } set { biographyResistDiseaseMod = value; } }
         public int BiographyResistMagicMod { get { return biographyResistMagicMod; } set { biographyResistMagicMod = value; } }
@@ -175,6 +178,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public bool Arrested { get { return arrested; } set { arrested = value; } }
         public bool IsInBeastForm { get; set; }
         public List<string> BackStory { get; set; }
+        public VampireClans PreviousVampireClan { get; set; }
 
         #endregion
 
@@ -190,6 +194,21 @@ namespace DaggerfallWorkshop.Game.Entity
         #endregion
 
         #region Public Methods
+
+        public bool GetSkillRecentlyIncreased(DFCareer.Skills skill)
+        {
+            return (skillsRecentlyRaised[(int)skill / 32] & (1 << ((int)skill % 32))) != 0;
+        }
+
+        public void SetSkillRecentlyIncreased(int index)
+        {
+            skillsRecentlyRaised[index / 32] |= (uint)(1 << (index % 32));
+        }
+
+        public void ResetSkillsRecentlyRaised()
+        {
+            Array.Clear(skillsRecentlyRaised, 0, 2);
+        }
 
         public RaceTemplate GetLiveRaceTemplate()
         {
@@ -235,6 +254,65 @@ namespace DaggerfallWorkshop.Game.Entity
             return (int)Math.Ceiling((remainingSecs / DaggerfallDateTime.SecondsPerHour));
         }
 
+        public void ChangeReactionMod(FactionFile.SocialGroups socialGroup, int amount)
+        {
+            int index = (int)socialGroup;
+            if (index >= 0 && index < reactionMods.Length)
+                reactionMods[index] += amount;
+        }
+
+        public int GetReactionMod(FactionFile.SocialGroups socialGroup)
+        {
+            int index = (int)socialGroup;
+            if (index >= 0 && index < reactionMods.Length)
+                return reactionMods[index];
+            else
+                return 0;
+        }
+
+        public override void FixedUpdate()
+        {
+            // Handle events that are called by classic's update loop
+            if (GameManager.ClassicUpdate)
+            {
+                // Tally running skill. Running tallies so quickly in classic that it might be a bug or oversight.
+                // Here we use a rate of 1/4 that observed for classic.
+                if (playerMotor.IsRunning && !playerMotor.IsRiding)
+                {
+                    if (runningTallyCounter == 3)
+                    {
+                        TallySkill(DFCareer.Skills.Running, 1);
+                        runningTallyCounter = 0;
+                    }
+                    else
+                        runningTallyCounter++;
+                }
+
+                // Handle breath when underwater and not water breathing
+                if (GameManager.Instance.PlayerEnterExit.IsPlayerSubmerged && !GameManager.Instance.PlayerEntity.IsWaterBreathing)
+                {
+                    if (currentBreath == 0)
+                    {
+                        currentBreath = GameManager.Instance.GuildManager.DeepBreath(MaxBreath);
+                    }
+                    if (breathUpdateTally > 18)
+                    {
+                        --currentBreath;
+                        if (Race == Races.Argonian && (UnityEngine.Random.Range(0, 2) == 1))
+                            ++currentBreath;
+                        breathUpdateTally = 0;
+                    }
+                    else
+                        ++breathUpdateTally;
+
+                    if (currentBreath <= 0)
+                        SetHealth(0);
+                }
+                else
+                    currentBreath = 0;
+            }
+        }
+
         public override void Update(DaggerfallEntityBehaviour sender)
         {
             if (SaveLoadManager.Instance.LoadInProgress)
@@ -242,16 +320,6 @@ namespace DaggerfallWorkshop.Game.Entity
 
             if (CurrentHealth <= 0)
                 return;
-
-            bool classicUpdate = false;
-
-            if (classicUpdateTimer < ClassicUpdateInterval)
-                classicUpdateTimer += Time.deltaTime;
-            else
-            {
-                classicUpdateTimer = 0;
-                classicUpdate = true;
-            }
 
             if (guardsArriveCountdown > 0)
             {
@@ -275,72 +343,39 @@ namespace DaggerfallWorkshop.Game.Entity
                 gameStarted = true;
             if (playerMotor != null)
             {
+                // UESP describes Athleticism relating to fatigue/stamina as "decreases slower when running, jumping, climbing, and swimming."
+                // https://en.uesp.net/wiki/Daggerfall:ClassMaker#Special_Advantages
+                // In this implementation, players with athleticism will lose fatigue 10% slower, otherwise at normal rate
+                // TODO: Determine actual improvement multiplier to fatigue loss, possibly move to FormulaHelper
+                float fatigueLossMultiplier = (career.Athleticism) ? 0.90f : 1.0f;
+
                 // Apply per-minute events
                 if (lastGameMinutes != gameMinutes)
                 {
                     // Apply fatigue loss to the player
-                    int amount = DefaultFatigueLoss;
+                    int amount = (int)(DefaultFatigueLoss * fatigueLossMultiplier);
                     if (climbingMotor != null && climbingMotor.IsClimbing)
-                        amount = ClimbingFatigueLoss;
+                        amount = (int)(ClimbingFatigueLoss * fatigueLossMultiplier);
                     else if (playerMotor.IsRunning)
-                        amount = RunningFatigueLoss;
+                        amount = (int)(RunningFatigueLoss * fatigueLossMultiplier);
                     else if (GameManager.Instance.PlayerEnterExit.IsPlayerSwimming)
                     {
-                        if (Race != Races.Argonian && UnityEngine.Random.Range(1, 100 + 1) > Skills.GetLiveSkillValue(DFCareer.Skills.Swimming))
-                            amount = SwimmingFatigueLoss;
+                        if (Race != Races.Argonian && Dice100.FailedRoll(Skills.GetLiveSkillValue(DFCareer.Skills.Swimming)))
+                            amount = (int)(SwimmingFatigueLoss * fatigueLossMultiplier);
                         TallySkill(DFCareer.Skills.Swimming, 1);
                     }
 
-                    DecreaseFatigue(amount);
+                    if (!isResting)
+                        DecreaseFatigue(amount);
 
                     // Make magically-created items that have expired disappear
                     items.RemoveExpiredItems();
                 }
 
-                // Handle events that are called by classic's update loop
-                if (classicUpdate)
-                {
-                    // Tally running skill. Running tallies so quickly in classic that it might be a bug or oversight.
-                    // Here we use a rate of 1/4 that observed for classic.
-                    if (playerMotor.IsRunning && !playerMotor.IsRiding)
-                    {
-                        if (runningTallyCounter == 3)
-                        {
-                            TallySkill(DFCareer.Skills.Running, 1);
-                            runningTallyCounter = 0;
-                        }
-                        else
-                            runningTallyCounter++;
-                    }
-
-                    // Handle breath when underwater and not water breathing
-                    if (GameManager.Instance.PlayerEnterExit.IsPlayerSubmerged && !GameManager.Instance.PlayerEntity.IsWaterBreathing)
-                    {
-                        if (currentBreath == 0)
-                        {
-                            currentBreath = GameManager.Instance.GuildManager.DeepBreath(MaxBreath);
-                        }
-                        if (breathUpdateTally > 18)
-                        {
-                            --currentBreath;
-                            if (Race == Races.Argonian && (UnityEngine.Random.Range(0, 2) == 1))
-                                ++currentBreath;
-                            breathUpdateTally = 0;
-                        }
-                        else
-                            ++breathUpdateTally;
-
-                        if (currentBreath <= 0)
-                            SetHealth(0);
-                    }
-                    else
-                        currentBreath = 0;
-                }
-
                 // Reduce fatigue when jumping and tally jumping skill
                 if (!CheckedCurrentJump && playerMotor.IsJumping)
                 {
-                    DecreaseFatigue(JumpingFatigueLoss);
+                    DecreaseFatigue((int)(JumpingFatigueLoss * fatigueLossMultiplier));
                     TallySkill(DFCareer.Skills.Jumping, 1);
                     CheckedCurrentJump = true;
                 }
@@ -384,16 +419,14 @@ namespace DaggerfallWorkshop.Game.Entity
                 if (((i + lastGameMinutes) % 54720) == 0) // 38 days
                 {
                     RegionPowerAndConditionsUpdate(true);
-                    //StartVampireOrWereCreatureQuest(false);
+                    StartRacialOverrideQuest(false);
                 }
 
-                //if (((i + lastGameMinutes) % 120960) == 0) // 84 days
-                    //StartVampireOrWereCreatureQuest(true);
+                if (((i + lastGameMinutes) % 120960) == 0) // 84 days
+                    StartRacialOverrideQuest(true);
             }
 
-            // TODO: Right now enemy spawns are only prevented when time has been raised for
-            // fast travel. They should later be prevented when time has been raised for
-            // turning into vampire
+            // Enemy spawns are prevented after time is raised for fast travel, jail time, and vampire transformation
             // Classic also prevents enemy spawns during loitering,
             // but this seems counterintuitive so it's not implemented in DF Unity for now
             if (!preventEnemySpawns)
@@ -402,8 +435,8 @@ namespace DaggerfallWorkshop.Game.Entity
 
                 for (uint l = 0; l < (gameMinutes - lastGameMinutes); ++l)
                 {
-                    // Catch up time and break if something spawns
-                    if (IntermittentEnemySpawn(l + lastGameMinutes + 1))
+                    // Catch up time and break if something spawns. Don't spawn encounters while player is swimming in water (same as classic).
+                    if (!GameManager.Instance.PlayerEnterExit.IsPlayerSwimming && IntermittentEnemySpawn(l + lastGameMinutes + 1))
                         break;
 
                     // Confirm regionData is available
@@ -412,14 +445,14 @@ namespace DaggerfallWorkshop.Game.Entity
 
                     // Handle guards appearing for low-legal rep player
                     int regionIndex = GameManager.Instance.PlayerGPS.CurrentRegionIndex;
-                    if (regionData[regionIndex].LegalRep < -10 && UnityEngine.Random.Range(1, 101) < 5)
+                    if (regionData[regionIndex].LegalRep < -10 && Dice100.SuccessRoll(5))
                     {
                         crimeCommitted = Crimes.Criminal_Conspiracy;
                         SpawnCityGuards(false);
                     }
 
                     // Handle guards appearing for banished player
-                    if ((regionData[regionIndex].SeverePunishmentFlags & 1) != 0 && UnityEngine.Random.Range(1, 101) < 10)
+                    if ((regionData[regionIndex].SeverePunishmentFlags & 1) != 0 && Dice100.SuccessRoll(10))
                     {
                         crimeCommitted = Crimes.Criminal_Conspiracy;
                         SpawnCityGuards(false);
@@ -454,6 +487,13 @@ namespace DaggerfallWorkshop.Game.Entity
             {
                 haveShownSurrenderToGuardsDialogue = false;
             }
+        }
+
+        void StartRacialOverrideQuest(bool isCureQuest)
+        {
+            RacialOverrideEffect racialEffect = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
+            if (racialEffect != null)
+                racialEffect.StartQuest(isCureQuest);
         }
 
         // Recreation of vampire/werecreature quest starter from classic
@@ -578,7 +618,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public void SpawnCityGuards(bool immediateSpawn)
         {
             // Only spawn if player is not in a dungeon, and if there are 10 or fewer existing guards
-            if (!GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon && GameManager.Instance.HowManyEnemiesOfType(MobileTypes.Knight_CityWatch) <= 10)
+            if (!GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon && GameManager.Instance.HowManyEnemiesOfType(MobileTypes.Knight_CityWatch, false, true) <= 10)
             {
                 DaggerfallLocation dfLocation = GameManager.Instance.StreamingWorld.CurrentPlayerLocationObject;
                 PopulationManager populationManager = dfLocation.GetComponent<PopulationManager>();
@@ -598,23 +638,22 @@ namespace DaggerfallWorkshop.Game.Entity
                             continue;
 
                         Vector3 directionToMobile = populationManager.PopulationPool[i].npc.Motor.transform.position - GameManager.Instance.PlayerMotor.transform.position;
-                        float distance = directionToMobile.magnitude;
-
-                        // Spawn from guard mobile NPCs first
-                        if (populationManager.PopulationPool[i].npc.Billboard.IsUsingGuardTexture)
+                        if (directionToMobile.magnitude <= 77.5f)
                         {
-                            SpawnCityGuard(populationManager.PopulationPool[i].npc.transform.position, populationManager.PopulationPool[i].npc.transform.forward);
-                            populationManager.PopulationPool[i].npc.gameObject.SetActive(false);
-                            // Count those within classic npc range as spawned from NPCs, to mimic classic behavior
-                            if (distance <= 77.5f)
+                            // Spawn from guard mobile NPCs first
+                            if (populationManager.PopulationPool[i].npc.Billboard.IsUsingGuardTexture)
+                            {
+                                SpawnCityGuard(populationManager.PopulationPool[i].npc.transform.position, populationManager.PopulationPool[i].npc.transform.forward);
+                                populationManager.PopulationPool[i].npc.gameObject.SetActive(false);
                                 ++guardsSpawnedFromNPCs;
-                        }
-                        // Next try non-guards
-                        else if (distance <= 77.5f && Vector3.Angle(directionToMobile, GameManager.Instance.PlayerMotor.transform.forward) >= 105.469
-                            && UnityEngine.Random.Range(0, 4) == 0)
-                        {
-                            SpawnCityGuard(populationManager.PopulationPool[i].npc.transform.position, populationManager.PopulationPool[i].npc.transform.forward);
-                            ++guardsSpawnedFromNPCs;
+                            }
+                            // Next try non-guards
+                            else if (Vector3.Angle(directionToMobile, GameManager.Instance.PlayerMotor.transform.forward) >= 105.469
+                                && UnityEngine.Random.Range(0, 4) == 0)
+                            {
+                                SpawnCityGuard(populationManager.PopulationPool[i].npc.transform.position, populationManager.PopulationPool[i].npc.transform.forward);
+                                ++guardsSpawnedFromNPCs;
+                            }
                         }
                     }
 
@@ -673,7 +712,7 @@ namespace DaggerfallWorkshop.Game.Entity
                     // Player seen by a non-guard NPC but not by any guard NPCs. Start a countdown until guards arrive.
                     if (!seenByGuard && seen)
                     {
-                        guardsArriveCountdown = UnityEngine.Random.Range(5, 11);
+                        guardsArriveCountdown = UnityEngine.Random.Range(5, 10 + 1);
                         // Also track location so guards don't appear if player leaves during countdown
                         guardsArriveCountdownLocation = dfLocation;
                     }
@@ -681,22 +720,26 @@ namespace DaggerfallWorkshop.Game.Entity
             }
         }
 
-        void SpawnCityGuard(Vector3 position, Vector3 direction)
+        public GameObject SpawnCityGuard(Vector3 position, Vector3 direction)
         {
             GameObject[] cityWatch = GameObjectHelper.CreateFoeGameObjects(position, MobileTypes.Knight_CityWatch, 1);
-            if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideBuilding)
-                cityWatch[0].transform.parent = GameManager.Instance.PlayerEnterExit.Interior.transform;
-            else if (GameManager.Instance.PlayerGPS.IsPlayerInLocationRect)
-                cityWatch[0].transform.parent = GameManager.Instance.StreamingWorld.CurrentPlayerLocationObject.transform;
-            cityWatch[0].transform.LookAt(direction);
+            cityWatch[0].transform.forward = direction;
             EnemyMotor enemyMotor = cityWatch[0].GetComponent<EnemyMotor>();
+
+            // Classic does not do anything special to make guards aware of the player, but since they're responding to a crime, standing around
+            // unaware of the player can be perceived as a bug.
             enemyMotor.MakeEnemyHostileToAttacker(GameManager.Instance.PlayerEntityBehaviour);
+
+            // Set a longer giveUpTimer than usual in case it takes more than the usual timer to get to the player position
+            enemyMotor.GiveUpTimer *= 3;
             cityWatch[0].SetActive(true);
+
+            return cityWatch[0];
         }
 
         void MakeNPCGuardsIntoEnemiesIfGuardsSpawned()
         {
-            if (GameManager.Instance.HowManyEnemiesOfType(MobileTypes.Knight_CityWatch) > 0)
+            if (GameManager.Instance.HowManyEnemiesOfType(MobileTypes.Knight_CityWatch, true) > 0)
             {
                 DaggerfallLocation dfLocation = GameManager.Instance.StreamingWorld.CurrentPlayerLocationObject;
                 if (dfLocation == null)
@@ -776,8 +819,8 @@ namespace DaggerfallWorkshop.Game.Entity
             this.sGroupReputations[4] = character.reputationUnderworld;
             this.currentFatigue = character.currentFatigue;
             this.skillUses = character.skillUses;
-            this.skillsRaisedThisLevel1 = character.skillsRaisedThisLevel1;
-            this.skillsRaisedThisLevel2 = character.skillsRaisedThisLevel2;
+            this.skillsRecentlyRaised[0] = character.skillsRaisedThisLevel1;
+            this.skillsRecentlyRaised[1] = character.skillsRaisedThisLevel2;
             this.startingLevelUpSkillSum = character.startingLevelUpSkillSum;
             this.minMetalToHit = (WeaponMaterialTypes)character.minMetalToHit;
             this.armorValues = character.armorValues;
@@ -788,7 +831,7 @@ namespace DaggerfallWorkshop.Game.Entity
             this.timeForDarkBrotherhoodLetter = character.timeForDarkBrotherhoodLetter;
             this.darkBrotherhoodRequirementTally = character.darkBrotherhoodRequirementTally;
             this.thievesGuildRequirementTally = character.thievesGuildRequirementTally;
-            this.hasStartedInitialVampireQuest = character.hasStartedInitialVampireQuest != 0;
+            //this.hasStartedInitialVampireQuest = character.hasStartedInitialVampireQuest != 0;
             //this.vampireClan = character.vampireClan;
             //this.lastTimeVampireNeedToKillSatiated = character.lastTimeVampireNeedToKillSatiated;
 
@@ -808,9 +851,10 @@ namespace DaggerfallWorkshop.Game.Entity
         }
 
         /// <summary>
-        /// Assigns character items from classic save tree.
+        /// Assigns character items and spells from classic save tree.
+        /// Spells are stored as a child of spellbook item container, which is why they are imported along with items.
         /// </summary>
-        public void AssignItems(SaveTree saveTree)
+        public void AssignItemsAndSpells(SaveTree saveTree)
         {
             // Find character record, should always be a singleton
             CharacterRecord characterRecord = (CharacterRecord)saveTree.FindRecord(RecordTypes.Character);
@@ -835,8 +879,14 @@ namespace DaggerfallWorkshop.Game.Entity
                 if ((record as ItemRecord).ParsedData.image1 == 0 || (record as ItemRecord).ParsedData.image1 == 0xffff)
                     continue;
 
-                // Create item, grabbing trapped soul if needed
+                // Create item
                 DaggerfallUnityItem newItem = new DaggerfallUnityItem((ItemRecord)record);
+
+                // Import spells if this is a spellbook record
+                if (newItem.ItemGroup == ItemGroups.MiscItems && newItem.GroupIndex == 0)
+                    ImportSpells(containerRecord);
+
+                // Grabbed trapped soul if needed
                 if (newItem.ItemGroup == ItemGroups.MiscItems && newItem.GroupIndex == 1)
                 {
                     if (record.Children.Count > 0)
@@ -866,6 +916,32 @@ namespace DaggerfallWorkshop.Game.Entity
                     if (characterRecord.ParsedData.equippedItems[i] == record.RecordRoot.RecordID)
                         equipTable.EquipItem(newItem, true, false);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Assigns spells from spellbook item.
+        /// </summary>
+        void ImportSpells(ContainerRecord record)
+        {
+            // Must have a populated spellbook container with spells
+            if (record == null || record.Children.Count == 0 ||
+                record.Children[0].Children == null || record.Children[0].Children.Count == 0)
+            {
+                return;
+            }
+
+            // Read spell records in spellbook container
+            foreach(SpellRecord spell in record.Children[0].Children)
+            {
+                spell.ReadNativeSpellData();
+                EffectBundleSettings bundle;
+                if (!GameManager.Instance.EntityEffectBroker.ClassicSpellRecordDataToEffectBundleSettings(spell.ParsedData, BundleTypes.Spell, out bundle))
+                {
+                    Debug.LogErrorFormat("Failed to create effect bundle while importing classic spell '{0}'.", spell.ParsedData.spellName);
+                    continue;
+                }
+                AddSpell(bundle);
             }
         }
 
@@ -920,13 +996,13 @@ namespace DaggerfallWorkshop.Game.Entity
         {
             // IDs from SPELLS.STD record ID https://en.uesp.net/wiki/Daggerfall:SPELLS.STD_indices
             int levitateID = 4;
-            //int charmMortalID = 90;       // Not implemented
+            int charmMortalID = 90;
             int calmHumanoidID = 91;
             int nimblenessID = 85;
             int paralysisID = 50;
             int freeActionID = 10;
             int healID = 64;
-            //int shieldID = 17;            // Not implemented
+            int shieldID = 17;
             int resistColdID = 11;
             int resistFireID = 12;
             int resistShockID = 13;
@@ -937,7 +1013,7 @@ namespace DaggerfallWorkshop.Game.Entity
 
             // Common spells
             AssignVampireSpell(levitateID);
-            //AssignVampireSpell(charmMortalID);
+            AssignVampireSpell(charmMortalID);
             AssignVampireSpell(calmHumanoidID);
 
             // Clan spells
@@ -956,7 +1032,7 @@ namespace DaggerfallWorkshop.Game.Entity
                     AssignVampireSpell(healID);
                     break;
                 case VampireClans.Garlythi:
-                    //AssignVampireSpell(shieldID);
+                    AssignVampireSpell(shieldID);
                     break;
                 case VampireClans.Selenu:
                     AssignVampireSpell(resistColdID);
@@ -1199,6 +1275,7 @@ namespace DaggerfallWorkshop.Game.Entity
                     if (skills.GetPermanentSkillValue(i) < 100 && (skills.GetPermanentSkillValue(i) < 95 || !AlreadyMasteredASkill()))
                     {
                         skills.SetPermanentSkillValue(i, (short)(skills.GetPermanentSkillValue(i) + 1));
+                        SetSkillRecentlyIncreased(i);
                         SetCurrentLevelUpSkillSum();
                         DaggerfallUI.Instance.PopupMessage(HardStrings.skillImprove.Replace("%s", DaggerfallUnity.Instance.TextProvider.GetSkillName((DFCareer.Skills)i)));
                         if (skills.GetPermanentSkillValue(i) == 100)
@@ -1362,6 +1439,11 @@ namespace DaggerfallWorkshop.Game.Entity
                 item.MakePermanent();
         }
 
+        public void ClearReactionMods()
+        {
+            Array.Clear(reactionMods, 0, socialGroupCount);
+        }
+
         #endregion
 
         #region RegionData
@@ -1422,6 +1504,10 @@ namespace DaggerfallWorkshop.Game.Entity
                                                         0, 0, 0, 0, 88, 94, 36, 94, 106, 84, 106, 106, 88, 98, 82, 98, 84, 94, 36, 88, 94, 36, 98, 84, 106,
                                                        88, 106, 88, 92, 84, 98, 88, 82, 94};
 
+            // Note: For some reason rumor updating is disabled in classic while the player is serving jail time. There's no clear reason for this,
+            // so not replicating that here.
+            GameManager.Instance.TalkManager.RefreshRumorMill();
+
             List<int> keys = new List<int>(factionData.FactionDict.Keys);
             foreach (int key in keys)
             {
@@ -1461,7 +1547,7 @@ namespace DaggerfallWorkshop.Game.Entity
                     }
 
                     // Raise or lower power based on power of parent, allies, random power bonus and enemies
-                    if (parentPowerMod + alliesPowerMod + factionData.FactionDict[key].rulerPowerBonus - enemiesPowerMod <= UnityEngine.Random.Range(0, 100 + 1))
+                    if (Dice100.FailedRoll(parentPowerMod + alliesPowerMod + factionData.FactionDict[key].rulerPowerBonus - enemiesPowerMod))
                         factionData.ChangePower(factionData.FactionDict[key].id, -1);
                     else
                         factionData.ChangePower(factionData.FactionDict[key].id, 1);
@@ -1490,10 +1576,10 @@ namespace DaggerfallWorkshop.Game.Entity
                             if (allies[i] != 0)
                             {
                                 int powerSum = factionPowerMod + factionData.FactionDict[key].rulerPowerBonus;
-                                if ((powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, allies[i]) * 3) / 5 + 70 < UnityEngine.Random.Range(0, 100 + 1))
+                                if (Dice100.FailedRoll((powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, allies[i]) * 3) / 5 + 70))
                                 {
                                     factionData.EndFactionAllies(factionData.FactionDict[key].id, allies[i]);
-                                    // AddNewRumor 1402
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, allies[i], -1, 100, 1402); // End faction allies
                                 }
                             }
                         }
@@ -1510,10 +1596,10 @@ namespace DaggerfallWorkshop.Game.Entity
                             if (FactionData.GetFactionData(enemies[i], out enemy) && !factionData.IsEnemyStatePermanentUntilWarOver(factionData.FactionDict[key], enemy))
                             {
                                 int powerSum = factionPowerMod + factionData.FactionDict[key].rulerPowerBonus;
-                                if ((powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, enemies[i]) * 3) / 5 > UnityEngine.Random.Range(0, 100 + 1))
+                                if (Dice100.SuccessRoll((powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, enemies[i]) * 3) / 5))
                                 {
                                     factionData.EndFactionEnemies(factionData.FactionDict[key].id, enemies[i]);
-                                    // AddNewRumor 1403
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, enemies[i], -1, 100, 1403); // End faction enemies
                                 }
                             }
                         }
@@ -1555,14 +1641,14 @@ namespace DaggerfallWorkshop.Game.Entity
                                       && factionData.GetFaction2ARelationToFaction1(factionData.FactionDict[key].id, random.id) == 0)
                                 {
                                     int powerSum = factionPowerMod + factionData.FactionDict[key].rulerPowerBonus;
-                                    if ((powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, random.id) * 3) / 5 > UnityEngine.Random.Range(0, 100 + 1))
+                                    if (Dice100.SuccessRoll((powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, random.id) * 3) / 5))
                                     {
-                                        //if (factionData.FactionDict[key].type == (int)FactionFile.FactionTypes.Province && factionData.FactionDict[key].region != -1)
-                                        //AddNewRumor 1481
-                                        //if (random.type == (int)FactionFile.FactionTypes.Province && random.region != -1)
-                                        //AddNewRumor 1481
+                                        if (factionData.FactionDict[key].type == (int)FactionFile.FactionTypes.Province && factionData.FactionDict[key].region != -1)
+                                            GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, random.id, factionData.FactionDict[key].region, 26, 1481); // Factions start alliance sign message
+                                        if (random.type == (int)FactionFile.FactionTypes.Province && random.region != -1)
+                                            GameManager.Instance.TalkManager.AddNonQuestRumor(random.id, factionData.FactionDict[key].id, random.region, 26, 1481); // Factions start alliance sign message
                                         factionData.StartFactionAllies(factionData.FactionDict[key].id, i, random.id);
-                                        //AddNewRumor 1400
+                                        GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, random.id, -1, 100, 1400); // Factions start alliance
                                     }
                                 }
                                 break;
@@ -1596,14 +1682,14 @@ namespace DaggerfallWorkshop.Game.Entity
                                 }
                                 else if (regionData[factionData.FactionDict[key].region].Flags[(int)RegionDataFlags.WarBeginning])
                                 {
-                                    //AddNewRumor 1479
-                                    //AddNewRumor 1479
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, warEnemyID, factionData.FactionDict[key].region, 0, 1479); // War started sign message
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(warEnemyID, factionData.FactionDict[key].id, warEnemy.region, 0, 1479); // War started sign message
                                     TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.WarOngoing);
                                     TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.WarOngoing);
                                 }
                                 else if (regionData[factionData.FactionDict[key].region].Flags[(int)RegionDataFlags.WarOngoing])
                                 {
-                                    if (UnityEngine.Random.Range(1, 100 + 1) > 5)
+                                    if (Dice100.FailedRoll(5))
                                     {
                                         int combinedPower = factionData.FactionDict[key].power + alliesPower / 5;
 
@@ -1630,20 +1716,20 @@ namespace DaggerfallWorkshop.Game.Entity
 
                                         if (combinedPower - combinedEnemyPower > combinedEnemyPower)
                                         {
-                                            // AddNewRumor 1408
+                                            GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, warEnemy.id, -1, 100, 1408); // War over
                                             factionData.ChangePower(factionData.FactionDict[key].id, warEnemy.power / 2);
                                             TurnOnConditionFlag(warEnemy.region, RegionDataFlags.WarLost);
                                             TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.WarWon);
                                         }
                                         else if (combinedEnemyPower - combinedPower > combinedPower)
                                         {
-                                            // AddNewRumor 1408
+                                            GameManager.Instance.TalkManager.AddNonQuestRumor(warEnemy.id, factionData.FactionDict[key].id, -1, 100, 1408); // War over
                                             factionData.ChangePower(warEnemy.id, factionData.FactionDict[key].power / 2);
                                             TurnOnConditionFlag(warEnemy.region, RegionDataFlags.WarWon);
                                             TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.WarLost);
                                         }
-                                        //else
-                                        //AddNewRumor 1407
+                                        else
+                                            GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, warEnemy.id, -1, 100, 1407); // War started/ongoing
                                     }
                                     else
                                     {
@@ -1696,20 +1782,21 @@ namespace DaggerfallWorkshop.Game.Entity
                                         if (relation == 2)
                                             mod = 10;
                                         int powerSum = factionPowerMod + factionData.FactionDict[key].rulerPowerBonus;
-                                        if (mod + (powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, random.id) * 3) / 5 + 70 < UnityEngine.Random.Range(0, 100 + 1))
+                                        if (Dice100.FailedRoll(mod + (powerSum + factionData.GetNumberOfCommonAlliesAndEnemies(factionData.FactionDict[key].id, random.id) * 3) / 5 + 70))
                                         {
-                                            //if (factionData.FactionDict[key].region != -1 && factionData.FactionDict[key].type == (int)FactionFile.FactionTypes.Province)
-                                            //AddNewRumor 1482
-                                            //if (random.region != -1 && random.type == (int)FactionFile.FactionTypes.Province)
-                                            //AddNewRumor 1482
+                                            if (factionData.FactionDict[key].region != -1 && factionData.FactionDict[key].type == (int)FactionFile.FactionTypes.Province)
+                                                GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, random.id, factionData.FactionDict[key].region, 27, 1482); // War started sign message
+                                            if (random.region != -1 && random.type == (int)FactionFile.FactionTypes.Province)
+                                                GameManager.Instance.TalkManager.AddNonQuestRumor(random.id, factionData.FactionDict[key].id, random.region, 27, 1482); // Enemy faction sign message
                                             factionData.StartFactionEnemies(factionData.FactionDict[key].id, i, random.id);
+                                            GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, random.id, -1, 100, 1401); // Faction rivalry started
                                             if (factionData.FactionDict[key].region != -1 && factionData.FactionDict[key].type == (int)FactionFile.FactionTypes.Province
                                                 && random.region != -1 && random.type == (int)FactionFile.FactionTypes.Province
                                                 && factionData.IsEnemyStatePermanentUntilWarOver(factionData.FactionDict[key], random))
                                             {
-                                                // AddNewRumor 1407
-                                                // AddNewRumor 1479
-                                                // AddNewRumor 1479
+                                                GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, random.id, -1, 100, 1407); // War started/ongoing
+                                                GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, random.id, factionData.FactionDict[key].region, 28, 1479); // War started sign message
+                                                GameManager.Instance.TalkManager.AddNonQuestRumor(random.id, factionData.FactionDict[key].id, random.region, 28, 1479); // War started sign message
                                                 TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.WarBeginning);
                                                 TurnOnConditionFlag(random.region, RegionDataFlags.WarBeginning);
                                             }
@@ -1724,13 +1811,13 @@ namespace DaggerfallWorkshop.Game.Entity
                         if (!factionData.GetFlag(key, FactionFile.Flags.RulerImmune))
                         {
                             int mod = factionData.FactionDict[key].rulerPowerBonus / 3;
-                            if (UnityEngine.Random.Range(0, 100 + 1) > mod + 70)
+                            if (Dice100.FailedRoll(mod + 70))
                             {
-                                //if (factionData.FactionDict[key].region != -1 && factionData.FactionDict[key].type == (int)FactionFile.FactionTypes.Province)
-                                // AddNewRumor 1480
+                                if (factionData.FactionDict[key].region != -1 && factionData.FactionDict[key].type == (int)FactionFile.FactionTypes.Province)
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, -1, 12, 1480); // New ruler. Although unused, a regionID is defined for this rumor in classic.
                                 factionData.SetNewRulerData(factionData.FactionDict[key].id);
                                 // if ( PlayerIsRelatedToFaction(factionData.FactionDict[key]) )
-                                // AddNewRumor 1406
+                                // AddNewRumor 1406 // New faction leader
                             }
                         }
 
@@ -1752,13 +1839,22 @@ namespace DaggerfallWorkshop.Game.Entity
                                 TurnOffConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.FamineEnding);
                             else if (regionData[factionData.FactionDict[key].region].Flags[(int)RegionDataFlags.FamineOngoing])
                             {
-                                if (UnityEngine.Random.Range(0, 100 + 1) < factionData.FactionDict[key].rulerPowerBonus / 5 + alliesPowerMod + factionData.FactionDict[key].power / 5)
+                                if (Dice100.SuccessRoll(factionData.FactionDict[key].rulerPowerBonus / 5 + alliesPowerMod + factionData.FactionDict[key].power / 5))
+                                {
                                     TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.FamineEnding);
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 7, 1477); // Famine sign message
+                                }
                             }
                             else if (regionData[factionData.FactionDict[key].region].Flags[(int)RegionDataFlags.FamineBeginning])
+                            {
                                 TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.FamineOngoing);
-                            else if (UnityEngine.Random.Range(1, 100 + 1) <= 2 && UnityEngine.Random.Range(0, 100 + 1) > factionData.FactionDict[key].rulerPowerBonus + alliesPowerMod)
+                                GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 7, 1477); // Famine sign message
+                            }
+                            else if (Dice100.SuccessRoll(2) && Dice100.FailedRoll(factionData.FactionDict[key].rulerPowerBonus + alliesPowerMod))
+                            {
                                 TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.FamineBeginning);
+                                GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 7, 1477); // Famine sign message
+                            }
 
                             // Plague
                             FactionFile.FactionData temple;
@@ -1771,28 +1867,33 @@ namespace DaggerfallWorkshop.Game.Entity
                                 if (temple.id != 0)
                                     factionData.ChangePower(temple.id, -1);
                                 factionData.ChangePower(factionData.FactionDict[key].id, -1);
-                                if (UnityEngine.Random.Range(0, 100 + 1) < factionData.FactionDict[key].power / 5 + factionData.FactionDict[key].rulerPowerBonus / 5 + alliesPowerMod)
+                                if (Dice100.SuccessRoll(factionData.FactionDict[key].power / 5 + factionData.FactionDict[key].rulerPowerBonus / 5 + alliesPowerMod))
+                                {
                                     TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.PlagueEnding);
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 4, 1478); // Plague sign message
+                                }
                             }
                             else if (regionData[factionData.FactionDict[key].region].Flags[(int)RegionDataFlags.PlagueBeginning])
                             {
                                 if (temple.id != 0)
                                     factionData.ChangePower(temple.id, -1);
                                 factionData.ChangePower(factionData.FactionDict[key].id, -1);
+                                GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 4, 1478); // Plague sign message
                                 TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.PlagueOngoing);
                             }
-                            else if (UnityEngine.Random.Range(1, 100 + 1) <= 2 && UnityEngine.Random.Range(0, 100 + 1) > factionData.FactionDict[key].rulerPowerBonus + alliesPowerMod)
+                            else if (Dice100.SuccessRoll(2) && Dice100.FailedRoll(factionData.FactionDict[key].rulerPowerBonus + alliesPowerMod))
                             {
                                 if (temple.id != 0)
                                     factionData.ChangePower(temple.id, -1);
                                 factionData.ChangePower(factionData.FactionDict[key].id, -1);
+                                GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 4, 1478); // Plague sign message
                                 TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.PlagueBeginning);
                             }
 
                             // Persecuted temple
                             if (TemplesAssociatedWithRegions[factionData.FactionDict[key].region] != 0)
                             {
-                                if (UnityEngine.Random.Range(0, 100 + 1) >= (temple.power - factionData.FactionDict[key].power + 5) / 5)
+                                if (Dice100.FailedRoll((temple.power - factionData.FactionDict[key].power + 5) / 5))
                                     TurnOffConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.PersecutedTemple);
                                 else if (temple.power >= 2 * factionData.FactionDict[key].power)
                                     TurnOffConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.PersecutedTemple);
@@ -1801,6 +1902,7 @@ namespace DaggerfallWorkshop.Game.Entity
                                     regionData[factionData.FactionDict[key].region].IDOfPersecutedTemple = (ushort)temple.id;
                                     TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.PersecutedTemple);
                                     factionData.ChangePower(temple.id, -1);
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 18, 1476); // Persecuted temple sign message
                                 }
                             }
 
@@ -1814,12 +1916,13 @@ namespace DaggerfallWorkshop.Game.Entity
                             FactionFile.FactionData darkBrotherhood;
                             FactionData.GetFactionData((int)FactionFile.FactionIDs.The_Dark_Brotherhood, out darkBrotherhood);
 
-                            if (UnityEngine.Random.Range(0, 101) >= ((thievesGuild.power + darkBrotherhood.power) / 2 - factionData.FactionDict[key].power + 5) / 5)
+                            if (Dice100.FailedRoll(((thievesGuild.power + darkBrotherhood.power) / 2 - factionData.FactionDict[key].power + 5) / 5))
                                 TurnOffConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.CrimeWave);
                             else
                             {
                                 TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.CrimeWave);
                                 factionData.ChangePower(factionData.FactionDict[key].id, -1);
+                                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, factionData.FactionDict[key].region, 11, 1410); // Crime wave
                             }
 
                             // Witch burnings
@@ -1829,12 +1932,13 @@ namespace DaggerfallWorkshop.Game.Entity
                                 factionData.ChangePower(witches.id, -1);
                             if (witches.id != 0)
                             {
-                                if (UnityEngine.Random.Range(0, 101) >= (witches.power - factionData.FactionDict[key].power + 5) / 5)
+                                if (Dice100.FailedRoll((witches.power - factionData.FactionDict[key].power + 5) / 5))
                                     TurnOffConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.WitchBurnings);
                                 else
                                 {
                                     TurnOnConditionFlag(factionData.FactionDict[key].region, RegionDataFlags.WitchBurnings);
                                     factionData.ChangePower(witches.id, -1);
+                                    GameManager.Instance.TalkManager.AddNonQuestRumor(factionData.FactionDict[key].id, 0, factionData.FactionDict[key].region, 10, 1475); // Witch burnings sign message
                                 }
                             }
                         }
@@ -1882,6 +1986,18 @@ namespace DaggerfallWorkshop.Game.Entity
                             factionData.ChangePower(merchants.id, 1);
                     }
                 }
+            }
+
+            if (updateConditions)
+            {
+                // These rumors are always available
+                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, -1, 100, 1450);
+                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, -1, 100, 1451);
+                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, -1, 100, 1452);
+                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, -1, 100, 1453);
+                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, -1, 100, 1454);
+                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, -1, 100, 1455);
+                GameManager.Instance.TalkManager.AddNonQuestRumor(0, 0, -1, 100, 1456);
             }
         }
 

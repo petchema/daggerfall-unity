@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -34,10 +34,13 @@ namespace DaggerfallWorkshop.Game
     public class GameManager : MonoBehaviour
     {
         #region Fields
+        public const float classicUpdateInterval = 0.0625f;        // Update every 1/16 of a second. An approximation of classic's update loop, which varies with framerate.
 
         public bool Verbose = false;
         bool isGamePaused = false;
         float savedTimeScale;
+        float classicUpdateTimer = 0;                       // Timer for matching classic's update loop
+        bool classicUpdate = false;                         // True when reached a classic update
         //Texture2D pauseScreenshot;
 
         GameObject playerObject = null;
@@ -94,6 +97,13 @@ namespace DaggerfallWorkshop.Game
         {
             get { return Instance.isGamePaused; }
         }
+
+        public static bool ClassicUpdate
+        {
+            get { return Instance.classicUpdate; }
+        }
+
+        public bool DisableAI { get; set; }
 
         public StateManager StateManager
         {
@@ -438,8 +448,28 @@ namespace DaggerfallWorkshop.Game
             Debug.Log("Welcome to Daggerfall Unity " + VersionInfo.DaggerfallUnityVersion);
         }
 
+        void FixedUpdate()
+        {
+            if (!IsPlayingGame())
+            {
+                classicUpdate = false;
+                return;
+            }
+
+            // Update timer that approximates the timing of original Daggerfall's game update loop
+            classicUpdateTimer += Time.deltaTime;
+            if (classicUpdateTimer >= classicUpdateInterval)
+            {
+                classicUpdateTimer = 0;
+                classicUpdate = true;
+            }
+            else
+                classicUpdate = false;
+        }
+
         void Update()
         {
+            // Don't process game manager input messages when game not running
             if (!IsPlayingGame())
                 return;
 
@@ -553,7 +583,7 @@ namespace DaggerfallWorkshop.Game
         /// </summary>
         /// <param name="minMonsterSpawnerDistance">Monster spawners must be at least this close.</param>
         /// <returns>True if enemies are nearby.</returns>
-        public bool AreEnemiesNearby(float minMonsterSpawnerDistance = 12f)
+        public bool AreEnemiesNearby(float minMonsterSpawnerDistance = 12f, bool includingPacified = false)
         {
             bool areEnemiesNearby = false;
             DaggerfallEntityBehaviour[] entityBehaviours = FindObjectsOfType<DaggerfallEntityBehaviour>();
@@ -566,10 +596,16 @@ namespace DaggerfallWorkshop.Game
                     if (enemySenses)
                     {
                         // Can enemy see player or is close enough they would be spawned in classic?
-                        if ((entityBehaviour.Target == Instance.PlayerEntityBehaviour && enemySenses.TargetInSight) || enemySenses.WouldBeSpawnedInClassic)
+                        if ((enemySenses.Target == Instance.PlayerEntityBehaviour && enemySenses.TargetInSight) || enemySenses.WouldBeSpawnedInClassic)
                         {
-                            areEnemiesNearby = true;
-                            break;
+                            // Is it hostile or pacified?
+                            EnemyMotor enemyMotor = entityBehaviour.GetComponent<EnemyMotor>();
+                            EnemyEntity enemyEntity = entityBehaviour.Entity as EnemyEntity;
+                            if (includingPacified || (enemyMotor.IsHostile && enemyEntity.MobileEnemy.Team != MobileTeams.PlayerAlly))
+                            {
+                                areEnemiesNearby = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -596,7 +632,7 @@ namespace DaggerfallWorkshop.Game
         /// <param name="type">Enemy type to search for.</param>
         /// <param name="stopLookingIfFound">Return as soon as an enemy of given type is found.</param>
         /// <returns>Number of this enemy type.</returns>
-        public int HowManyEnemiesOfType(MobileTypes type, bool stopLookingIfFound = false)
+        public int HowManyEnemiesOfType(MobileTypes type, bool stopLookingIfFound = false, bool includingPacified = false)
         {
             int numberOfEnemies = 0;
             DaggerfallEntityBehaviour[] entityBehaviours = FindObjectsOfType<DaggerfallEntityBehaviour>();
@@ -608,9 +644,14 @@ namespace DaggerfallWorkshop.Game
                     EnemyEntity entity = entityBehaviour.Entity as EnemyEntity;
                     if (entity.MobileEnemy.ID == (int)type)
                     {
-                        numberOfEnemies++;
-                        if (stopLookingIfFound)
-                            return numberOfEnemies;
+                        // Is it hostile or pacified?
+                        EnemyMotor enemyMotor = entityBehaviour.GetComponent<EnemyMotor>();
+                        if (includingPacified || (enemyMotor.IsHostile && entity.Team != MobileTeams.PlayerAlly))
+                        {
+                            numberOfEnemies++;
+                            if (stopLookingIfFound)
+                                return numberOfEnemies;
+                        }
                     }
                 }
             }

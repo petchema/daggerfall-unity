@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -721,11 +721,11 @@ namespace DaggerfallWorkshop.Utility
                     // Store building information for first model of record
                     // First model is main record structure, others are attachments like posts
                     // Only main structure is needed to resolve building after hit-test
-                    //int buildingKey = 0;
+                    int buildingKey = 0;
                     if (firstModel)
                     {
-                        //// Example: Create building key for this record - considered experimental for now
-                        //buildingKey = BuildingDirectory.MakeBuildingKey((byte)layoutX, (byte)layoutY, (byte)recordCount);
+                        // Create building key for this record - considered experimental for now
+                        buildingKey = BuildingDirectory.MakeBuildingKey((byte)layoutX, (byte)layoutY, (byte)recordCount);
 
                         StaticBuilding staticBuilding = new StaticBuilding();
                         staticBuilding.modelMatrix = modelMatrix;
@@ -736,13 +736,16 @@ namespace DaggerfallWorkshop.Utility
                         firstModel = false;
                     }
 
-                    // Example: Do stuff with buildingKey
-                    // if (buildingKey != 0) then this should be the building key for this record
-                    // if (staticDoors != null && staticDoors.Length > 0) then this should have all the initial door data (basically position stuff) for this building
-
                     // Import custom GameObject
-                    if (MeshReplacement.ImportCustomGameobject(obj.ModelIdNum, parent, modelMatrix) != null)
+                    GameObject go;
+                    if (go = MeshReplacement.ImportCustomGameobject(obj.ModelIdNum, parent, modelMatrix))
+                    {
+                        // Find doors
+                        if (staticDoors != null && staticDoors.Length > 0)
+                            CustomDoor.InitDoors(go, staticDoors, buildingKey);
+
                         continue;
+                    }
 
                     // Use Daggerfall Model
                     // Add or combine
@@ -811,8 +814,7 @@ namespace DaggerfallWorkshop.Utility
             // Is this a city gate?
             if (IsCityGate(modelID))
             {
-                DaggerfallCityGate gate = go.AddComponent<DaggerfallCityGate>();
-                gate.SetOpen(!dfUnity.Option_CloseCityGates);
+                go.AddComponent<DaggerfallCityGate>();
             }
 
             return go;

@@ -1,5 +1,5 @@
 ﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -12,6 +12,7 @@
 using System;
 using DaggerfallConnect;
 using DaggerfallConnect.Arena2;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Utility
 {
@@ -1467,15 +1468,15 @@ namespace DaggerfallWorkshop.Utility
                 }
             }
 
-            int random = UnityEngine.Random.Range(1, 101);
+            int roll = Dice100.Roll();
             int playerLevel = Game.GameManager.Instance.PlayerEntity.Level;
             int min;
             int max;
 
             // Random/player level based adjustments from classic. These assume enemy lists of length 20.
-            if (random > 80)
+            if (roll > 80)
             {
-                if (random > 95)
+                if (roll > 95)
                 {
                     if (playerLevel <= 5)
                     {

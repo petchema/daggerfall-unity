@@ -1,10 +1,10 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
 // Original Author: Gavin Clayton (interkarma@dfworkshop.net)
-// Contributors:    
+// Contributors:    Numidium
 // 
 // Notes:
 //
@@ -19,6 +19,9 @@ using DaggerfallConnect.Save;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Serialization;
 using DaggerfallWorkshop.Game.Utility;
+using DaggerfallWorkshop.Game.Items;
+using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
+using DaggerfallWorkshop.Game.UserInterfaceWindows;
 
 namespace DaggerfallWorkshop.Game.MagicAndEffects
 {
@@ -54,6 +57,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         readonly Dictionary<string, BaseEntityEffect> magicEffectTemplates = new Dictionary<string, BaseEntityEffect>();
         readonly Dictionary<int, BaseEntityEffect> potionEffectTemplates = new Dictionary<int, BaseEntityEffect>();
         readonly Dictionary<int, SpellRecord.SpellRecordData> classicSpells = new Dictionary<int, SpellRecord.SpellRecordData>();
+        readonly Dictionary<string, CustomSpellBundleOffer> customSpellBundleOffers = new Dictionary<string, CustomSpellBundleOffer>();
 
         #endregion
 
@@ -68,6 +72,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             get { return magicRoundsSinceStartup; }
         }
 
+        /// <summary>
+        /// Gets or sets flag stating if time was just increased synthetically.
+        /// Should only be raised by fast travel and prison time.
+        /// Some time-based effects do not operate during these increases, e.g. the "item deteriorates" side-effect
+        /// This flag is lowered at the end of each magic update.
+        /// </summary>
+        public bool SyntheticTimeIncrease { get; private set; }
+
         #endregion
 
         #region Constructors
@@ -77,6 +89,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             SaveLoadManager.OnLoad += SaveLoadManager_OnLoad;
             StartGameBehaviour.OnNewGame += StartGameBehaviour_OnNewGame;
             StartGameBehaviour.OnStartGame += StartGameBehaviour_OnStartGame;
+            DaggerfallTravelPopUp.OnPostFastTravel += DaggerfallTravelPopUp_OnPostFastTravel;
+            DaggerfallCourtWindow.OnEndPrisonTime += DaggerfallCourtWindow_OnEndPrisonTime;
         }
 
         #endregion
@@ -89,53 +103,90 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             RebuildClassicSpellsDict();
 
             // Enumerate classes implementing an effect and create an instance to use as factory
-            // TODO: Provide an external method for mods to register custom effects without reflections
             magicEffectTemplates.Clear();
             IEnumerable<BaseEntityEffect> effectTemplates = ReflectiveEnumerator.GetEnumerableOfType<BaseEntityEffect>();
             foreach (BaseEntityEffect effect in effectTemplates)
             {
-                // Effect must present a key
-                if (string.IsNullOrEmpty(effect.Key))
+                // Effect must present a key and be discoverable via reflective enumeration
+                if (string.IsNullOrEmpty(effect.Key) || effect.Properties.DisableReflectiveEnumeration)
                     continue;
 
-                // Store template
-                // TODO: Allow effect overwrite for modded effects
-                if (effect.VariantCount > 1)
-                {
-                    // Store one template per variant for multi-effects
-                    for (int i = 0; i < effect.VariantCount; i++)
-                    {
-                        BaseEntityEffect variantEffect = CloneEffect(effect) as BaseEntityEffect;
-                        variantEffect.CurrentVariant = i;
-                        magicEffectTemplates.Add(variantEffect.Key, variantEffect);
-                        IndexEffectRecipes(variantEffect);
-                    }
-                }
-                else
-                {
-                    // Just store singleton effect
-                    magicEffectTemplates.Add(effect.Key, effect);
-                    IndexEffectRecipes(effect);
-                }
-
-                // Map classic key when defined - output error in case of classic key conflict
-                // NOTE: Mods should also be able to replace classic effect - will need to handle substitutions later
-                // NOTE: Not mapping effect keys for non spell effects at this time
-                byte groupIndex, subGroupIndex;
-                BaseEntityEffect.ClassicEffectFamily family;
-                BaseEntityEffect.ReverseClasicKey(effect.Properties.ClassicKey, out groupIndex, out subGroupIndex, out family);
-                if (effect.Properties.ClassicKey != 0 && family == BaseEntityEffect.ClassicEffectFamily.Spells)
-                {
-                    if (classicEffectMapping.ContainsKey(effect.Properties.ClassicKey))
-                    {
-                        Debug.LogErrorFormat("EntityEffectBroker: Detected duplicate classic effect key for {0} ({1}, {2})", effect.Key, groupIndex, subGroupIndex);
-                    }
-                    else
-                    {
-                        classicEffectMapping.Add(effect.Properties.ClassicKey, effect.Key);
-                    }
-                }
+                // Register template
+                RegisterEffectTemplate(effect);
             }
+
+            // Below is an example of how to register a fully custom effect and spell bundle
+            // This call should remain commented out except for testing and example purposes
+            // Mods would do this kind of work after capturing OnRegisterCustomEffects event
+            RegisterCustomEffectDemo();
+
+            // Raise event for custom effects to register
+            RaiseOnRegisterCustomEffectsEvent();
+        }
+
+        void RegisterCustomEffectDemo()
+        {
+            // This method is an example of how to create a fully custom spell bundle
+            // and expose it to other systems like spells for sale and item enchanter
+            // The process is mostly just setting up data, something that can be automated with helpers
+
+            // First register custom effect with broker
+            // This will make it available to crafting stations supported by effect
+            // We're using variant 0 of this effect here (Inferno)
+            MageLight templateEffect = new MageLight();
+            templateEffect.CurrentVariant = 0;
+            RegisterEffectTemplate(templateEffect);
+
+            // Create effect settings for our custom spell
+            // These are Chance, Duration, and Magnitude required by spell - usually seen in spellmaker
+            // No need to define settings not used by effect
+            // For our custom spell, we're using same Duration settings as Light spell: 1 + 4 per level
+            // Note these settings will also control final cost of spell to buy and cast
+            EffectSettings effectSettings = new EffectSettings()
+            {
+                DurationBase = 1,
+                DurationPlus = 4,
+                DurationPerLevel = 1,
+            };
+
+            // Create an EffectEntry
+            // This links the effect key with settings
+            // Each effect entry in bundle needs its own settings - most spells only have a single effect
+            EffectEntry effectEntry = new EffectEntry()
+            {
+                Key = templateEffect.Properties.Key,
+                Settings = effectSettings,
+            };
+
+            // Create a custom spell bundle
+            // This is a portable version of the spell for other systems
+            // For example, every spell in the player's spellbook is a bundle
+            // Bundle target and elements settings should follow effect requirements
+            EffectBundleSettings mageLightInferoSpell = new EffectBundleSettings()
+            {
+                Version = CurrentSpellVersion,
+                BundleType = BundleTypes.Spell,
+                TargetType = TargetTypes.CasterOnly,
+                ElementType = ElementTypes.Magic,
+                Name = "Magelight Inferno",
+                IconIndex = 12,
+                Effects = new EffectEntry[] { effectEntry },
+            };
+
+            // Create a custom spell offer
+            // This informs other systems if they can use this bundle
+            CustomSpellBundleOffer mageLightInferoOffer = new CustomSpellBundleOffer()
+            {
+                Key = "MageLightInferno-CustomOffer",                           // This key is for the offer itself and must be unique
+                Usage = CustomSpellBundleOfferUsage.SpellsForSale|              // Available in spells for sale
+                        CustomSpellBundleOfferUsage.CastWhenUsedEnchantment|    // Available for "cast on use" enchantments
+                        CustomSpellBundleOfferUsage.CastWhenHeldEnchantment,    // Available for "cast on held" enchantments
+                BundleSetttings = mageLightInferoSpell,                         // The spell bundle created earlier
+                EnchantmentCost = 250,                                          // Cost to use spell at item enchanter if enabled
+            };
+
+            // Register the offer
+            RegisterCustomSpellBundleOffer(mageLightInferoOffer);
         }
 
         void Update()
@@ -177,11 +228,152 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 //long totalTime = stopwatch.ElapsedMilliseconds - startTime;
                 //Debug.LogFormat("Time to run {0} magic rounds: {1}ms", catchupRounds, totalTime);
             }
+
+            // Lower synthetic time increase flag
+            SyntheticTimeIncrease = false;
         }
 
         #endregion
 
         #region Public Methods
+
+        /// <summary>
+        /// Register new effect template with broker.
+        /// Also maps classic key and potion recipes defined by effect.
+        /// </summary>
+        /// <param name="effect">New effect to register.</param>
+        /// <param name="allowReplacement">Allow replacement of existing effect with this key.</param>
+        /// <returns>True if successful.</returns>
+        public bool RegisterEffectTemplate(BaseEntityEffect effect, bool allowReplacement = false)
+        {
+            // Template cannot be null or have a null or empty key
+            if (effect == null || string.IsNullOrEmpty(effect.Key))
+            {
+                Debug.LogError("RegisterEffect: Either template is null or has a null or empty key value.");
+                return false;
+            }
+
+            // Check for existing template with this key
+            if (magicEffectTemplates.ContainsKey(effect.Key))
+            {
+                if (allowReplacement)
+                {
+                    magicEffectTemplates.Remove(effect.Key);
+                }
+                else
+                {
+                    Debug.LogErrorFormat("RegisterEffect: Template key '{0}' already exists. Use allowReplacement=true to replace this effect.", effect.Key);
+                    return false;
+                }
+            }
+
+            // Register effect template
+            if (effect.VariantCount > 1)
+            {
+                // Store one template per variant for multi-effects
+                for (int i = 0; i < effect.VariantCount; i++)
+                {
+                    BaseEntityEffect variantEffect = CloneEffect(effect) as BaseEntityEffect;
+                    variantEffect.CurrentVariant = i;
+                    magicEffectTemplates.Add(variantEffect.Key, variantEffect);
+                    IndexEffectRecipes(variantEffect);
+                    MapClassicKey(variantEffect, allowReplacement);
+                }
+            }
+            else
+            {
+                // Just store singleton effect
+                magicEffectTemplates.Add(effect.Key, effect);
+                IndexEffectRecipes(effect);
+                MapClassicKey(effect, allowReplacement);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Usage flags for custom spell bundle offer.
+        /// Informs other systems if they can use this spell.
+        /// </summary>
+        [Flags]
+        public enum CustomSpellBundleOfferUsage
+        {
+            None = 0,
+            SpellsForSale = 1,
+            CastWhenUsedEnchantment = 2,
+            CastWhenHeldEnchantment = 4,
+            CastWhenStrikesEnchantment = 8,
+            All = 15,
+        }
+
+        /// <summary>
+        /// A custom spell bundle offer.
+        /// </summary>
+        public struct CustomSpellBundleOffer
+        {
+            public string Key;
+            public CustomSpellBundleOfferUsage Usage;
+            public EffectBundleSettings BundleSetttings;
+            public int EnchantmentCost;
+        }
+
+        /// <summary>
+        /// Register a custom spell bundle from pre-made settings.
+        /// </summary>
+        /// <param name="offer">Offer settings.</param>
+        public void RegisterCustomSpellBundleOffer(CustomSpellBundleOffer offer)
+        {
+            // Key must be unique
+            if (customSpellBundleOffers.ContainsKey(offer.Key))
+            {
+                Debug.LogErrorFormat("RegisterCustomSpellBundleOffer: Duplicate bundle key '{0}'", offer.Key);
+                return;
+            }
+            customSpellBundleOffers.Add(offer.Key, offer);
+        }
+
+        /// <summary>
+        /// Gets a specific custom spell bundle offer.
+        /// </summary>
+        public CustomSpellBundleOffer GetCustomSpellBundleOffer(string key)
+        {
+            if (!customSpellBundleOffers.ContainsKey(key))
+                throw new Exception(string.Format("GetCustomSpellBundleOffers: Bundle key '{0}' not found", key));
+            
+            return customSpellBundleOffers[key];
+        }
+
+        /// <summary>
+        /// Gets all custom spell bundle offers based on usage.
+        /// </summary>
+        public CustomSpellBundleOffer[] GetCustomSpellBundleOffers(CustomSpellBundleOfferUsage usage = CustomSpellBundleOfferUsage.All)
+        {
+            List<CustomSpellBundleOffer> offers = new List<CustomSpellBundleOffer>();
+
+            foreach(CustomSpellBundleOffer offer in customSpellBundleOffers.Values)
+            {
+                if ((offer.Usage & usage) == usage)
+                    offers.Add(offer);
+            }
+
+            return offers.ToArray();
+        }
+
+        /// <summary>
+        /// Gets all custom spell bundles based on usage.
+        /// </summary>
+        public EffectBundleSettings[] GetCustomSpellBundles(CustomSpellBundleOfferUsage usage = CustomSpellBundleOfferUsage.All)
+        {
+            List<EffectBundleSettings> bundles = new List<EffectBundleSettings>();
+
+            foreach (CustomSpellBundleOffer offer in customSpellBundleOffers.Values)
+            {
+                if ((offer.Usage & usage) == usage)
+                    bundles.Add(offer.BundleSetttings);
+            }
+
+            return bundles.ToArray();
+        }
 
         /// <summary>
         /// Gets number of potion properties assigned to this effect.
@@ -375,6 +567,29 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         }
 
         /// <summary>
+        /// Gets all registered item maker effects.
+        /// Only classes exposing MagicCraftingStations.ItemMaker in properties will be returned.
+        /// </summary>
+        /// <param name="sortAlpha">True to sort enchantment names by alpha.</param>
+        /// <returns>List of item enchantment templates.</returns>
+        public List<IEntityEffect> GetEnchantmentEffectTemplates(bool sortAlpha = false)
+        {
+            List<IEntityEffect> enchantmentTemplates = new List<IEntityEffect>();
+
+            foreach (IEntityEffect effectTemplate in magicEffectTemplates.Values)
+            {
+                // Effect must support access to item maker
+                if ((effectTemplate.Properties.AllowedCraftingStations & MagicCraftingStations.ItemMaker) == MagicCraftingStations.ItemMaker)
+                    enchantmentTemplates.Add(effectTemplate);
+            }
+
+            if (sortAlpha)
+                return enchantmentTemplates.OrderBy(o => o.Properties.GroupName).ToList();
+            else
+                return enchantmentTemplates;
+        }
+
+        /// <summary>
         /// Determine if a key exists in the templates dictionary.
         /// </summary>
         /// <param name="key">Key for template.</param>
@@ -540,6 +755,34 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             }
         }
 
+        void MapClassicKey(IEntityEffect effect, bool allowReplacement)
+        {
+            byte groupIndex, subGroupIndex;
+            BaseEntityEffect.ClassicEffectFamily family;
+
+            // Must be an effect with classic key
+            if (effect == null || effect.Properties.ClassicKey == 0)
+                return;
+
+            // Remove existing mapping if required
+            if (classicEffectMapping.ContainsKey(effect.Properties.ClassicKey) && allowReplacement)
+                classicEffectMapping.Remove(effect.Properties.ClassicKey);
+
+            // Map classic key when defined - output error in case of classic key conflict
+            BaseEntityEffect.ReverseClasicKey(effect.Properties.ClassicKey, out groupIndex, out subGroupIndex, out family);
+            if (effect.Properties.ClassicKey != 0 && family == BaseEntityEffect.ClassicEffectFamily.Spells)
+            {
+                if (classicEffectMapping.ContainsKey(effect.Properties.ClassicKey))
+                {
+                    Debug.LogErrorFormat("EntityEffectBroker: Detected duplicate classic effect key for {0} ({1}, {2})", effect.Key, groupIndex, subGroupIndex);
+                }
+                else
+                {
+                    classicEffectMapping.Add(effect.Properties.ClassicKey, effect.Key);
+                }
+            }
+        }
+
         // Called when game starts or loaded, after world time has been set/restored
         // Syncs initial magic round timer with game time for counting magic rounds
         void InitMagicRoundTimer()
@@ -562,6 +805,16 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         void SaveLoadManager_OnLoad(SaveData_v1 saveData)
         {
             InitMagicRoundTimer();
+        }
+
+        private void DaggerfallCourtWindow_OnEndPrisonTime()
+        {
+            SyntheticTimeIncrease = true;
+        }
+
+        private void DaggerfallTravelPopUp_OnPostFastTravel()
+        {
+            SyntheticTimeIncrease = true;
         }
 
         #endregion
@@ -593,7 +846,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 ElementType = ClassicElementIndexToElementType(spellRecordData.element),
                 Name = spellRecordData.spellName,
                 IconIndex = spellRecordData.icon,
+                Icon = new SpellIcon(),
             };
+            effectBundleSettingsOut.Icon.index = effectBundleSettingsOut.IconIndex;
 
             // Assign effects
             List<EffectEntry> foundEffects = new List<EffectEntry>();
@@ -749,7 +1004,12 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             // Check if effect template is implemented for this slot - instant fail if effect not implemented
             int classicKey = BaseEntityEffect.MakeClassicKey((byte)type, (byte)subType);
 
-            return GameManager.Instance.EntityEffectBroker.GetEffectTemplate(classicKey);
+            // Attempt to find the effect template
+            IEntityEffect result = GameManager.Instance.EntityEffectBroker.GetEffectTemplate(classicKey);
+            if (result == null)
+                Debug.LogWarningFormat("Could not find effect template for type={0} subType={1}", type, subType);
+
+            return result;
         }
 
         /// <summary>
@@ -790,6 +1050,15 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         {
             if (OnNewMagicRound != null)
                 OnNewMagicRound();
+        }
+
+        // OnRegisterCustomEffects
+        public delegate void OnRegisterCustomEffectsEventHandler();
+        public static event OnRegisterCustomEffectsEventHandler OnRegisterCustomEffects;
+        protected virtual void RaiseOnRegisterCustomEffectsEvent()
+        {
+            if (OnRegisterCustomEffects != null)
+                OnRegisterCustomEffects();
         }
 
         #endregion

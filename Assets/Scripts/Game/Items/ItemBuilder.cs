@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -18,6 +18,7 @@ using DaggerfallConnect.FallExe;
 using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Utility.AssetInjection;
+using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Game.Items
 {
@@ -131,11 +132,11 @@ namespace DaggerfallWorkshop.Game.Items
         public static ArmorMaterialTypes RandomArmorMaterial(int playerLevel)
         {
             // Random armor material
-            int random = UnityEngine.Random.Range(1, 101);
+            int roll = Dice100.Roll();
 
-            if (random >= 70)
+            if (roll >= 70)
             {
-                if (random >= 90)
+                if (roll >= 90)
                 {
                     WeaponMaterialTypes plateMaterial = RandomMaterial(playerLevel);
                     return (ArmorMaterialTypes)(0x0200 + plateMaterial);
@@ -338,7 +339,7 @@ namespace DaggerfallWorkshop.Game.Items
 
             if (weapon == Weapons.Arrow)
             {   // Handle arrows
-                newItem.stackCount = UnityEngine.Random.Range(1, 21);
+                newItem.stackCount = UnityEngine.Random.Range(1, 20 + 1);
                 newItem.currentCondition = 0; // not sure if this is necessary, but classic does it
             }
             else
@@ -372,7 +373,7 @@ namespace DaggerfallWorkshop.Game.Items
             // Handle arrows
             if (groupIndex == 18)
             {
-                newItem.stackCount = UnityEngine.Random.Range(1, 21);
+                newItem.stackCount = UnityEngine.Random.Range(1, 20 + 1);
                 newItem.currentCondition = 0; // not sure if this is necessary, but classic does it
             }
 
@@ -419,7 +420,6 @@ namespace DaggerfallWorkshop.Game.Items
             }
 
             newItem.dyeColor = DaggerfallUnity.Instance.ItemHelper.GetArmorDyeColor((ArmorMaterialTypes)newItem.nativeMaterialValue);
-            FixLeatherHelm(newItem);
 
             // Adjust for variant
             if (variant >= 0)
@@ -470,7 +470,6 @@ namespace DaggerfallWorkshop.Game.Items
             }
 
             newItem.dyeColor = DaggerfallUnity.Instance.ItemHelper.GetArmorDyeColor(material);
-            FixLeatherHelm(newItem);
             RandomizeArmorVariant(newItem);
 
             return newItem;
@@ -794,17 +793,6 @@ namespace DaggerfallWorkshop.Game.Items
                 variant = UnityEngine.Random.Range(0, item.ItemTemplate.variants);
 
             SetVariant(item, variant);
-        }
-
-        /// <summary>
-        /// Set leather helms to use chain dye.
-        /// Daggerfall seems to do this also as "leather" helms have the chain tint in-game.
-        /// Might need to revisit this later.
-        /// </summary>
-        public static void FixLeatherHelm(DaggerfallUnityItem item)
-        {
-            if (item.TemplateIndex == (int)Armor.Helm && (ArmorMaterialTypes)item.nativeMaterialValue == ArmorMaterialTypes.Leather)
-                item.dyeColor = DyeColors.Chain;
         }
 
         #endregion

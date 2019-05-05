@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -217,6 +217,14 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             saveFolderLabel.TextColor = saveFolderColor;
             screenshotPanel.Components.Add(saveFolderLabel);
 
+            // Allow clicking folder label to open save folder in explorer
+            // Currently Windows player and editor platforms only
+            if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                saveFolderLabel.MouseOverBackgroundColor = Color.blue;
+                saveFolderLabel.OnMouseClick += SaveFolderLabel_OnMouseClick;
+            }
+
             // Time labels
             saveTimeLabel.ShadowPosition = Vector2.zero;
             saveTimeLabel.HorizontalAlignment = HorizontalAlignment.Center;
@@ -414,7 +422,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         void SetBackground(BaseScreenComponent panel, Color color, string textureName)
         {
             Texture2D tex;
-            if (TextureReplacement.TryImportTexture(textureName, out tex))
+            if (TextureReplacement.TryImportTexture(textureName, true, out tex))
                 panel.BackgroundTexture = tex;
             else
                 panel.BackgroundColor = color;
@@ -592,6 +600,22 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             UpdateSelectedSaveInfo();
 
             CloseWindow();
+        }
+
+        private void SaveFolderLabel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            // Get save key
+            int key = GameManager.Instance.SaveLoadManager.FindSaveFolderByNames(currentPlayerName, saveNameTextBox.Text);
+            if (key == -1)
+                return;
+
+            // Get save folder
+            string path = GameManager.Instance.SaveLoadManager.GetSaveFolder(key);
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            // Attempt to open path
+            System.Diagnostics.Process.Start(path);
         }
 
         #endregion

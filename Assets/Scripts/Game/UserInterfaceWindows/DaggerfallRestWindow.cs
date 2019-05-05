@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -455,9 +455,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             PlayerEnterExit playerEnterExit = GameManager.Instance.PlayerEnterExit;
             PlayerGPS playerGPS = GameManager.Instance.PlayerGPS;
 
-            bool inTown = playerGPS.IsPlayerInTown(true);
-
-            if (inTown && !playerEnterExit.IsPlayerInside)
+            if (playerGPS.IsPlayerInTown(true, true))
             {
                 CloseWindow();
                 DaggerfallUI.MessageBox(cityCampingIllegal);
@@ -468,14 +466,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                 return false;
             }
-            else if ((inTown || !playerGPS.HasCurrentLocation) && playerEnterExit.IsPlayerInsideBuilding)
+            else if (playerGPS.IsPlayerInTown() && playerEnterExit.IsPlayerInsideBuilding)
             {
-                // Check for guild hall rest privileges
-                if (GameManager.Instance.GuildManager.GetGuild(playerEnterExit.BuildingDiscoveryData.factionID).CanRest())
-                {
-                    playerEnterExit.Interior.FindMarker(out allocatedBed, DaggerfallInterior.InteriorMarkerTypes.Rest);
-                    return true;
-                }
                 // Check owned locations
                 string sceneName = DaggerfallInterior.GetSceneName(playerGPS.CurrentLocation.MapTableData.MapId, playerEnterExit.BuildingDiscoveryData.buildingKey);
                 if (SaveLoadManager.StateManager.ContainsPermanentScene(sceneName))
@@ -489,9 +481,21 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     int mapId = playerGPS.CurrentLocation.MapTableData.MapId;
                     RoomRental_v1 room = GameManager.Instance.PlayerEntity.GetRentedRoom(mapId, buildingKey);
                     remainingHoursRented = PlayerEntity.GetRemainingHours(room);
-                    allocatedBed = room.allocatedBed;
+
+                    // Get allocated bed marker - default to 0 if out of range
+                    // We relink marker position by index as building positions are not stable, they can move from terrain mods or floating Y
+                    Vector3[] restMarkers = playerEnterExit.Interior.FindMarkers(DaggerfallInterior.InteriorMarkerTypes.Rest);
+                    int bedIndex = (room.allocatedBedIndex >= 0 && room.allocatedBedIndex < restMarkers.Length) ? room.allocatedBedIndex : 0;
+                    allocatedBed = restMarkers[bedIndex];
                     if (remainingHoursRented > 0)
                         return true;
+                }
+                // Check for guild hall rest privileges (exclude taverns since they are all marked as fighters guilds in data)
+                if (playerEnterExit.BuildingDiscoveryData.buildingType != DFLocation.BuildingTypes.Tavern &&
+                    GameManager.Instance.GuildManager.GetGuild(playerEnterExit.BuildingDiscoveryData.factionID).CanRest())
+                {
+                    playerEnterExit.Interior.FindMarker(out allocatedBed, DaggerfallInterior.InteriorMarkerTypes.Rest);
+                    return true;
                 }
                 CloseWindow();
                 DaggerfallUI.MessageBox(HardStrings.haveNotRentedRoom);

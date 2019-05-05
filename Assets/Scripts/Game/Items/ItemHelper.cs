@@ -1,10 +1,10 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
 // Original Author: Gavin Clayton (interkarma@dfworkshop.net)
-// Contributors:
+// Contributors: Numidium
 //
 // Notes:
 //
@@ -141,9 +141,13 @@ namespace DaggerfallWorkshop.Game.Items
             // Get item template
             ItemTemplate template = item.ItemTemplate;
 
-            // Return just the template name if item is unidentified or an Artifact.
+            // Return just the template name if item is unidentified.
             if (!item.IsIdentified)
                 return template.name;
+
+            // Return the shortName if item is an artifact
+            if (item.IsArtifact)
+                return item.shortName;
 
             // Books are handled differently
             if (item.ItemGroup == ItemGroups.Books)
@@ -227,6 +231,24 @@ namespace DaggerfallWorkshop.Game.Items
                 }
             }
 
+            // Show trapped soul name if any
+            if (item.ItemGroup == ItemGroups.MiscItems && item.TemplateIndex == (int)MiscItems.Soul_trap)
+            {
+                if (item.TrappedSoulType != MobileTypes.None)
+                {
+                    MobileEnemy soul;
+                    if (EnemyBasics.GetEnemy(item.TrappedSoulType, out soul))
+                    {
+                        MobileEnemy mobileEnemy = GameObjectHelper.EnemyDict[(int)item.TrappedSoulType];
+                        result += string.Format(" ({0})", soul.Name);
+                    }
+                }
+                //else
+                //{
+                //    // Considering showing (empty) for empty soul traps
+                //}
+            }
+
             return result;
         }
 
@@ -307,6 +329,10 @@ namespace DaggerfallWorkshop.Game.Items
                 // "Short shirt" template index 202 variants 2 and 5 for human female
                 data.offset = new DaggerfallConnect.Utility.DFPosition(237, 43);
             }
+
+            // Get mask texture where alpha 0 is umasked areas of image and alpha 1 are masked areas of image
+            // Note: Texture replacement will need to support import of an optional mask texture for each replacement
+            ImageReader.UpdateMaskTexture(ref data);
 
             Texture2D tex;
             if (!forPaperDoll && TextureReplacement.TryImportTexture(archive, record, 0, item.dyeColor, out tex))
@@ -424,7 +450,7 @@ namespace DaggerfallWorkshop.Game.Items
         {
             List<int> keys = new List<int>(bookIDNameMapping.Keys);
             int size = bookIDNameMapping.Count;
-            return keys[UnityEngine.Random.Range(0, size - 1)];
+            return keys[UnityEngine.Random.Range(0, size)];
         }
 
         /// <summary>
@@ -664,7 +690,7 @@ namespace DaggerfallWorkshop.Game.Items
             }
 
             // Handle enchanted weapons
-            if (item.legacyMagic != null && item.legacyMagic[0].type != EnchantmentTypes.None)
+            if (item.IsEnchanted)
             {
                 switch (result)
                 {
@@ -708,6 +734,32 @@ namespace DaggerfallWorkshop.Game.Items
             // Determine metal type
             if (item.ItemGroup == ItemGroups.Weapons)
             {
+                // Overrides for artifacts whose dyes do not match their materials
+                if (item.IsArtifact)
+                {
+                    foreach (DaggerfallEnchantment enchantment in item.LegacyEnchantments)
+                    {
+                        if (enchantment.type == EnchantmentTypes.SpecialArtifactEffect)
+                        {
+                            switch (enchantment.param)
+                            {
+                                case (int)ArtifactsSubTypes.Mehrunes_Razor: // Different from classic but Elven matches the paper doll more closely
+                                    return MetalTypes.Elven;
+                                case (int)ArtifactsSubTypes.Mace_of_Molag_Bal:
+                                    return MetalTypes.Ebony;
+                                case (int)ArtifactsSubTypes.Wabbajack:
+                                    return MetalTypes.Steel;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    // Artifact weapons with no unique effects
+                    if (item.ItemName == "Chrysamere")
+                        return MetalTypes.Elven;
+                    if (item.ItemName == "Staff of Magnus")
+                        return MetalTypes.Mithril;
+                }
                 WeaponMaterialTypes weaponMaterial = (WeaponMaterialTypes)item.nativeMaterialValue;
                 switch (weaponMaterial)
                 {
@@ -744,9 +796,6 @@ namespace DaggerfallWorkshop.Game.Items
                         return MetalTypes.Iron;
                     case ArmorMaterialTypes.Steel:
                         return MetalTypes.Steel;
-                    case ArmorMaterialTypes.Chain:
-                    case ArmorMaterialTypes.Chain2:
-                        return MetalTypes.Chain;
                     case ArmorMaterialTypes.Silver:
                         return MetalTypes.Silver;
                     case ArmorMaterialTypes.Elven:
@@ -803,8 +852,9 @@ namespace DaggerfallWorkshop.Game.Items
                 case WeaponMaterialTypes.Steel:
                     return DyeColors.Steel;
                 case WeaponMaterialTypes.Silver:
+                    return DyeColors.Silver;
                 case WeaponMaterialTypes.Elven:
-                    return DyeColors.SilverOrElven;
+                    return DyeColors.Elven;
                 case WeaponMaterialTypes.Dwarven:
                     return DyeColors.Dwarven;
                 case WeaponMaterialTypes.Mithril:
@@ -832,16 +882,14 @@ namespace DaggerfallWorkshop.Game.Items
         {
             switch (material)
             {
-                case ArmorMaterialTypes.Chain:
-                case ArmorMaterialTypes.Chain2:
-                    return DyeColors.Chain;
                 case ArmorMaterialTypes.Iron:
                     return DyeColors.Iron;
                 case ArmorMaterialTypes.Steel:
                     return DyeColors.Steel;
                 case ArmorMaterialTypes.Silver:
+                    return DyeColors.Silver;
                 case ArmorMaterialTypes.Elven:
-                    return DyeColors.SilverOrElven;
+                    return DyeColors.Elven;
                 case ArmorMaterialTypes.Dwarven:
                     return DyeColors.Dwarven;
                 case ArmorMaterialTypes.Mithril:
@@ -978,12 +1026,24 @@ namespace DaggerfallWorkshop.Game.Items
                     items.AddItem(ItemBuilder.CreateItem(ItemGroups.MiscItems, (int)MiscItems.Spellbook));
                 }
             }
+        }
 
-            // Player should now have a valid spellbook, otherwise create one
-            if (!items.Contains(ItemGroups.MiscItems, (int)MiscItems.Spellbook))
+        /// <summary>
+        /// Gives a new spellbook item to player entity (if they don't already have one).
+        /// </summary>
+        /// <param name="playerEntity">Player entity to receive spellbook item.</param>
+        /// <returns>True if spellbook added, false is player already has a spellbook item.</returns>
+        public bool AddSpellbookItem(PlayerEntity playerEntity)
+        {
+            ItemCollection items = playerEntity.Items;
+            DaggerfallUnityItem spellbook = items.GetItem(ItemGroups.MiscItems, (int)MiscItems.Spellbook);
+            if (spellbook == null)
             {
                 items.AddItem(ItemBuilder.CreateItem(ItemGroups.MiscItems, (int)MiscItems.Spellbook));
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -26,7 +26,6 @@ namespace DaggerfallWorkshop
 {
     public class DaggerfallInterior : MonoBehaviour
     {
-        const int doorModelId = 9800;
         const int ladderModelId = 41409;
         const int propModelType = 3;
 
@@ -202,6 +201,23 @@ namespace DaggerfallWorkshop
             return true;
         }
 
+        public bool FindClosestInteriorDoor(Vector3 playerPos, out Vector3 closestDoorPositionOut, out Vector3 closestDoorNormalOut)
+        {
+            closestDoorPositionOut = closestDoorNormalOut = Vector3.zero;
+            DaggerfallStaticDoors interiorDoors = GetComponent<DaggerfallStaticDoors>();
+            if (!interiorDoors)
+                return false;
+
+            int doorIndex;
+            if (interiorDoors.FindClosestDoorToPlayer(playerPos, -1, out closestDoorPositionOut, out doorIndex))
+            {
+                closestDoorNormalOut = interiorDoors.GetDoorNormal(doorIndex);
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Finds closest entrance marker to door position.
         /// </summary>
@@ -259,6 +275,22 @@ namespace DaggerfallWorkshop
             }
 
             return !(markerOut == Vector3.zero);
+        }
+
+        /// <summary>
+        /// Find all marker positions of a specific type.
+        /// </summary>
+        public Vector3[] FindMarkers(InteriorMarkerTypes type)
+        {
+            List<Vector3> markerResults = new List<Vector3>();
+
+            for (int i = 0; i < markers.Count; i++)
+            {
+                if (markers[i].type == type)
+                    markerResults.Add(markers[i].gameObject.transform.position);
+            }
+
+            return markerResults.ToArray();
         }
 
         /// <summary>
@@ -380,7 +412,8 @@ namespace DaggerfallWorkshop
                 // Make ladder collider convex
                 if (obj.ModelIdNum == ladderModelId)
                 {
-                    go.GetComponent<MeshCollider>().convex = true;
+                    var meshCollider = go.GetComponent<MeshCollider>();
+                    if (meshCollider) meshCollider.convex = true;
                     go.AddComponent<DaggerfallLadder>();
                 }
 
@@ -845,6 +878,10 @@ namespace DaggerfallWorkshop
         /// </summary>
         private void AddActionDoors()
         {
+            // Using 9000-9005 here but identical door models are also found at 900x, 910x, through to 980x
+            // They seem to be duplicate models but can have different model origins so not all ranges are suitable
+            const int doorModelBaseId = 9000;
+
             GameObject actionDoorsNode = new GameObject("Action Doors");
             actionDoorsNode.transform.parent = this.transform;
 
@@ -857,9 +894,10 @@ namespace DaggerfallWorkshop
                 Vector3 modelRotation = new Vector3(0, -obj.YRotation / BlocksFile.RotationDivisor, 0);
                 Vector3 modelPosition = new Vector3(obj.XPos, -obj.YPos, obj.ZPos) * MeshReader.GlobalScale;
 
-                // Instantiate door prefab and add model
+                // Instantiate door prefab and add model - DoorModelIndex is modulo to known-good range just in case
+                uint modelId = (uint)(doorModelBaseId + obj.DoorModelIndex % 5);
                 GameObject go = GameObjectHelper.InstantiatePrefab(dfUnity.Option_InteriorDoorPrefab.gameObject, string.Empty, actionDoorsNode.transform, Vector3.zero);
-                GameObjectHelper.CreateDaggerfallMeshGameObject(doorModelId, actionDoorsNode.transform, false, go, true);
+                GameObjectHelper.CreateDaggerfallMeshGameObject(modelId, actionDoorsNode.transform, false, go, true);
 
                 // Resize box collider to new mesh bounds
                 BoxCollider boxCollider = go.GetComponent<BoxCollider>();
@@ -873,6 +911,10 @@ namespace DaggerfallWorkshop
                 // Apply transforms
                 go.transform.rotation = Quaternion.Euler(modelRotation);
                 go.transform.position = modelPosition;
+
+                // Update climate
+                DaggerfallMesh dfMesh = go.GetComponent<DaggerfallMesh>();
+                dfMesh.SetClimate(climateBase, climateSeason, WindowStyle.Disabled);
 
                 // Get action door script
                 DaggerfallActionDoor actionDoor = go.GetComponent<DaggerfallActionDoor>();

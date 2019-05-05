@@ -1,10 +1,10 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
 // Original Author: Gavin Clayton (interkarma@dfworkshop.net)
-// Contributors:    
+// Contributors:    Numidium
 // 
 // Notes:
 //
@@ -14,6 +14,8 @@ using DaggerfallConnect;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Formulas;
+using DaggerfallWorkshop.Game.Utility;
+using DaggerfallWorkshop.Game.Items;
 
 namespace DaggerfallWorkshop.Game.MagicAndEffects
 {
@@ -31,6 +33,12 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         /// Gets or sets current effect settings.
         /// </summary>
         EffectSettings Settings { get; set; }
+
+        /// <summary>
+        /// Gets or sets enchantment param for enchantment effects.
+        /// If this property is null then effect is not a live enchantment.
+        /// </summary>
+        EnchantmentParam? EnchantmentParam { get; set; }
 
         /// <summary>
         /// Gets effect potion properties (if any).
@@ -114,6 +122,11 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         int CurrentVariant { get; set; }
 
         /// <summary>
+        /// True if spell effect always lands regardless of saving throws.
+        /// </summary>
+        bool BypassSavingThrows { get; }
+
+        /// <summary>
         /// Called by an EntityEffectManager when parent bundle is attached to host entity.
         /// Use this for setup or immediate work performed only once.
         /// </summary>
@@ -139,6 +152,41 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         /// Use this for any wrap-up work.
         /// </summary>
         void End();
+
+        /// <summary>
+        /// Perform a chance roll on this effect based on chance settings.
+        /// Can be used by custom chance effects that need to roll chance other than at start.
+        /// </summary>
+        bool RollChance();
+
+        /// <summary>
+        /// Gets array of enchantment settings supported by this effect.
+        /// Can return a null or empty array, especially if effect not an enchantment.
+        /// </summary>
+        EnchantmentSettings[] GetEnchantmentSettings();
+
+        /// <summary>
+        /// Helper to check if properties contain the specified item maker flags.
+        /// </summary>
+        bool HasItemMakerFlags(ItemMakerFlags flags);
+
+        /// <summary>
+        /// Helper to check if properties contain the specified enchantment payload flags
+        /// </summary>
+        bool HasEnchantmentPayloadFlags(EnchantmentPayloadFlags flags);
+
+        /// <summary>
+        /// Enchantment payload callback for enchantment to perform custom execution based on context.
+        /// These callbacks are performed directly from template, not from a live instance of effect. Do not store state in effect during callbacks.
+        /// Not used by EnchantmentPayloadFlags.Held - rather, an effect instance bundle is assigned to entity's effect manager to execute as normal.
+        /// </summary>
+        PayloadCallbackResults? EnchantmentPayloadCallback(EnchantmentPayloadFlags context, EnchantmentParam? param = null, DaggerfallEntityBehaviour sourceEntity = null, DaggerfallEntityBehaviour targetEntity = null, DaggerfallUnityItem sourceItem = null, int sourceDamage = 0);
+
+        /// <summary>
+        /// Enchantment can flag that it is exclusive to one or more enchantments in array provided.
+        /// Used by enchanting window to prevent certain enchantments from being selected together.
+        /// </summary>
+        bool IsEnchantmentExclusiveTo(EnchantmentSettings[] settingsToTest, EnchantmentParam? comparerParam = null);
 
         /// <summary>
         /// Get effect state data to serialize.
@@ -173,6 +221,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         protected EntityEffectManager manager = null;
         protected int variantCount = 1;
         protected int currentVariant = 0;
+        protected bool bypassSavingThrows = false;
 
         int roundsRemaining;
         bool chanceSuccess = false;
@@ -235,6 +284,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             get { return settings; }
             set { settings = value; }
         }
+
+        public EnchantmentParam? EnchantmentParam { get; set; }
 
         public virtual PotionProperties PotionProperties
         {
@@ -305,6 +356,11 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             set { currentVariant = Mathf.Clamp(value, 0, variantCount - 1); }
         }
 
+        public bool BypassSavingThrows
+        {
+            get { return bypassSavingThrows; }
+        }
+
         #endregion
 
         #region IEntityEffect Virtual Methods
@@ -313,6 +369,56 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
 
         public virtual void SetPotionProperties()
         {
+        }
+
+        /// <summary>
+        /// Gets all enchantment settings supported by this effect.
+        /// Effects supporting MagicCraftingStations.ItemMaker must implement this method to become usable in item maker.
+        /// The effect must also be able to execute enchantment payload when handed back settings. 
+        /// </summary>
+        /// <returns>EnchantmentSettings array. Can return null or empty array.</returns>
+        public virtual EnchantmentSettings[] GetEnchantmentSettings()
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Helper to check properties carry specified item maker flags.
+        /// </summary>
+        /// <param name="flags">Flags to check.</param>
+        /// <returns>True if flags specified.</returns>
+        public virtual bool HasItemMakerFlags(ItemMakerFlags flags)
+        {
+            return (Properties.ItemMakerFlags & flags) == flags;
+        }
+
+        /// <summary>
+        /// Helper to check if properties contain the specified enchantment payload flags
+        /// </summary>
+        /// <param name="flags">Flags to check.</param>
+        /// <returns>True if flags specified.</returns>
+        public virtual bool HasEnchantmentPayloadFlags(EnchantmentPayloadFlags flags)
+        {
+            return (Properties.EnchantmentPayloadFlags & flags) == flags;
+        }
+
+        /// <summary>
+        /// Enchantment payload callback for enchantment to perform custom execution based on context.
+        /// These callbacks are performed directly from template, not from a live instance of effect. Do not store state in effect during callbacks.
+        /// Not used by EnchantmentPayloadFlags.Held - rather, an effect instance bundle is assigned to entity's effect manager to execute as normal.
+        /// </summary>
+        public virtual PayloadCallbackResults? EnchantmentPayloadCallback(EnchantmentPayloadFlags context, EnchantmentParam? param = null, DaggerfallEntityBehaviour sourceEntity = null, DaggerfallEntityBehaviour targetEntity = null, DaggerfallUnityItem sourceItem = null, int sourceDamage = 0)
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Enchantment can flag that it is exclusive to one or more enchantments in array provided.
+        /// Used by enchanting window to prevent certain enchantments from being selected together.
+        /// </summary>
+        public virtual bool IsEnchantmentExclusiveTo(EnchantmentSettings[] settingsToTest, EnchantmentParam? comparerParam = null)
+        {
+            return false;
         }
 
         /// <summary>
@@ -489,16 +595,44 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             return false;
         }
 
+        /// <summary>
+        /// Gets final chance value based on caster level and effect settings.
+        /// </summary>
+        /// <returns>Chance value.</returns>
+        public int ChanceValue()
+        {
+            int casterLevel = (caster) ? caster.Entity.Level : 1;
+            //Debug.LogFormat("{5} ChanceValue {0} = base + plus * (level/chancePerLevel) = {1} + {2} * ({3}/{4})", settings.ChanceBase + settings.ChancePlus * (int)Mathf.Floor(casterLevel / settings.ChancePerLevel), settings.ChanceBase, settings.ChancePlus, casterLevel, settings.ChancePerLevel, Key);
+            return settings.ChanceBase + settings.ChancePlus * (int)Mathf.Floor(casterLevel / settings.ChancePerLevel);
+        }
+
+        /// <summary>
+        /// Performs a chance roll for this effect based on chance settings.
+        /// </summary>
+        /// <returns>True if chance roll succeeded.</returns>
+        public virtual bool RollChance()
+        {
+            if (!Properties.SupportChance)
+                return false;
+
+            bool outcome = Dice100.SuccessRoll(ChanceValue());
+
+            //Debug.LogFormat("Effect '{0}' has a {1}% chance of succeeding and rolled {2} for a {3}", Key, ChanceValue(), roll, (outcome) ? "success" : "fail");
+
+            return outcome;
+        }
+
         #endregion
 
         #region Protected Helpers
 
         protected DaggerfallEntityBehaviour GetPeeredEntityBehaviour(EntityEffectManager manager)
         {
-            if (manager == null)
-                return null;
-
-            return manager.GetComponent<DaggerfallEntityBehaviour>();
+            // Return cached entity behaviour or attempt to get component directly
+            if (manager && manager.EntityBehaviour)
+                return manager.EntityBehaviour;
+            else
+                return manager.GetComponent<DaggerfallEntityBehaviour>();
         }
 
         protected int GetMagnitude(DaggerfallEntityBehaviour caster = null)
@@ -594,26 +728,6 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 return;
 
             potionProperties.Recipes = recipes;
-        }
-
-        protected int ChanceValue()
-        {
-            int casterLevel = (caster) ? caster.Entity.Level : 1;
-            //Debug.LogFormat("{5} ChanceValue {0} = base + plus * (level/chancePerLevel) = {1} + {2} * ({3}/{4})", settings.ChanceBase + settings.ChancePlus * (int)Mathf.Floor(casterLevel / settings.ChancePerLevel), settings.ChanceBase, settings.ChancePlus, casterLevel, settings.ChancePerLevel, Key);
-            return settings.ChanceBase + settings.ChancePlus * (int)Mathf.Floor(casterLevel / settings.ChancePerLevel);
-        }
-
-        protected bool RollChance()
-        {
-            if (!Properties.SupportChance)
-                return false;
-
-            int roll = UnityEngine.Random.Range(1, 100);
-            bool outcome = (roll <= ChanceValue());
-
-            //Debug.LogFormat("Effect '{0}' has a {1}% chance of succeeding and rolled {2} for a {3}", Key, ChanceValue(), roll, (outcome) ? "success" : "fail");
-
-            return outcome;
         }
 
         #endregion

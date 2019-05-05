@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -31,13 +31,17 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
     {
         const string nativeImgName = "CUST00I0.IMG";
         const string nativeDaggerImgName = "CUST08I0.IMG";
+
         const int maxHpPerLevel = 30;
         const int minHpPerLevel = 4;
         const int defaultHpPerLevel = 8;
+        const int minDifficultyPoints = -12;
+        const int maxDifficultyPoints = 40;
+
         const int strNameYourClass = 301;
         const int strSetSkills = 300;
         const int strDistributeStats = 302;
-
+        const int strAdvancingDaggerInRed = 306;
         Texture2D nativeTexture;
         Texture2D nativeDaggerTexture;
         DaggerfallFont font;
@@ -156,6 +160,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             // Initialize character class
             createdClass = new DFCareer();
             createdClass.HitPointsPerLevel = defaultHpPerLevel;
+            createdClass.SpellPointMultiplier = DFCareer.SpellPointMultipliers.Times_0_50;
             createdClass.SpellPointMultiplierValue = .5f;
 
             // Initiate UI components
@@ -405,6 +410,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 messageBox = new DaggerfallMessageBox(uiManager, this);
                 messageBox.SetTextTokens(strDistributeStats);
+                messageBox.ClickAnywhereToClose = true;
+                messageBox.Show();
+                return;
+            }
+
+            // Is AdvancementMultiplier off limits?
+            if (difficultyPoints < minDifficultyPoints || difficultyPoints > maxDifficultyPoints)
+            {
+                messageBox = new DaggerfallMessageBox(uiManager, this);
+                messageBox.SetTextTokens(strAdvancingDaggerInRed);
                 messageBox.ClickAnywhereToClose = true;
                 messageBox.Show();
                 return;

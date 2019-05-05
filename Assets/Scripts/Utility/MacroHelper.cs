@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -16,6 +16,7 @@ using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.UserInterfaceWindows;
 using UnityEngine;
 using DaggerfallWorkshop.Game.Utility;
+using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
 
 namespace DaggerfallWorkshop.Utility
 {
@@ -219,7 +220,7 @@ namespace DaggerfallWorkshop.Utility
             { "%tcn", null }, // Travel city name
             { "%thd", ToHitMod }, // Combat odds
             { "%tim", Time }, // Time
-            { "%vam", null }, // PC's vampire clan
+            { "%vam", VampireClan }, // PC's vampire clan
             { "%vcn", null }, // Vampire's Clan
             { "%vn", null },  // ?
             { "%wdm", WeaponDamage }, // Weapon damage
@@ -246,17 +247,19 @@ namespace DaggerfallWorkshop.Utility
 
         #region fields (some macros need state (e.g. %fn2 depends on %fn1)
 
-        static int idFaction1InNews = -1;
-        static int idFaction1Ruler = -1;
+        static int idFaction1 = -1;
+        static int idFaction2 = -1;
+        static int idRegion = -1;
 
         #endregion
 
         #region Public Utility Functions
 
-        public static void ResetFactionAndRulerIds()
+        public static void SetFactionIdsAndRegionID(int faction1, int faction2, int region)
         {
-            idFaction1InNews = -1;
-            idFaction1Ruler = -1;
+            idFaction1 = faction1;
+            idFaction2 = faction2;
+            idRegion = region;
         }
 
         public static string GetFirstname(string name)
@@ -269,7 +272,7 @@ namespace DaggerfallWorkshop.Utility
         {
             // TODO: How should bank type be randomised? This line results in blank names sometimes, so using race instead.
             //return (NameHelper.BankTypes) DFRandom.random_range_inclusive(0, 8);
-            Races race = (Races) DFRandom.random_range_inclusive(0, 8);
+            Races race = (Races) DFRandom.random_range_inclusive(1, 8);
             return GetNameBank(race);
         }
 
@@ -280,7 +283,7 @@ namespace DaggerfallWorkshop.Utility
             factions.GetFactionData(factionId, out fd);
 
             Genders gender = (Genders) ((fd.ruler + 1) % 2); // even entries are female titles/genders, odd entries are male ones
-            Races race = (Races) fd.race;
+            Races race = RaceTemplate.GetRaceFromFactionRace((FactionFile.FactionRaces)fd.race);
 
             return DaggerfallUnity.Instance.NameHelper.FullName(GetNameBank(race), gender);
         }
@@ -304,6 +307,39 @@ namespace DaggerfallWorkshop.Utility
                     return NameHelper.BankTypes.Nord;
                 case Races.Redguard:
                     return NameHelper.BankTypes.Redguard;
+            }
+        }
+
+        private static string GetRulerTitle(int factionRuler)
+        {
+            switch (factionRuler)
+            {
+                case 1:
+                    return HardStrings.King;
+                case 2:
+                    return HardStrings.Queen;
+                case 3:
+                    return HardStrings.Duke;
+                case 4:
+                    return HardStrings.Duchess;
+                case 5:
+                    return HardStrings.Marquis;
+                case 6:
+                    return HardStrings.Marquise;
+                case 7:
+                    return HardStrings.Count;
+                case 8:
+                    return HardStrings.Countess;
+                case 9:
+                    return HardStrings.Baron;
+                case 10:
+                    return HardStrings.Baroness;
+                case 11:
+                    return HardStrings.Lord;
+                case 12:
+                    return HardStrings.Lady;
+                default:
+                    return HardStrings.Lord;
             }
         }
 
@@ -539,7 +575,7 @@ namespace DaggerfallWorkshop.Utility
             if (buildingDirectory && buildingDirectory.BuildingCount > 0)
             {
                 List<BuildingSummary> taverns = buildingDirectory.GetBuildingsOfType(DFLocation.BuildingTypes.Tavern);
-                int i = UnityEngine.Random.Range(0, taverns.Count - 1);
+                int i = UnityEngine.Random.Range(0, taverns.Count);
                 PlayerGPS.DiscoveredBuilding tavern;
                 if (GameManager.Instance.PlayerGPS.GetAnyBuilding(taverns[i].buildingKey, out tavern))
                     return tavern.displayName;
@@ -552,36 +588,7 @@ namespace DaggerfallWorkshop.Utility
             PlayerGPS gps = GameManager.Instance.PlayerGPS;
             FactionFile.FactionData regionFaction;
             GameManager.Instance.PlayerEntity.FactionData.FindFactionByTypeAndRegion(7, gps.CurrentRegionIndex, out regionFaction);
-
-            switch (regionFaction.ruler)
-            {
-                case 1:
-                    return HardStrings.King;
-                case 2:
-                    return HardStrings.Queen;
-                case 3:
-                    return HardStrings.Duke;
-                case 4:
-                    return HardStrings.Duchess;
-                case 5:
-                    return HardStrings.Marquis;
-                case 6:
-                    return HardStrings.Marquise;
-                case 7:
-                    return HardStrings.Count;
-                case 8:
-                    return HardStrings.Countess;
-                case 9:
-                    return HardStrings.Baron;
-                case 10:
-                    return HardStrings.Baroness;
-                case 11:
-                    return HardStrings.Lord;
-                case 12:
-                    return HardStrings.Lady;
-                default:
-                    return HardStrings.Lord;
-            }
+            return GetRulerTitle(regionFaction.ruler);
         }
 
         private static string Crime(IMacroContextProvider mcp)
@@ -826,30 +833,16 @@ namespace DaggerfallWorkshop.Utility
         public static string AFactionInNews(IMacroContextProvider mcp)
         {   // %fx1
             PersistentFactionData factions = GameManager.Instance.PlayerEntity.FactionData;
-            int id;
-            if (idFaction1Ruler == -1) // no previous %ol1
-            {
-                id = UnityEngine.Random.Range(0, TalkManager.factionsUsedForFactionInNews.Count - 1);
-                idFaction1InNews = id;
-            }
-            else
-            {
-                id = idFaction1Ruler;
-            }
             FactionFile.FactionData fd;
-            factions.GetFactionData((int)TalkManager.factionsUsedForFactionInNews[id], out fd);
+            factions.GetFactionData(idFaction1, out fd);
             return fd.name;
         }
 
         public static string AnotherFactionInNews(IMacroContextProvider mcp)
         {   // %fx2
             PersistentFactionData factions = GameManager.Instance.PlayerEntity.FactionData;
-            // get random number between 0 and factionsUsedForFactionInNews.Count - 2 now since we might add a + 1 for an id >= idFaction1InNews later to prevent same faction as for %fx1
-            int id = UnityEngine.Random.Range(0, TalkManager.factionsUsedForFactionInNews.Count - 1);
             FactionFile.FactionData fd;
-            if (id >= idFaction1InNews) // make sure to create an id != idFaction1InNews
-                id += 1; // by just adding 1 if id >= idFaction1InNews -> so we will end up with an id in ranges [0, idFaction1InNews) union (idFaction1InNews, factionsUsedForFactionInNews.Count]
-            factions.GetFactionData((int)TalkManager.factionsUsedForFactionInNews[id], out fd);
+            factions.GetFactionData(idFaction2, out fd);
             return fd.name;
         }
 
@@ -861,100 +854,33 @@ namespace DaggerfallWorkshop.Utility
 
         public static string OldLordOfFaction1(IMacroContextProvider mcp)
         {   // %ol1
-            int id;
-            if (idFaction1Ruler == -1)
-            {
-                id = UnityEngine.Random.Range(0, TalkManager.factionsUsedForRulers.Count - 1);
-                idFaction1Ruler = id;
-            }
-            else
-            {
-                id = idFaction1Ruler;
-            }
-            return GetLordNameForFaction((int)TalkManager.factionsUsedForRulers[id]);
+            return GetLordNameForFaction(idFaction1);
         }
 
         public static string LordOfFaction1(IMacroContextProvider mcp)
         {   // %fl1
-            int id;
-            if (idFaction1Ruler == -1)
-            {
-                id = UnityEngine.Random.Range(0, TalkManager.factionsUsedForRulers.Count - 1);
-                idFaction1Ruler = id;
-            }
-            else
-            {
-                id = idFaction1Ruler;
-            }
-            return GetLordNameForFaction((int)TalkManager.factionsUsedForRulers[id]);
+            return GetLordNameForFaction(idFaction1);
         }
 
         public static string LordOfFaction2(IMacroContextProvider mcp)
         {   // %fl2
-            // get random number between 0 and factionsUsedForRulers.Count - 2 now since we might add a + 1 for an id >= idFaction1Ruler later to prevent same faction as for %fl1
-            int id = UnityEngine.Random.Range(0, TalkManager.factionsUsedForRulers.Count - 2);
-            if (id >= idFaction1Ruler) // make sure to create an id != idFaction1Ruler
-                id += 1; // by just adding 1 if id >= idFaction1InNews -> so we will end up with an id in ranges [0, idFaction1Ruler) union (idFaction1InNews, factionsUsedForFactionRulers.Count]
-            return GetLordNameForFaction((int)TalkManager.factionsUsedForRulers[id]);
+            return GetLordNameForFaction(idFaction2);
         }
 
         public static string TitleOfLordOfFaction1(IMacroContextProvider mcp)
         {   // %lt1
-            int id;
-            if (idFaction1Ruler == -1)
-            {
-                id = UnityEngine.Random.Range(0, TalkManager.factionsUsedForRulers.Count - 1);
-                idFaction1Ruler = id;
-            }
-            else
-            {
-                id = idFaction1Ruler;
-            }
-
             PersistentFactionData factions = GameManager.Instance.PlayerEntity.FactionData;
             FactionFile.FactionData fd;
-            factions.GetFactionData((int)TalkManager.factionsUsedForRulers[id], out fd);
+            factions.GetFactionData(idFaction1, out fd);
 
-            switch (fd.ruler)
-            {
-                case 1:
-                    return HardStrings.King;
-                case 2:
-                    return HardStrings.Queen;
-                case 3:
-                    return HardStrings.Duke;
-                case 4:
-                    return HardStrings.Duchess;
-                case 5:
-                    return HardStrings.Marquis;
-                case 6:
-                    return HardStrings.Marquise;
-                case 7:
-                    return HardStrings.Count;
-                case 8:
-                    return HardStrings.Countess;
-                case 9:
-                    return HardStrings.Baron;
-                case 10:
-                    return HardStrings.Baroness;
-                case 11:
-                    return HardStrings.Lord;
-                case 12:
-                    return HardStrings.Lady;
-                default:
-                    return HardStrings.Lord;
-            }
+            return GetRulerTitle(fd.ruler);
         }
 
         public static string RegionInContext(IMacroContextProvider mcp)
         {   // %reg
-            if (idFaction1Ruler != -1)
+            if (idRegion != -1)
             {
-                //return DaggerfallUnity.Instance.ContentReader.MapFileReader.GetRegionName((int)TalkManager.factionsUsedForRulers[idFaction1Ruler]); // not mapping to same regions for some reason as FactionFile.FactionIDs enum
-                string regionName = Enum.GetName(typeof(FactionFile.FactionIDs), (FactionFile.FactionIDs)TalkManager.factionsUsedForRulers[idFaction1Ruler]);
-                regionName = regionName.Replace('_', ' ');
-                return regionName;
-
+                return MapsFile.RegionNames[idRegion];
             }
             else
                 return CurrentRegion(mcp);
@@ -1393,6 +1319,16 @@ namespace DaggerfallWorkshop.Utility
             // %hpw
             if (mcp == null) return null;
             return mcp.GetMacroDataSource().GeographicalFeature();
+        }
+
+        private static string VampireClan(IMacroContextProvider mcp)
+        {
+            // %vam
+            RacialOverrideEffect racialEffect = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
+            if (racialEffect is VampirismEffect)
+                return (racialEffect as VampirismEffect).GetClanName();
+            else
+                return "%vam[ERROR: PC not a vampire]";
         }
 
         public static string Q1(IMacroContextProvider mcp)

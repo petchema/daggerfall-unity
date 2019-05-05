@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -46,7 +46,7 @@ namespace DaggerfallWorkshop.Game
         float waitCounter;
         float volumeScale = 1f;
 
-        void Start()
+        void Awake()
         {
             // Save references
             dfAudioSource = GetComponent<DaggerfallAudioSource>();
@@ -67,7 +67,7 @@ namespace DaggerfallWorkshop.Game
                 AttackSound = (SoundClips)mobile.Summary.Enemy.AttackSound;
             }
 
-            RaceForSounds = (Entity.Races)Random.Range(1, 6);
+            RaceForSounds = (Entity.Races)Random.Range(1, 5 + 1);
 
             // Start attract timer
             StartWaiting();
@@ -194,7 +194,7 @@ namespace DaggerfallWorkshop.Game
         private void StartWaiting()
         {
             // Reset countdown to next sound
-            waitTime = Random.Range(MinAttractDelay, MaxAttractDelay);
+            waitTime = Random.Range(MinAttractDelay, MaxAttractDelay + 1);
             waitCounter = 0;
         }
 

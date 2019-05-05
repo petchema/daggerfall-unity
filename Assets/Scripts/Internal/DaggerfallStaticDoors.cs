@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -36,6 +36,7 @@ namespace DaggerfallWorkshop
             //for (int i = 0; i < Doors.Length; i++)
             //{
             //    GameObject go = new GameObject();
+            //    go.name = "DoorTrigger";
             //    go.transform.parent = transform;
             //    go.transform.position = transform.rotation * Doors[i].buildingMatrix.MultiplyPoint3x4(Doors[i].centre);
             //    go.transform.position += transform.position;
@@ -43,8 +44,10 @@ namespace DaggerfallWorkshop
 
             //    BoxCollider c = go.AddComponent<BoxCollider>();
             //    c.size = GameObjectHelper.QuaternionFromMatrix(Doors[i].buildingMatrix) * Doors[i].size;
+            //    c.size = new Vector3(Mathf.Abs(c.size.x), Mathf.Abs(c.size.y), Mathf.Abs(c.size.z)); // Abs size components so not negative for collider
             //    c.isTrigger = true;
             //}
+            //Debug.LogFormat("Added {0} door triggers to scene", Doors.Length);
         }
 
         /// <summary>
@@ -120,8 +123,8 @@ namespace DaggerfallWorkshop
                 // Get this door centre in world space
                 Vector3 centre = transform.rotation * Doors[i].buildingMatrix.MultiplyPoint3x4(Doors[i].centre) + transform.position;
 
-                // Check if door belongs to same building record
-                if (Doors[i].recordIndex == record)
+                // Check if door belongs to same building record or accept any record
+                if (Doors[i].recordIndex == record || record == -1)
                 {
                     // Check distance and save closest
                     float distance = Vector3.Distance(playerPos, centre);

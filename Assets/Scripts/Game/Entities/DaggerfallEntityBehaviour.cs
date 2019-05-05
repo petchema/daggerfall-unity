@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -26,7 +26,6 @@ namespace DaggerfallWorkshop.Game.Entity
         EntityTypes lastEntityType = EntityTypes.None;
         DaggerfallEntity entity = null;
         DaggerfallLoot corpseLootContainer = null;
-        DaggerfallEntityBehaviour target = null;
 
         #endregion
 
@@ -39,12 +38,6 @@ namespace DaggerfallWorkshop.Game.Entity
         {
             get { return entity; }
             set { SetEntityValue(value); }
-        }
-
-        public DaggerfallEntityBehaviour Target
-        {
-            get { return target; }
-            set { target = value; }
         }
 
         /// <summary>
@@ -63,6 +56,11 @@ namespace DaggerfallWorkshop.Game.Entity
         private void Awake()
         {
             SetEntityType(EntityType);
+        }
+
+        void FixedUpdate()
+        {
+            Entity.FixedUpdate();
         }
 
         void Update()
@@ -203,10 +201,10 @@ namespace DaggerfallWorkshop.Game.Entity
             // When source is player
             if (sourceEntityBehaviour == GameManager.Instance.PlayerEntityBehaviour)
             {
+                PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
                 // Handle civilian NPC crime reporting
                 if (EntityType == EntityTypes.CivilianNPC)
                 {
-                    PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
                     MobilePersonNPC mobileNpc = transform.GetComponent<MobilePersonNPC>();
                     if (mobileNpc)
                     {
@@ -218,10 +216,17 @@ namespace DaggerfallWorkshop.Game.Entity
                         }
                         else
                         {
-                            playerEntity.TallyCrimeGuildRequirements(false, 5);
-                            // TODO: LOS check from each townsperson. If seen, register crime and start spawning guards as below.
-                            playerEntity.CrimeCommitted = PlayerEntity.Crimes.Murder;
-                            playerEntity.SpawnCityGuards(true);
+                            if (!mobileNpc.Billboard.IsUsingGuardTexture)
+                            {
+                                playerEntity.TallyCrimeGuildRequirements(false, 5);
+                                playerEntity.CrimeCommitted = PlayerEntity.Crimes.Murder;
+                                playerEntity.SpawnCityGuards(true);
+                            }
+                            else
+                            {
+                                playerEntity.CrimeCommitted = PlayerEntity.Crimes.Assault;
+                                playerEntity.SpawnCityGuard(mobileNpc.transform.position, mobileNpc.transform.forward);
+                            }
 
                             // Disable when dead
                             mobileNpc.Motor.gameObject.SetActive(false);
@@ -241,6 +246,14 @@ namespace DaggerfallWorkshop.Game.Entity
                             GameManager.Instance.MakeEnemiesHostile();
                         }
                         enemyMotor.MakeEnemyHostileToAttacker(GameManager.Instance.PlayerEntityBehaviour);
+                    }
+
+                    // Handle killing guards
+                    EnemyEntity enemyEntity = entity as EnemyEntity;
+                    if (enemyEntity.MobileEnemy.ID == (int)MobileTypes.Knight_CityWatch && entity.CurrentHealth <= 0)
+                    {
+                        playerEntity.TallyCrimeGuildRequirements(false, 1);
+                        playerEntity.CrimeCommitted = PlayerEntity.Crimes.Murder;
                     }
                 }
             }

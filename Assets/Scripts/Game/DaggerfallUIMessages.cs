@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -56,6 +56,7 @@ namespace DaggerfallWorkshop.Game
         public const string dfuiOpenPlayerHistoryWindow = "dfuiOpenPlayerHistoryWindow";
         public const string dfuiOpenSpellBookWindow = "dfuiOpenSpellBookWindow";
         public const string dfuiOpenSpellMakerWindow = "dfuiOpenSpellMakerWindow";
+        public const string dfuiOpenItemMakerWindow = "dfuiOpenItemMakerWindow";
         public const string dfuiOpenUseMagicItemWindow = "dfuiOpenUseMagicItemWindow";
 
         // Status info messages

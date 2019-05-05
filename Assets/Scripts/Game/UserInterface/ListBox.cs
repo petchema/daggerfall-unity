@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -72,6 +72,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
             public Color selectedShadowColor = DaggerfallUI.DaggerfallDefaultShadowColor;
             public Color highlightedTextColor = DaggerfallUI.DaggerfallAlternateHighlightTextColor;
             public Color highlightedSelectedTextColor = DaggerfallUI.DaggerfallBrighterSelectedTextColor;
+            public object tag;
 
             public ListItem(TextLabel textLabel)
             {
@@ -146,6 +147,11 @@ namespace DaggerfallWorkshop.Game.UserInterface
         public string SelectedItem
         {
             get { return listItems[selectedIndex].textLabel.Text; }
+        }
+
+        public ListItem SelectedValue
+        {
+            get { return listItems[selectedIndex]; }
         }
 
         public int Count
@@ -487,7 +493,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
             SelectNone();
         }
 
-        public void AddItem(string text, out ListItem itemOut, int position = -1)
+        public void AddItem(string text, out ListItem itemOut, int position = -1, object tag = null)
         {
             if (font == null)
                 font = DaggerfallUI.DefaultFont;
@@ -517,16 +523,17 @@ namespace DaggerfallWorkshop.Game.UserInterface
             itemOut.selectedTextColor = selectedTextColor;
             itemOut.shadowColor = shadowColor;
             itemOut.selectedShadowColor = selectedShadowColor;
+            itemOut.tag = tag;
             if (position < 0)
                 listItems.Add(itemOut);
             else
                 listItems.Insert(position, itemOut);
         }
 
-        public void AddItem(string text, int position = -1)
+        public void AddItem(string text, int position = -1, object tag = null)
         {
             ListItem itemOut;
-            AddItem(text, out itemOut, position);
+            AddItem(text, out itemOut, position, tag);
         }
 
         public void AddItems(string[] items)

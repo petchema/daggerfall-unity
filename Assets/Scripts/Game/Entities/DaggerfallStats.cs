@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -12,6 +12,7 @@
 using UnityEngine;
 using System;
 using DaggerfallConnect;
+using DaggerfallWorkshop.Game.Formulas;
 
 namespace DaggerfallWorkshop.Game.Entity
 {
@@ -77,20 +78,21 @@ namespace DaggerfallWorkshop.Game.Entity
         #region Public Methods
 
         /// <summary>
-        /// Check if all permanent stat values are at 100.
+        /// Check if all permanent stat values are at max.
         /// </summary>
-        /// <returns>True if all at 100.</returns>
-        public bool IsAll100()
+        /// <returns>True if all at max.</returns>
+        public bool IsAllMax()
         {
+            int max = FormulaHelper.MaxStatValue();
             return (
-                PermanentStrength == 100 &&
-                PermanentIntelligence == 100 &&
-                PermanentWillpower == 100 &&
-                PermanentAgility == 100 &&
-                PermanentEndurance == 100 &&
-                PermanentPersonality == 100 &&
-                PermanentSpeed == 100 &&
-                PermanentLuck == 100);
+                PermanentStrength == max &&
+                PermanentIntelligence == max &&
+                PermanentWillpower == max &&
+                PermanentAgility == max &&
+                PermanentEndurance == max &&
+                PermanentPersonality == max &&
+                PermanentSpeed == max &&
+                PermanentLuck == max);
         }
 
         /// <summary>
@@ -153,8 +155,8 @@ namespace DaggerfallWorkshop.Game.Entity
             int mod = mods[(int)stat];
             int value = GetPermanentStatValue(stat) + mod;
 
-            // Clamp live stat to 1-100
-            value = Mathf.Clamp(value, 1, 100);
+            // Clamp live stat to 1-MaxStatValue
+            value = Mathf.Clamp(value, 1, FormulaHelper.MaxStatValue());
 
             return (short)value;
         }

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -329,6 +329,38 @@ namespace DaggerfallWorkshop.Utility
 #endif
 
             return go;
+        }
+
+        /// <summary>
+        /// Gets best parent for an object at spawn time.
+        /// Objects should always be placed to some child object in world rather than directly into root of scene.
+        /// </summary>
+        /// <returns>Best parent transform, or null as fallback.</returns>
+        public static Transform GetBestParent()
+        {
+            PlayerEnterExit playerEnterExit = GameManager.Instance.PlayerEnterExit;
+
+            // Place in world near player depending on local area
+            if (playerEnterExit.IsPlayerInsideBuilding)
+            {
+                return playerEnterExit.Interior.transform;
+            }
+            else if (playerEnterExit.IsPlayerInsideDungeon)
+            {
+                return playerEnterExit.Dungeon.transform;
+            }
+            else if (!playerEnterExit.IsPlayerInside && GameManager.Instance.PlayerGPS.IsPlayerInLocationRect)
+            {
+                return GameManager.Instance.StreamingWorld.CurrentPlayerLocationObject.transform;
+            }
+            else if (!playerEnterExit.IsPlayerInside)
+            {
+                return GameManager.Instance.StreamingTarget.transform;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         #region RMB & RDB Block Helpers
@@ -1088,7 +1120,7 @@ namespace DaggerfallWorkshop.Utility
         /// </summary>
         /// <param name="reaction">Foe is hostile by default but can optionally set to passive.</param>
         /// <returns>GameObject[] array of 1-N foes. Array can be null or empty if create fails.</returns>
-        public static GameObject[] CreateFoeGameObjects(Vector3 position, MobileTypes foeType, int spawnCount = 1, MobileReactions reaction = MobileReactions.Hostile, Foe foeResource = null)
+        public static GameObject[] CreateFoeGameObjects(Vector3 position, MobileTypes foeType, int spawnCount = 1, MobileReactions reaction = MobileReactions.Hostile, Foe foeResource = null, bool alliedToPlayer = false)
         {
             List<GameObject> gameObjects = new List<GameObject>();
 
@@ -1100,7 +1132,7 @@ namespace DaggerfallWorkshop.Utility
             {
                 // Generate enemy
                 string name = string.Format("DaggerfallEnemy [{0}]", foeType.ToString());
-                GameObject go = GameObjectHelper.InstantiatePrefab(DaggerfallUnity.Instance.Option_EnemyPrefab.gameObject, name, null, position);
+                GameObject go = GameObjectHelper.InstantiatePrefab(DaggerfallUnity.Instance.Option_EnemyPrefab.gameObject, name, GetBestParent(), position);
                 SetupDemoEnemy setupEnemy = go.GetComponent<SetupDemoEnemy>();
                 if (setupEnemy != null)
                 {
@@ -1112,7 +1144,7 @@ namespace DaggerfallWorkshop.Utility
                         gender = MobileGender.Female;
 
                     // Configure enemy
-                    setupEnemy.ApplyEnemySettings(foeType, reaction, gender);
+                    setupEnemy.ApplyEnemySettings(foeType, reaction, gender, alliedToPlayer: alliedToPlayer);
 
                     // Align non-flying units with ground
                     DaggerfallMobileUnit mobileUnit = setupEnemy.GetMobileBillboardChild();
@@ -1157,7 +1189,7 @@ namespace DaggerfallWorkshop.Utility
         /// <param name="maxDistance">Maximum distance from player.</param>
         /// <param name="parent">Parent GameObject. If none specified the most suitable parent will be selected automatically.</param>
         /// <returns>FoeSpawner GameObject.</returns>
-        public static GameObject CreateFoeSpawner(bool lineOfSightCheck = true, MobileTypes foeType = MobileTypes.None, int spawnCount = 0, float minDistance = 4, float maxDistance = 20, Transform parent = null)
+        public static GameObject CreateFoeSpawner(bool lineOfSightCheck = true, MobileTypes foeType = MobileTypes.None, int spawnCount = 0, float minDistance = 4, float maxDistance = 20, Transform parent = null, bool alliedToPlayer = false)
         {
             // Create new foe spawner
             GameObject go = new GameObject();
@@ -1168,6 +1200,7 @@ namespace DaggerfallWorkshop.Utility
             spawner.MinDistance = minDistance;
             spawner.MaxDistance = maxDistance;
             spawner.Parent = parent;
+            spawner.AlliedToPlayer = alliedToPlayer;
 
             // Assign position on top of player
             // Spawner can be placed anywhere to work, but rest system considers a spawner to be an enemy "in potentia" for purposes of breaking rest and travel

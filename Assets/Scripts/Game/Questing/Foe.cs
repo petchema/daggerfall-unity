@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -16,6 +16,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Utility;
+using DaggerfallWorkshop.Game.MagicAndEffects;
 using DaggerfallWorkshop.Utility;
 using DaggerfallConnect.Arena2;
 using FullSerializer;
@@ -42,6 +43,7 @@ namespace DaggerfallWorkshop.Game.Questing
         int killCount;                      // How many of this enemy spawn player has killed, does not rearm
         string displayName;                 // Foe display name for quest system macros
         string typeName;                    // Foe type name for quest system macros
+        SpellReference[] spellsToCast;      // Virtual spell queue to cast on entity
 
         #endregion
 
@@ -219,7 +221,7 @@ namespace DaggerfallWorkshop.Game.Questing
             // Always treating monsters as male for now as they don't have any gender in game files
             if ((int)foeType < 128)
             {
-                DFRandom.srand(DateTime.Now.Millisecond);
+                DFRandom.srand(DateTime.Now.Millisecond + DFRandom.random_range(1, 1000000));
                 displayName = DaggerfallUnity.Instance.NameHelper.MonsterName();
                 return;
             }
@@ -248,6 +250,7 @@ namespace DaggerfallWorkshop.Game.Questing
             public int killCount;
             public string displayName;
             public string typeName;
+            public SpellReference[] spellsToCast;
         }
 
         public override object GetSaveData()
@@ -261,6 +264,7 @@ namespace DaggerfallWorkshop.Game.Questing
             data.killCount = killCount;
             data.displayName = displayName;
             data.typeName = typeName;
+            data.spellsToCast = spellsToCast;
 
             return data;
         }
@@ -279,6 +283,7 @@ namespace DaggerfallWorkshop.Game.Questing
             killCount = data.killCount;
             displayName = data.displayName;
             typeName = data.typeName;
+            spellsToCast = data.spellsToCast;
         }
 
         #endregion

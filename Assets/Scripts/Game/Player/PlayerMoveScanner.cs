@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -72,12 +72,13 @@ namespace DaggerfallWorkshop.Game
         HangingMotor hangingMotor;
         ClimbingMotor climbingMotor;
         AcrobatMotor acrobatMotor;
-        PlayerMotor playerMotor;
+        //PlayerMotor playerMotor;
         private int turnCount = 0;
 
         public float HeadHitRadius { get; private set; }
         public float StepHitDistance { get; private set; }
         public float HeadHitDistance { get; private set; }
+        public RaycastHit HeadRaycastHit { get; private set; }
         public bool HitSomethingInFront { get; private set; }
         /// <summary>
         /// Saved WallGrab vector after detaching from a wall.  
@@ -107,7 +108,7 @@ namespace DaggerfallWorkshop.Game
         {
             controller = GetComponent<CharacterController>();
             acrobatMotor = GetComponent<AcrobatMotor>();
-            playerMotor = GetComponent<PlayerMotor>();
+            //playerMotor = GetComponent<PlayerMotor>();
             hangingMotor = GetComponent<HangingMotor>();
             climbingMotor = GetComponent<ClimbingMotor>();
             HeadHitRadius = controller.radius * 0.85f;
@@ -175,10 +176,12 @@ namespace DaggerfallWorkshop.Game
                 if (hit.collider.GetComponent<MeshCollider>())
                 {
                     HeadHitDistance = hit.distance;
+                    HeadRaycastHit = hit;
                     //Debug.Log(HeadHitDistance + "\n");
                     return true;
                 }
             }
+            HeadRaycastHit = hit;
             return false;
         }
         
@@ -311,7 +314,7 @@ namespace DaggerfallWorkshop.Game
             else
                 inFrontDirection = controller.transform.forward;
                
-            HitSomethingInFront = (Physics.Raycast(controller.transform.position, inFrontDirection, out hit, 0.3f));
+            HitSomethingInFront = (Physics.Raycast(controller.transform.position, inFrontDirection, out hit, controller.radius + 0.1f));
         }
     }
 }

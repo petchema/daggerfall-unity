@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -111,15 +111,20 @@ namespace DaggerfallWorkshop.Game.Serialization
                 }
 
                 // Restore appearance
-                if (MeshReplacement.ImportCustomFlatGameobject(data.textureArchive, data.textureRecord, Vector3.zero, loot.transform))
+                if (MeshReplacement.SwapCustomFlatGameobject(data.textureArchive, data.textureRecord, loot.transform, Vector3.zero, lootContext == WorldContext.Dungeon))
                 {
                     // Use imported model instead of billboard
                     if (billboard) Destroy(billboard);
                     Destroy(GetComponent<MeshRenderer>());
                 }
-                else if (billboard)
+                else
                 {
-                    // Restore billboard appearance if present
+                    // Restore billboard if previously replaced by custom model
+                    // This happens when the record is changed and new model is not provided by mods
+                    if (!billboard)
+                        billboard = loot.transform.gameObject.AddComponent<DaggerfallBillboard>();
+
+                    // Restore billboard appearance
                     billboard.SetMaterial(data.textureArchive, data.textureRecord);
                 }
             }

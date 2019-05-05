@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -252,6 +252,29 @@ namespace DaggerfallWorkshop.Game.Player
             }
             else
                 return false;
+        }
+
+        /// <summary>
+        /// Gets the faction data corresponding to the given region index.
+        /// </summary>
+        /// <param name="regionIndex">The index of the region to get faction data of.</param>
+        /// <param name="factionData">Receives faction data.</param>
+        /// <param name="duplicateException">Throw exception if duplicate region faction found, otherwise just log warning.</param>
+        public void GetRegionFaction(int regionIndex, out FactionFile.FactionData factionData, bool duplicateException = true)
+        {
+            FactionFile.FactionData[] factions = GameManager.Instance.PlayerEntity.FactionData.FindFactions(
+                (int)FactionFile.FactionTypes.Province, -1, -1, regionIndex);
+
+            // Should always find a single region
+            if (factions == null || factions.Length != 1)
+            {
+                if (duplicateException)
+                    throw new Exception(string.Format("GetRegionFaction() found more than 1 matching NPC faction for region {0}.", regionIndex));
+                else
+                    Debug.LogWarningFormat("GetRegionFaction() found more than 1 matching NPC faction for region {0}.", regionIndex);
+            }
+
+            factionData = factions[0];
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -43,6 +43,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const int maxLabels = maxItems * 2;
         const int labelSpacing = 8;
         const int tandemLabelSpacing = 6;
+        const int advPickerItemCount = 12;
         const float defaultSpellPointMod = .5f;
 
         DFCareer advantageData;
@@ -289,8 +290,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 return;
             }
 
-            DaggerfallListPickerWindow advantagePicker = new DaggerfallListPickerWindow(uiManager, this);
-            advantagePicker.ListBox.Font = DaggerfallUI.SmallFont;
+            DaggerfallListPickerWindow advantagePicker = new DaggerfallListPickerWindow(uiManager, this, DaggerfallUI.SmallFont, advPickerItemCount);
             advantagePicker.OnItemPicked += AdvantagePicker_OnItemPicked;
 
             items = isDisadvantages ? disadvantageStrings : advantageStrings;
@@ -393,7 +393,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             } 
             else
             {
-                DaggerfallListPickerWindow secondaryPicker = new DaggerfallListPickerWindow(uiManager, this);
+                DaggerfallListPickerWindow secondaryPicker = new DaggerfallListPickerWindow(uiManager, this, DaggerfallUI.SmallFont, advPickerItemCount);
                 secondaryPicker.ListBox.Font = DaggerfallUI.SmallFont;
                 secondaryPicker.OnItemPicked += SecondaryPicker_OnItemPicked;
                 secondaryPicker.OnCancel += SecondaryPicker_OnCancel;
@@ -946,7 +946,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                         SetAttackModifier(DFCareer.AttackModifier.Phobia, advDis.secondaryString);
                         break;
                     case HardStrings.expertiseIn:
-                        SetAttackModifier(DFCareer.AttackModifier.Bonus, advDis.secondaryString);
+                        SetProficiency(DFCareer.Proficiency.Expert, advDis.secondaryString);
                         break;
                     case HardStrings.forbiddenWeaponry:
                         SetProficiency(DFCareer.Proficiency.Forbidden, advDis.secondaryString);

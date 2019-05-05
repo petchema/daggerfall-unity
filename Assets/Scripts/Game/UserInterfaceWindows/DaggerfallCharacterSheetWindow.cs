@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -34,8 +34,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         bool leveling = false;
 
-        const int minBonusPool = 4;        // The minimum number of free points to allocate on level up
-        const int maxBonusPool = 6;        // The maximum number of free points to allocate on level up
+        const int oghmaBonusPool = 30;
+
         SoundClips levelUpSound = SoundClips.LevelUp;
 
         KeyCode toggleClosedBinding;
@@ -203,7 +203,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             // Toggle window closed with same hotkey used to open it
             if (Input.GetKeyUp(toggleClosedBinding))
-                CloseWindow();
+                if (CheckIfDoneLeveling())
+                    CloseWindow();
         }
 
         public override void OnPush()
@@ -218,12 +219,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         public override void CancelWindow()
         {
-            if (leveling)
-            {
-                if (!CheckIfDoneLeveling())
-                    return;
-            }
-            base.CancelWindow();
+            if (CheckIfDoneLeveling())
+                base.CancelWindow();
         }
 
         #endregion
@@ -242,20 +239,23 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         // Creates formatting tokens for skill popups
         TextFile.Token[] CreateSkillTokens(DFCareer.Skills skill, bool twoColumn = false, int startPosition = 0)
         {
+            bool highlight = playerEntity.GetSkillRecentlyIncreased(skill);
+
             List<TextFile.Token> tokens = new List<TextFile.Token>();
+            TextFile.Formatting formatting = highlight ? TextFile.Formatting.TextHighlight : TextFile.Formatting.Text;
 
             TextFile.Token skillNameToken = new TextFile.Token();
+            skillNameToken.formatting = formatting;
             skillNameToken.text = DaggerfallUnity.Instance.TextProvider.GetSkillName(skill);
-            skillNameToken.formatting = TextFile.Formatting.Text;
 
             TextFile.Token skillValueToken = new TextFile.Token();
+            skillValueToken.formatting = formatting;
             skillValueToken.text = string.Format("{0}%", playerEntity.Skills.GetLiveSkillValue(skill));
-            skillValueToken.formatting = TextFile.Formatting.Text;
 
             DFCareer.Stats primaryStat = DaggerfallSkills.GetPrimaryStat(skill);
             TextFile.Token skillPrimaryStatToken = new TextFile.Token();
+            skillPrimaryStatToken.formatting = formatting;
             skillPrimaryStatToken.text = DaggerfallUnity.Instance.TextProvider.GetAbbreviatedStatName(primaryStat);
-            skillPrimaryStatToken.formatting = TextFile.Formatting.Text;
 
             TextFile.Token positioningToken = new TextFile.Token();
             positioningToken.formatting = TextFile.Formatting.PositionPrefix;
@@ -338,6 +338,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             }
 
             DaggerfallMessageBox messageBox = new DaggerfallMessageBox(uiManager, this);
+            messageBox.SetHighlightColor(DaggerfallUI.DaggerfallUnityStatIncreasedTextColor);
             messageBox.SetTextTokens(tokens.ToArray(), null, false);
             messageBox.ClickAnywhereToClose = true;
             messageBox.Show();
@@ -393,9 +394,14 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 PlayerEntity.MaxHealth += FormulaHelper.CalculateHitPointsPerLevelUp(PlayerEntity);
                 DaggerfallUI.Instance.PlayOneShot(levelUpSound);
 
-                // Roll bonus pool for player to distribute
-                // Using maxBonusPool + 1 for inclusive range
-                int bonusPool = UnityEngine.Random.Range(minBonusPool, maxBonusPool + 1);
+                int bonusPool;
+
+                if (!PlayerEntity.OghmaLevelUp)
+                {
+                    bonusPool = FormulaHelper.BonusPool();
+                }
+                else
+                    bonusPool = oghmaBonusPool;
 
                 // Add stats rollout for leveling up
                 NativePanel.Components.Add(statsRollout);
@@ -405,6 +411,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 this.statsRollout.BonusPool = bonusPool;
 
                 PlayerEntity.ReadyToLevelUp = false;
+                PlayerEntity.OghmaLevelUp = false;
             }
 
             // Update main labels
@@ -446,21 +453,28 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         bool CheckIfDoneLeveling()
         {
-            if (statsRollout.BonusPool > 0 && !statsRollout.WorkingStats.IsAll100())
+            if (leveling)
             {
-                DaggerfallMessageBox messageBox = new DaggerfallMessageBox(uiManager, this);
-                messageBox.SetText(HardStrings.mustDistributeBonusPoints);
-                messageBox.ClickAnywhereToClose = true;
-                messageBox.Show();
-                return false;
+                if (statsRollout.BonusPool > 0 && !statsRollout.WorkingStats.IsAllMax())
+                {
+                    DaggerfallMessageBox messageBox = new DaggerfallMessageBox(uiManager, this);
+                    messageBox.SetText(HardStrings.mustDistributeBonusPoints);
+                    messageBox.ClickAnywhereToClose = true;
+                    messageBox.Show();
+                    return false;
+                }
+                else
+                {
+                    leveling = false;
+                    PlayerEntity.Stats = statsRollout.WorkingStats;
+                    NativePanel.Components.Remove(statsRollout);
+                }
             }
             else
             {
-                leveling = false;
-                PlayerEntity.Stats = statsRollout.WorkingStats;
-                NativePanel.Components.Remove(statsRollout);
-                return true;
+                playerEntity.ResetSkillsRecentlyRaised();
             }
+            return true;
         }
 
         string[] GetClassSpecials()
@@ -863,12 +877,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void ExitButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
-            if (leveling)
-            {
-                if (!CheckIfDoneLeveling())
-                    return;
-            }
-            CloseWindow();
+            if (CheckIfDoneLeveling())
+                CloseWindow();
         }
 
         private void StatsRollout_OnStatChanged()

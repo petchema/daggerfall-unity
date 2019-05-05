@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -140,7 +140,7 @@ namespace DaggerfallWorkshop.Game.Guilds
                     return true;
                 case GuildServices.Identify:
                     return true;
-                case GuildServices.BuySpells:
+                case GuildServices.BuySpellsMages:
                     return true;
                 case GuildServices.MakeSpells:
                     return IsMember();

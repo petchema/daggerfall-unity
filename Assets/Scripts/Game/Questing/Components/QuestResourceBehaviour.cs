@@ -1,5 +1,5 @@
-﻿// Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Project:         Daggerfall Tools For Unity
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -128,6 +128,13 @@ namespace DaggerfallWorkshop.Game.Questing
                 Foe foe = (Foe)targetResource;
                 if (foe == null)
                     return;
+
+                // If foe is hidden then remove self from game
+                if (foe.IsHidden)
+                {
+                    Destroy(gameObject);
+                    return;
+                }
 
                 // Handle restrained check
                 // This might need some tuning in relation to injured and death checks

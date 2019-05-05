@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -8,6 +8,12 @@
 // 
 // Notes:
 //
+
+/*
+ * TODO:
+ * - Support for first person weapons
+ * - Support for town NPCs and enemies
+ */
 
 using System;
 using System.Collections.Generic;
@@ -31,6 +37,9 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         static Func<Color32> getTreeColorCallback = () => Color.Lerp(Color.white, Color.grey, Random.value);
         static Action<Terrain> setTreesSettingsCallback = SetTreesSettings;
 
+        static HashSet<Vector2Int> triedBillboards = new HashSet<Vector2Int>();
+        static HashSet<uint> triedModels = new HashSet<uint>();
+
         #endregion
 
         #region Properties
@@ -53,6 +62,12 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         #endregion
 
         #region Public Methods
+
+        public static void RetryAssetImports()
+        {
+            triedBillboards.Clear();
+            triedModels.Clear();
+        }
 
         /// <summary>
         /// Seek and import a GameObject from mods to replace a Daggerfall mesh.
@@ -96,16 +111,11 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             go.transform.parent = parent;
 
             // Assign position
-            if (inDungeon)
-            {
-                // Fix origin position for dungeon flats
-                int height = ImageReader.GetImageData(TextureFile.IndexToFileName(archive), record, createTexture: false).height;
-                position.y -= height / 2 * MeshReader.GlobalScale;
-            }
-            go.transform.localPosition = position;
+            AlignToBase(go.transform, position, archive, record, inDungeon);
 
             // Assign a random rotation
-            if (go.GetComponent<FaceWall>() == null)
+            var iObjectPositioner = go.GetComponent<IObjectPositioner>();
+            if (iObjectPositioner == null || iObjectPositioner.AllowFlatRotation)
             {
                 Random.InitState((int)position.x);
                 go.transform.Rotate(0, Random.Range(0f, 360f), 0);
@@ -121,6 +131,34 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             // Finalise gameobject materials
             FinaliseMaterials(go);
             return go;
+        }
+
+        /// <summary>
+        /// Ensures that the requested imported model is assigned to the given transform and is positioned correctly.
+        /// If archive and record mismatch, the requested prefab is imported while currently loaded gameobject is destroyed.
+        /// This has a similar purpose to <see cref="DaggerfallBillboard.SetMaterial()"/>.
+        /// </summary>
+        /// <param name="archive">Texture archive for original billboard.</param>
+        /// <param name="record">Texture record for original billboard.</param>
+        /// <param name="parent">Parent to assign to GameObject.</param>
+        /// <param name="position">Position to assign to GameObject.</param>
+        /// <param name="inDungeon">Fix position for dungeon models.</param>
+        /// <returns>Returns the imported model or null if not found.</returns>
+        public static GameObject SwapCustomFlatGameobject(int archive, int record, Transform parent, Vector3 position, bool inDungeon = false)
+        {
+            GameObject go = null;
+
+            string name = string.Format("DaggerfallBillboard [Replacement] [TEXTURE.{0:000}, Index={1}]", archive, record);
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform transform = parent.GetChild(i);
+                if (transform.name == name)
+                    AlignToBase((go = transform.gameObject).transform, position, archive, record, inDungeon);
+                else if (transform.name.StartsWith("DaggerfallBillboard [Replacement]"))
+                    GameObject.Destroy(transform.gameObject);
+            }
+
+            return go ?? ImportCustomFlatGameobject(archive, record, position, parent, inDungeon);
         }
 
         /// <summary>
@@ -196,7 +234,15 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             if (DaggerfallUnity.Settings.AssetInjection)
             {
                 if (ModManager.Instance != null)
-                    return ModManager.Instance.TryGetAsset(GetName(modelID), clone, out go);
+                {
+                    if (!triedModels.Contains(modelID))
+                    {
+                        if (ModManager.Instance.TryGetAsset(GetName(modelID), clone, out go))
+                            return true;
+                        else
+                            triedModels.Add(modelID);
+                    }
+                }
             }
 
             go = null;
@@ -211,7 +257,16 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
             if (DaggerfallUnity.Settings.AssetInjection)
             {
                 if (ModManager.Instance != null)
-                    return ModManager.Instance.TryGetAsset(GetName(archive, record), clone, out go);
+                {
+                    Vector2Int billboardIdx = new Vector2Int(archive, record);
+                    if (!triedBillboards.Contains(billboardIdx))
+                    {
+                        if (ModManager.Instance.TryGetAsset(GetName(archive, record), clone, out go))
+                            return true;
+                        else
+                            triedBillboards.Add(billboardIdx);
+                    }
+                }
             }
 
             go = null;
@@ -244,6 +299,22 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         private static string GetName(int archive, int record)
         {
             return string.Format("{0:000}_{1}", archive, record);
+        }
+
+        /// <summary>
+        /// Sets position for a gameobject that replaces a billboard, with the assumption that the origin is at the base of the model.
+        /// </summary>
+        private static void AlignToBase(Transform transform, Vector3 position, int archive, int record, bool inDungeon)
+        {
+            // Fix origin position for dungeon flats
+            if (inDungeon)
+            {
+                int height = ImageReader.GetImageData(TextureFile.IndexToFileName(archive), record, createTexture: false).height;
+                position.y -= height / 2 * MeshReader.GlobalScale;
+            }
+
+            // Assign position
+            transform.localPosition = position;
         }
 
         /// <summary>

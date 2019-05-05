@@ -1,5 +1,5 @@
 // Project:         Daggerfall Tools For Unity
-// Copyright:       Copyright (C) 2009-2018 Daggerfall Workshop
+// Copyright:       Copyright (C) 2009-2019 Daggerfall Workshop
 // Web Site:        http://www.dfworkshop.net
 // License:         MIT License (http://www.opensource.org/licenses/mit-license.php)
 // Source Code:     https://github.com/Interkarma/daggerfall-unity
@@ -57,6 +57,12 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
 
             value = null;
             return false;
+        }
+
+        public bool GetBool(string key, bool defaultValue = false)
+        {
+            XElement element;
+            return TryGetElement(key, out element) ? bool.Parse((string)element) : defaultValue;
         }
 
         public bool TryGetFloat(string key, out float value)
