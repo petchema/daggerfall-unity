@@ -1012,7 +1012,7 @@ namespace DaggerfallWorkshop
                 }
             }
             // wait a bit, game is probably struggling to create new terrain too
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(2f);
             // then start reclaiming
             foreach (LooseObjects.Desc desc in bucket)
             {
