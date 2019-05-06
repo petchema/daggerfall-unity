@@ -101,21 +101,21 @@ Shader "Daggerfall/TilemapTextureArray" {
 			float dist = distance(IN.worldPos.xyz, _WorldSpaceCameraPos.xyz);
 			
 			float mipMapLevel;
-			if (dist < 10.0f)
+			if (dist < 7.0f)
 				mipMapLevel = 0.0;
-			else if (dist < 25.0f)
+			else if (dist < 17.5f)
 				mipMapLevel = 1.0;
-			else if (dist < 50.0f)
+			else if (dist < 35.0f)
 				mipMapLevel = 2.0;
-			else if (dist < 125.0f)
+			else if (dist < 87.5f)
 				mipMapLevel = 3.0;
-			else if (dist < 250.0f)
+			else if (dist < 175.0f)
 				mipMapLevel = 4.0;
-			else if (dist < 500.0f)
+			else if (dist < 350.0f)
 				mipMapLevel = 5.0;
-			else if (dist < 1000.0f)
+			else if (dist < 700.0f)
 				mipMapLevel = 6.0;
-			else if (dist < 10000.0f)
+			else if (dist < 7000.0f)
 				mipMapLevel = 7.0;
 			else
 				mipMapLevel = 8.0;
