@@ -58,6 +58,7 @@ namespace DaggerfallWorkshop.Game.Banking
         Depositing_LOC,
         Repaying_loan,
         Borrowing_loan,
+        Repaying_loan_from_account,
         Buy_house,
         Sell_house,
         Buy_ship,
@@ -76,6 +77,7 @@ namespace DaggerfallWorkshop.Game.Banking
         public const float goldUnitWeightInKg = 0.0025f;
         private const float deedSellMult = 0.85f;
         private const float housePriceMult = 1280f;
+        private const uint loanRepayMinutes = DaggerfallDateTime.DaysPerYear * DaggerfallDateTime.MinutesPerDay;
 
         #region Ships:
 
@@ -288,7 +290,10 @@ namespace DaggerfallWorkshop.Game.Banking
                     result = DepositAll_LOC(regionIndex);
                     break;
                 case TransactionType.Repaying_loan:
-                    result = RepayLoan(ref amount, regionIndex);
+                    result = RepayLoan(ref amount, false, regionIndex);
+                    break;
+                case TransactionType.Repaying_loan_from_account:
+                    result = RepayLoan(ref amount, true, regionIndex);
                     break;
                 case TransactionType.Borrowing_loan:
                     result = BorrowLoan(amount, regionIndex);
@@ -478,16 +483,21 @@ namespace DaggerfallWorkshop.Game.Banking
         }
 
         //note - uses inv. gold pieces, account gold & loc
-        private static TransactionResult RepayLoan(ref int amount, int regionIndex)
+        private static TransactionResult RepayLoan(ref int amount, bool accountOnly, int regionIndex)
         {
             PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
-            var playerGold = playerEntity.GetGoldAmount();
-            var accountGold = BankAccounts[regionIndex].accountGold;
+            var availableGold = BankAccounts[regionIndex].accountGold;
+            if (!accountOnly)
+            {
+                var playerGold = playerEntity.GetGoldAmount();
+                availableGold += playerGold;
+            }
+
             TransactionResult result = TransactionResult.NONE;
 
             if (!HasLoan(regionIndex))
                 return TransactionResult.NONE;
-            else if (amount > playerGold + accountGold)
+            else if (amount > availableGold)
                 return TransactionResult.NOT_ENOUGH_GOLD;
             else if (amount > BankAccounts[regionIndex].loanTotal)
             {
@@ -496,8 +506,9 @@ namespace DaggerfallWorkshop.Game.Banking
             }
 
             bankAccounts[regionIndex].loanTotal -= amount;
-            amount = playerEntity.DeductGoldAmount(amount);
-            if (amount > 0)     // Should not happen
+            if (!accountOnly)
+                amount = playerEntity.DeductGoldAmount(amount);
+            if (amount > 0)
                 bankAccounts[regionIndex].accountGold -= amount;
 
             if (bankAccounts[regionIndex].loanTotal <= 0)
@@ -517,7 +528,7 @@ namespace DaggerfallWorkshop.Game.Banking
             {
                 BankAccounts[regionIndex].loanTotal += (int)(amount + amount * .1);
                 BankAccounts[regionIndex].accountGold += amount;
-                bankAccounts[regionIndex].loanDueDate = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
+                bankAccounts[regionIndex].loanDueDate = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime() + loanRepayMinutes;
             }
             return result;
         }
