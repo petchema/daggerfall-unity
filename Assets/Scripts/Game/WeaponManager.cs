@@ -31,7 +31,7 @@ namespace DaggerfallWorkshop.Game
     public class WeaponManager : MonoBehaviour
     {
         const float defaultBowReach = 50f;
-        const float defaultWeaponReach = 2.25f;
+        public const float defaultWeaponReach = 2.25f;
 
         // Max time-length of a trail of mouse positions for attack gestures
         private const float MaxGestureSeconds = 1.0f;
@@ -333,8 +333,12 @@ namespace DaggerfallWorkshop.Game
             }
             else if (!isDamageFinished && ScreenWeapon.GetCurrentFrame() == ScreenWeapon.GetHitFrame())
             {
+                // Racial override can suppress optional attack voice
+                RacialOverrideEffect racialOverride = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
+                bool suppressCombatVoices = racialOverride != null && racialOverride.SuppressOptionalCombatVoices;
+
                 // Chance to play attack voice
-                if (DaggerfallUnity.Settings.CombatVoices && ScreenWeapon.WeaponType != WeaponTypes.Bow && Dice100.SuccessRoll(20))
+                if (DaggerfallUnity.Settings.CombatVoices && !suppressCombatVoices && ScreenWeapon.WeaponType != WeaponTypes.Bow && Dice100.SuccessRoll(20))
                     ScreenWeapon.PlayAttackVoice();
 
                 // Transfer damage.
@@ -696,7 +700,12 @@ namespace DaggerfallWorkshop.Game
             if (!ScreenWeapon)
                 return;
 
-            if (usingRightHand)
+            RacialOverrideEffect racialOverride = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
+            if (racialOverride != null && racialOverride.SetFPSWeapon(ScreenWeapon))
+            {
+                return;
+            }
+            else if (usingRightHand)
             {
                 if (currentRightHandWeapon == null)
                     SetMelee(ScreenWeapon);

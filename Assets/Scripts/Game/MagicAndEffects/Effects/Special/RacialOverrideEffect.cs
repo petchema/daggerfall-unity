@@ -31,6 +31,18 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 
         #endregion
 
+        #region Properties
+
+        /// <summary>
+        /// Allow racial override to suppress Combat Voices option as required.
+        /// </summary>
+        public virtual bool SuppressOptionalCombatVoices
+        {
+            get { return false; }
+        }
+
+        #endregion
+
         #region Overrides
 
         // Always present at least one round remaining so effect system does not remove
@@ -123,6 +135,17 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         /// <param name="isCureQuest">True when this should start cure quest.</param>
         public virtual void StartQuest(bool isCureQuest)
         {
+        }
+
+        /// <summary>
+        /// Set state of current FPS weapon from WeaponManager.
+        /// Allows the racial override to set a unique weapon type such as wereclaws.
+        /// </summary>
+        /// <param name="target">Target FPSWeapon to change.</param>
+        /// <returns>True if weapon changed.</returns>
+        public virtual bool SetFPSWeapon(FPSWeapon target)
+        {
+            return false;
         }
 
         #endregion
