@@ -41,6 +41,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             get { return false; }
         }
 
+        /// <summary>
+        /// Allow racial override to suppress paper doll body and items to show background only.
+        /// </summary>
+        public virtual bool SuppressPaperDollBodyAndItems
+        {
+            get { return false; }
+        }
+
         #endregion
 
         #region Overrides
@@ -145,6 +153,17 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         /// <returns>True if weapon changed.</returns>
         public virtual bool SetFPSWeapon(FPSWeapon target)
         {
+            return false;
+        }
+
+        /// <summary>
+        /// Allow racial override to suppress inventory UI.
+        /// Some care might need to be taken by other systems this does not crash game like classic.
+        /// </summary>
+        /// <param name="suppressInventoryMessage">Optional message to display when inventory suppressed.</param>
+        public virtual bool GetSuppressInventory(out string suppressInventoryMessage)
+        {
+            suppressInventoryMessage = string.Empty;
             return false;
         }
 

@@ -14,6 +14,7 @@ using FullSerializer;
 using DaggerfallConnect;
 using DaggerfallConnect.Utility;
 using DaggerfallConnect.FallExe;
+using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Items;
 using DaggerfallWorkshop.Game.Utility;
@@ -32,6 +33,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 
         public const string LycanthropyCurseKey = "Lycanthropy-Curse";
 
+        const string generalTextDatabase = "GeneralText";
         const int paperDollWidth = 110;
         const int paperDollHeight = 184;
 
@@ -80,6 +82,14 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         /// Transformed lycanthropes play custom attack voices on enemy hit.
         /// </summary>
         public override bool SuppressOptionalCombatVoices
+        {
+            get { return isTransformed; }
+        }
+
+        /// <summary>
+        /// Lycanthropes only display a custom background while transformed.
+        /// </summary>
+        public override bool SuppressPaperDollBodyAndItems
         {
             get { return isTransformed; }
         }
@@ -154,6 +164,41 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 DaggerfallUnity.Instance.WorldTime.Now.SecundaLunarPhase);
         }
 
+        public override bool GetCustomPaperDollBackgroundTexture(PlayerEntity playerEntity, out Texture2D textureOut)
+        {
+            const string werewolfBackground = "WOLF00I0.IMG";
+            const string wereboarBackground = "BOAR00I0.IMG";
+
+            // Do nothing if not transformed
+            textureOut = null;
+            if (!isTransformed)
+                return false;
+
+            // Get source texture based on lycanthropy type
+            string filename;
+            switch (infectionType)
+            {
+                case LycanthropyTypes.Werewolf:
+                    filename = werewolfBackground;
+                    break;
+                case LycanthropyTypes.Wereboar:
+                    filename = wereboarBackground;
+                    break;
+                default:
+                    return false;
+            }
+
+            // Background is cut into sub-texture and cached on first call
+            if (!backgroundTexture)
+            {
+                Texture2D texture = ImageReader.GetTexture(filename, 0, 0, false);
+                backgroundTexture = ImageReader.GetSubTexture(texture, backgroundSubRect, backgroundFullSize);
+            }
+
+            textureOut = backgroundTexture;
+            return true;
+        }
+
         public override bool SetFPSWeapon(FPSWeapon target)
         {
             if (isTransformed)
@@ -201,6 +246,20 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 screenWeapon.PlayAttackVoice(customSound);
         }
 
+        public override bool GetSuppressInventory(out string suppressInventoryMessage)
+        {
+            if (isTransformed)
+            {
+                suppressInventoryMessage = TextManager.Instance.GetText(generalTextDatabase, "inventoryWhileShapechanged");
+                return true;
+            }
+            else
+            {
+                suppressInventoryMessage = string.Empty;
+                return false;
+            }
+        }
+
         #endregion
 
         #region Public Methods
@@ -226,7 +285,13 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 GameManager.Instance.PlayerEntity.ItemEquipTable.UnequipItem(EquipSlots.RightHand);
                 GameManager.Instance.PlayerEntity.ItemEquipTable.UnequipItem(EquipSlots.LeftHand);
 
-                // TODO: Show claws
+                // Set race name based on infection type
+                if (infectionType == LycanthropyTypes.Werewolf)
+                    compoundRace.Name = TextManager.Instance.GetText(racesTextDatabase, "werewolf");
+                else if (infectionType == LycanthropyTypes.Wereboar)
+                    compoundRace.Name = TextManager.Instance.GetText(racesTextDatabase, "wereboar");
+                else
+                    compoundRace.Name = GameManager.Instance.PlayerEntity.BirthRaceTemplate.Name;
 
                 // TODO: Set last transform time for 24-hour cooldown
             }
@@ -234,7 +299,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             {
                 isTransformed = false;
 
-                // TODO: Show unarmed
+                // Restore birth race name
+                compoundRace.Name = GameManager.Instance.PlayerEntity.BirthRaceTemplate.Name;
             }
         }
 
@@ -247,9 +313,6 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             // Clone birth race and assign custom settings
             // New compound races will retain almost everything from birth race
             compoundRace = GameManager.Instance.PlayerEntity.BirthRaceTemplate.Clone();
-
-            // TODO: Get race name based on infection type
-            //compoundRace.Name = TextManager.Instance.GetText(racesTextDatabase, "weretype");
 
             // Set special lycanthropy flags
             compoundRace.ImmunityFlags |= DFCareer.EffectFlags.Disease;
