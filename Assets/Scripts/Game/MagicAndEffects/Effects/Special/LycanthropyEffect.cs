@@ -43,10 +43,13 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         bool hasStartedInitialLycanthropyQuest;
         bool wearingHircineRing;
         bool isTransformed;
+        bool isFullMoon;
 
         DFSize backgroundFullSize = new DFSize(125, 198);
         Rect backgroundSubRect = new Rect(8, 7, paperDollWidth, paperDollHeight);
         Texture2D backgroundTexture;
+
+        float moveSoundTimer;
 
         #endregion
 
@@ -54,6 +57,8 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
 
         public LycanthropyEffect()
         {
+            InitMoveSoundTimer();
+
             // TODO: Register commands
         }
 
@@ -142,6 +147,17 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 entityBehaviour.Entity.MinMetalToHit = WeaponMaterialTypes.Silver;
             else
                 entityBehaviour.Entity.MinMetalToHit = WeaponMaterialTypes.Iron;
+
+            // Play move sound while transformed after random amount of time has elapsed
+            if (isTransformed)
+            {
+                moveSoundTimer -= Time.deltaTime;
+                if (moveSoundTimer < 0)
+                {
+                    PlayLycanthropeMoveSound();
+                    InitMoveSoundTimer();
+                }
+            }
         }
 
         public override void MagicRound()
@@ -152,7 +168,11 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             // This item will change certain lycanthropy payload behaviours when equipped
             wearingHircineRing = IsWearingHircineRing();
 
+            // Check for full moon in either lunar cycle
+            isFullMoon = DaggerfallUnity.Instance.WorldTime.Now.MassarLunarPhase == LunarPhases.Full || DaggerfallUnity.Instance.WorldTime.Now.SecundaLunarPhase == LunarPhases.Full;
+
             ApplyLycanthropeAdvantages();
+            ForceTransformDuringFullMoon();
 
             // Some temp debug info used during development
             Debug.LogFormat(
@@ -260,6 +280,20 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             }
         }
 
+        public override bool GetSuppressTalk(out string suppressTalkMessage)
+        {
+            if (isTransformed)
+            {
+                suppressTalkMessage = TextManager.Instance.GetText(generalTextDatabase, "youGetNoResponse");
+                return true;
+            }
+            else
+            {
+                suppressTalkMessage = string.Empty;
+                return false;
+            }
+        }
+
         #endregion
 
         #region Public Methods
@@ -292,6 +326,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                     compoundRace.Name = TextManager.Instance.GetText(racesTextDatabase, "wereboar");
                 else
                     compoundRace.Name = GameManager.Instance.PlayerEntity.BirthRaceTemplate.Name;
+
+                // Initialise move sound timer
+                InitMoveSoundTimer();
 
                 // TODO: Set last transform time for 24-hour cooldown
             }
@@ -344,6 +381,47 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             SetSkillMod(DFCareer.Skills.CriticalStrike, skillModAmount);
             SetSkillMod(DFCareer.Skills.Climbing, skillModAmount);
             SetSkillMod(DFCareer.Skills.HandToHand, skillModAmount);
+        }
+
+        void InitMoveSoundTimer(float minTime = 4, float maxTime = 20)
+        {
+            moveSoundTimer = Random.Range(minTime, maxTime);
+        }
+
+        void PlayLycanthropeMoveSound()
+        {
+            // Get sound based on infection type
+            SoundClips customSound = SoundClips.None;
+            if (infectionType == LycanthropyTypes.Werewolf)
+                customSound = SoundClips.EnemyWerewolfMove;
+            else if (infectionType == LycanthropyTypes.Wereboar)
+                customSound = SoundClips.EnemyWereboarMove;
+
+            // Play sound through weapon
+            FPSWeapon screenWeapon = GameManager.Instance.WeaponManager.ScreenWeapon;
+            if (screenWeapon && customSound != SoundClips.None)
+                screenWeapon.PlayAttackVoice(customSound);
+        }
+
+        void ForceTransformDuringFullMoon()
+        {
+            // Does not happen if Hircine's Ring equipped
+            if (wearingHircineRing)
+                return;
+
+            // Player is forced into lycanthrope form every magic round for the whole duration of any full moon
+            // In classic, player can switch back to humanoid form briefly (remainder of magic round) before being forced to shapechange again (next magic round)
+            // Intentionally reproducing this handling here so player can shift back and forth to loot corpses, etc.
+            // I'm not sure if this was intentional in classic or not, but it's not much fun to be shut out of the game for a
+            // whole 24 hours every 15 days. I *think* this was intentional so lycanthrope players could at least struggle through.
+            // Same goes for other weirdness like renting rooms or handing in quests. It's just not fun to shut out of game completely.
+            // Ultimately the player has their own choice to do this or not. They can run free in the wilderness for 24 hours if they prefer.
+            if (isFullMoon && !isTransformed)
+            {
+                string youDreamOfTheMoon = TextManager.Instance.GetText(generalTextDatabase, "youDreamOfTheMoon");
+                DaggerfallUI.AddHUDText(youDreamOfTheMoon, 2);
+                MorphSelf();
+            }
         }
 
         bool IsWearingHircineRing()
