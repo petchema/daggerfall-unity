@@ -210,6 +210,14 @@ namespace DaggerfallWorkshop.Game.Banking
             return BankAccounts[regionIndex].hasDefaulted;
         }
 
+        public static void SetDefaulted(int regionIndex, bool defaulted)
+        {
+            if (!ValidateRegion(regionIndex))
+                return;
+
+            BankAccounts[regionIndex].hasDefaulted = defaulted;
+        }
+
         public static void SetupAccounts()
         {
             bankAccounts = new BankRecordData_v1[DaggerfallUnity.Instance.ContentReader.MapFileReader.RegionCount];
@@ -489,8 +497,7 @@ namespace DaggerfallWorkshop.Game.Banking
             var availableGold = BankAccounts[regionIndex].accountGold;
             if (!accountOnly)
             {
-                var playerGold = playerEntity.GetGoldAmount();
-                availableGold += playerGold;
+                availableGold += playerEntity.GetGoldAmount();
             }
 
             TransactionResult result = TransactionResult.NONE;

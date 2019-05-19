@@ -1,30 +1,55 @@
 using System;
+using System.Collections.Generic;
+using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Game.Banking;
 using DaggerfallWorkshop.Game.Entity;
+using DaggerfallWorkshop.Utility;
 using UnityEngine;
 
 namespace DaggerfallWorkshop.Game
 {
     public class LoanChecker : MonoBehaviour
     {
+        const int MinutesPerMonth = DaggerfallDateTime.MinutesPerDay * DaggerfallDateTime.DaysPerMonth;
+
+        const string textDatabase = "DaggerfallUI";
+        const float loanReminderHUDDelay = 3;
+
         private LoanChecker()
         {
         }
 
-        public static void CheckOverdueLoans()
+        public static void CheckOverdueLoans(uint lastGameMinutes)
         {
             uint gameMinutes = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
             for (int regionIndex = 0; regionIndex < DaggerfallBankManager.BankAccounts.Length; regionIndex++)
             {
-                uint paymentDueMinutes = DaggerfallBankManager.BankAccounts[regionIndex].loanDueDate;
+                long paymentDueMinutes = DaggerfallBankManager.GetLoanDueDate(regionIndex);
 
                 if (paymentDueMinutes != 0)
                 {
-                    Debug.Log("Loan in region " + regionIndex);
                     if (paymentDueMinutes < gameMinutes)
                     {
                         Debug.Log("loan overdue " + paymentDueMinutes + " < " + gameMinutes);
                         OverdueLoan(regionIndex);
+                    }
+                    else
+                    {
+                        long lastRemainingMonths = (paymentDueMinutes - lastGameMinutes) / MinutesPerMonth;
+                        long remainingMonths = (paymentDueMinutes - gameMinutes) / MinutesPerMonth;
+                        if (remainingMonths < lastRemainingMonths)
+                        {
+                            // Months left before due date
+                            int[] sendReminderMonths = { 6, 3, 1 };
+                            if (Array.Exists(sendReminderMonths, month => lastRemainingMonths >= month && remainingMonths < month))
+                            {
+                                // Send letters before due date instead?
+                                DaggerfallUI.AddHUDText(String.Format(TextManager.Instance.GetText(textDatabase, "loanReminder"),
+                                    DaggerfallBankManager.GetLoanedTotal(regionIndex)), loanReminderHUDDelay);
+                                DaggerfallUI.AddHUDText(String.Format(TextManager.Instance.GetText(textDatabase, "loanReminder2"),
+                                    remainingMonths + 1, MapsFile.RegionNames[regionIndex]), loanReminderHUDDelay);
+                            }
+                        }
                     }
                 }
             }
@@ -32,15 +57,15 @@ namespace DaggerfallWorkshop.Game
 
         private static void OverdueLoan(int regionIndex)
         {
-            Serialization.BankRecordData_v1 account = DaggerfallBankManager.BankAccounts[regionIndex];
-            int transferAmount = Mathf.Min(account.loanTotal, account.accountGold);
+            int transferAmount = (int)Math.Min(DaggerfallBankManager.GetLoanedTotal(regionIndex), DaggerfallBankManager.GetAccountTotal(regionIndex));
             DaggerfallBankManager.MakeTransaction(TransactionType.Repaying_loan_from_account, transferAmount, regionIndex);
             if (!DaggerfallBankManager.HasLoan(regionIndex))
                 return;
 
             // Set hasDefaulted flag (Note: Does not seem to ever be set in classic)
-            account.hasDefaulted = true;
+            DaggerfallBankManager.SetDefaulted(regionIndex, true);
             PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
+            // Should that be weighted by the amount?
             playerEntity.LowerRepForCrime(regionIndex, PlayerEntity.Crimes.LoanDefault);
         }
     }
