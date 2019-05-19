@@ -174,7 +174,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public RegionDataRecord[] RegionData { get { return regionData; } set { regionData = value; } }
         public uint LastGameMinutes { get { return lastGameMinutes; } set { lastGameMinutes = value; } }
         public List<RoomRental_v1> RentedRooms { get { return rentedRooms; } set { rentedRooms = value; } }
-        public Crimes CrimeCommitted { get { return crimeCommitted; } set { crimeCommitted = value; } }
+        public Crimes CrimeCommitted { get { return crimeCommitted; } set { SetCrimeCommitted(value); } }
         public bool HaveShownSurrenderToGuardsDialogue { get { return haveShownSurrenderToGuardsDialogue; } set { haveShownSurrenderToGuardsDialogue = value; } }
         public bool Arrested { get { return arrested; } set { arrested = value; } }
         public bool IsInBeastForm { get; set; }
@@ -274,7 +274,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public override void FixedUpdate()
         {
             // Handle events that are called by classic's update loop
-            if (GameManager.ClassicUpdate)
+            if (GameManager.ClassicUpdate && playerMotor)
             {
                 // Tally running skill. Running tallies so quickly in classic that it might be a bug or oversight.
                 // Here we use a rate of 1/4 that observed for classic.
@@ -496,51 +496,6 @@ namespace DaggerfallWorkshop.Game.Entity
             RacialOverrideEffect racialEffect = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
             if (racialEffect != null)
                 racialEffect.StartQuest(isCureQuest);
-        }
-
-        // Recreation of vampire/werecreature quest starter from classic
-        // Notes:
-        // 1) In classic the initial quest can happen multiple times but this is probably a mistake.
-        // 2) Additional quests will come regardless of whether the initial quest was completed or failed, as the bool is set
-        //    when the initial quest begins, not on successful completion.
-        void StartVampireOrWereCreatureQuest(bool isCureQuest)
-        {
-            /* TEMP: Commenting out for now until quest deployment system is ready for this - please do not remove
-            if (Race == Races.Vampire)
-            {
-                if (isCureQuest)
-                {
-                    if (DFRandom.random_range_inclusive(10, 100) < 30)
-                        QuestMachine.Instance.InstantiateQuest("$CUREVAM");
-                }
-                else if (hasStartedInitialVampireQuest)
-                {
-                    // Get an appropriate quest for player's level?
-                    if (DFRandom.random_range_inclusive(1, 100) < 50)
-                    {
-                        // Get the regional vampire clan faction id for affecting reputation on success/failure, and current rep
-                        int factionId = 23; // TODO: get appropriate value - just hardcoding The Vraseth for now!
-                        int reputation = FactionData.GetReputation(factionId);
-
-                        // Select a quest at random from appropriate pool
-                        Quest offeredQuest = GameManager.Instance.QuestListsManager.GetGuildQuest(FactionFile.GuildGroups.Vampires, MembershipStatus.Nonmember, factionId, reputation, Level);
-                        if (offeredQuest != null)
-                            QuestMachine.Instance.InstantiateQuest(offeredQuest);
-                    }
-                }
-                else if (DFRandom.random_range_inclusive(1, 100) < 50)
-                {
-                    QuestMachine.Instance.InstantiateQuest("P0A01L00");
-                    hasStartedInitialVampireQuest = true;
-                }
-            }
-            /*else
-            {
-                if (playerIsWereCreature && isCureQuest && DFRandom.random_range_inclusive(1, 100) < 30)
-                {
-                    QuestMachine.Instance.InstantiateQuest("$CUREWER");
-                }
-            }*/
         }
 
         public bool IntermittentEnemySpawn(uint Minutes)
@@ -2230,6 +2185,15 @@ namespace DaggerfallWorkshop.Game.Entity
             arrested = true;
             halfOfLegalRepPlayerLostFromCrime = (short)(reputationLossPerCrime[(int)crimeCommitted] / 2);
             DaggerfallUI.PostMessage(DaggerfallUIMessages.dfuiOpenCourtWindow);
+        }
+
+        void SetCrimeCommitted(Crimes crime)
+        {
+            // Racial override can suppress crimes, e.g. transformed lycanthrope
+            RacialOverrideEffect racialOverride = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
+            bool suppressCrime = racialOverride != null && racialOverride.SuppressCrime;
+
+            crimeCommitted = (!suppressCrime) ? crime : Crimes.None;
         }
 
         #endregion
