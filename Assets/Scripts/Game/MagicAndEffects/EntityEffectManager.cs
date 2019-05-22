@@ -967,7 +967,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         {
             // Breaks payload callback
             EnchantmentParam param = new EnchantmentParam() { ClassicParam = settings.ClassicParam, CustomParam = settings.CustomParam };
-            PayloadCallbackResults? results = effectTemplate.EnchantmentPayloadCallback(EnchantmentPayloadFlags.Breaks, param, entityBehaviour, entityBehaviour, item);
+            effectTemplate.EnchantmentPayloadCallback(EnchantmentPayloadFlags.Breaks, param, entityBehaviour, entityBehaviour, item);
         }
 
         #endregion
@@ -1404,6 +1404,12 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
         {
             if (HasVampirism())
                 (racialOverrideEffect as VampirismEffect).CureVampirism();
+        }
+
+        public void EndLycanthropy()
+        {
+            if (HasLycanthropy())
+                (racialOverrideEffect as LycanthropyEffect).CureLycanthropy();
         }
 
         #endregion
