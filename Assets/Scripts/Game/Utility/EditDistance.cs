@@ -1,6 +1,7 @@
+#define DEBUG_SHOW_EDITDISTANCE_TIMES
+
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
@@ -57,14 +58,6 @@ namespace DaggerfallWorkshop.Game.Utility
             this.trim_cost = trim_cost;
         }
 
-        private class KeyComparer : Comparer<KeyValuePair<String, String>>
-        {
-            public override int Compare(KeyValuePair<string, string> x, KeyValuePair<string, string> y)
-            {
-                return string.Compare(x.Key, y.Key, StringComparison.InvariantCulture);
-            }
-        }
-
         public void SetDictionary(String[] dictionary)
         {
             SetDictionary(new List<String>(dictionary));
@@ -84,49 +77,67 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             int l1 = s1.Length;
             int l2 = s2.Length;
+
             float[] row = new float[l2 + 1];
             for (int j = 0; j <= l2; j++)
                 row[j] = seek_cost(s2, j);
+
+            // row[j] is the distance between the empty string (0th prefix of s1) and the jth prefix of s2
+
             float[] future_row = new float[l2 + 1];
+
             for (int i = 0; i < l1; i++)
             {
+                // row[j] is the distance between the ith prefix of s1 and the jth prefix of s2
+                // future_row[j] should be the distance between the (i+1)th prefix of s1 and the jth prefix of s2
+
+                // found_lesser: Is any cost in future_row[] lesser than upperBound?
+                bool found_lesser = float.IsInfinity(upperBound);
+
+                // j = 0, only available transition is deleting ith character of s1
                 future_row[0] = row[0] + delete_cost(s1[i]);
-                bool found_lower = float.IsInfinity(upperBound);
-                for (int j = 0; j < l2; j++)
+                if (!found_lesser && future_row[0] <= upperBound)
+                    found_lesser = true;
+
+                for (int j1 = 0; j1 < l2; j1++) // j = j1 + 1
                 {
-                    if (s1[i] == s2[j])
-                        future_row[j+1] = row[j];
+                    if (s1[i] == s2[j1])
+                        // Fast path: characters match, no extra cost
+                        future_row[j1 + 1] = row[j1];
                     else
                     {
-                        float cost = Math.Min(future_row[j] + insert_cost(s2[j]),
-                                                    row[j+1] + delete_cost(s1[i]));
-                        future_row[j+1] = Math.Min(cost, row[j] + replace_cost(s1[i], s2[j]));
+                        // Pick the cost of the cheapest transition available
+                        future_row[j1 + 1] = Math.Min(
+                                              Math.Min(row[j1 + 1] + delete_cost(s1[i]),
+                                                       future_row[j1] + insert_cost(s2[j1])), 
+                                              row[j1] + replace_cost(s1[i], s2[j1]));
                     }
-                    if (!found_lower && future_row[j + 1] < upperBound)
-                        found_lower = true;
+                    if (!found_lesser && future_row[j1 + 1] <= upperBound)
+                        found_lesser = true;
                 }
-                if (!found_lower)
+                if (!found_lesser)
+                    // Asuming all costs are positive, if no cost in future_row[] is lesser than upperBound, 
+                    // then final result won't be either
                     return float.PositiveInfinity;
 
                 float[] temp = row;
                 row = future_row;
                 future_row = temp;
             }
-            if (l2 > l1)
+
+            // row[j] is the distance between s1 (l1th prefix of s1) and the jth prefix of s2
+
+            float min = float.MaxValue;
+            for (int j = 0; j <= l2; j++)
             {
-                float min = float.MaxValue;
-                for (int j = 0; j <= l2; j++)
-                {
-                    float cost = row[j] + trim_cost(s2, j);
-                    if (cost < min)
-                        min = cost;
-                }
-                return min;
+                float cost = row[j] + trim_cost(s2, j);
+                if (cost < min)
+                    min = cost;
             }
-            else
-                return row[l2];
+            return min;
         }
 
+        // Standard PriorityQueue, aka Heap datastructure
         private class PriorityQueue<T> where T : IComparable<T>
         {
             private List<T> data;
@@ -198,6 +209,12 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public MatchResult[] FindBestMatches(string needle, int ntop)
         {
+#if DEBUG_SHOW_EDITDISTANCE_TIMES
+            // Start timing
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            long startTime = stopwatch.ElapsedMilliseconds;
+#endif
+
             string canonized_needle = canonize_string(needle);
             PriorityQueue<MatchResult> kept = new PriorityQueue<MatchResult>();
             float worseKeptDistance = float.PositiveInfinity;
@@ -221,6 +238,12 @@ namespace DaggerfallWorkshop.Game.Utility
             MatchResult[] result = new MatchResult[kept.Count()];
             for (int i = kept.Count(); i-- > 0; )
                 result[i] = kept.Dequeue();
+
+#if DEBUG_SHOW_EDITDISTANCE_TIMES
+            // Show timer
+            long totalTime = stopwatch.ElapsedMilliseconds - startTime;
+            DaggerfallUnity.LogMessage(string.Format("Time to findBestMatches: {0}ms", totalTime), true);
+#endif
             return result;
         }
     }

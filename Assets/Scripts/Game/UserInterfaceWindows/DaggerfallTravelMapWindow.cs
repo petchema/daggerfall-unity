@@ -152,6 +152,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         readonly Dictionary<int, Texture2D> importedOverlays = new Dictionary<int, Texture2D>();
 
         private readonly int maxMatchingResults = 20;
+        private string distanceRegionName = null;
+        private EditDistance distance;
 
         #endregion
 
@@ -315,6 +317,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             teleportationTravel = false;
             findingLocation = false;
             gotoLocation = null;
+            distanceRegionName = null;
+            distance = null;
         }
 
         public override void Update()
@@ -1445,13 +1449,21 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 return false;
             }
 
-            EditDistance distance = DaggerfallEditDistance.GetDistance();
-            // FIXME: optim: call this only once per region change
-            distance.SetDictionary(currentDFRegion.MapNames);
+            if (distanceRegionName != currentDFRegion.Name)
+            {
+                distanceRegionName = currentDFRegion.Name;
+                distance = DaggerfallEditDistance.GetDistance();
+                distance.SetDictionary(currentDFRegion.MapNames);
+            }
 
             EditDistance.MatchResult[] bestMatches = distance.FindBestMatches(name, maxMatchingResults);
 
             // Check if selected locations actually exist/are visible
+
+            bool first = true;
+            bool perfectMatchExists = false;
+            ContentReader.MapSummary findLocationSummary;
+
             foreach (EditDistance.MatchResult match in bestMatches)
             {
                 if (!currentDFRegion.MapNameLookup.ContainsKey(match.text))
@@ -1462,16 +1474,28 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 int index = currentDFRegion.MapNameLookup[match.text];
                 DFRegion.RegionMapTable locationInfo = currentDFRegion.MapTable[index];
                 DFPosition pos = MapsFile.LongitudeLatitudeToMapPixel((int)locationInfo.Longitude, (int)locationInfo.Latitude);
-                if (DaggerfallUnity.ContentReader.HasLocation(pos.X, pos.Y, out locationSummary))
+                if (DaggerfallUnity.ContentReader.HasLocation(pos.X, pos.Y, out findLocationSummary))
                 {
                     // only make location searchable if it is already discovered
-                    if (!checkLocationDiscovered(locationSummary))
+                    if (!checkLocationDiscovered(findLocationSummary))
                         continue;
 
+                    if (first)
+                    {
+                        perfectMatchExists = (match.distance == 0);
+
+                        // Set locationSummary to first result's MapSummary in case we skip the location list picker step
+                        locationSummary = findLocationSummary;
+                        first = false;
+                    }
+                    else
+                    {
+                        // If perfect match exist, return all perfect matches only
+                        // Normally there should be only one perfect match, but if string canonization generates collisions that's no longer guaranteed
+                        if (perfectMatchExists && match.distance > 0f)
+                            break;
+                    }
                     matching.Add(match);
-                    // Perfect match, return only one result?
-                    if (match.distance == 0)
-                        break;
                 }
             }
 
