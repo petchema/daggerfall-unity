@@ -71,6 +71,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         DaggerfallFont titleFont        = DaggerfallUI.Instance.Font2;
         DaggerfallFont pageButtonFont   = DaggerfallUI.Instance.Font3;
 
+        readonly Resolution[] resolutions = GetDistinctResolutions();
+
         int currentPage = 0;
         float y = 0;
 
@@ -294,8 +296,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             // Basic settings
             AddSectionTitle(leftPanel, "basic");
             resolution = AddSlider(leftPanel, "resolution",
-                Array.FindIndex(Screen.resolutions, x => x.width == DaggerfallUnity.Settings.ResolutionWidth && x.height == DaggerfallUnity.Settings.ResolutionHeight),
-                Screen.resolutions.Select(x => string.Format("{0}x{1}", x.width, x.height)).ToArray());
+                Array.FindIndex(resolutions, x => x.width == DaggerfallUnity.Settings.ResolutionWidth && x.height == DaggerfallUnity.Settings.ResolutionHeight),
+                resolutions.Select(x => string.Format("{0}x{1}", x.width, x.height)).ToArray());
             resolution.OnScroll += Resolution_OnScroll;
             fullscreen = AddCheckbox(leftPanel, "fullscreen", DaggerfallUnity.Settings.Fullscreen);
             fullscreen.OnToggleState += Fullscreen_OnToggleState;
@@ -390,7 +392,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             if (applyScreenChanges)
             {
-                Resolution selectedResolution = Screen.resolutions[resolution.ScrollIndex];
+                Resolution selectedResolution = resolutions[resolution.ScrollIndex];
                 DaggerfallUnity.Settings.ResolutionWidth = selectedResolution.width;
                 DaggerfallUnity.Settings.ResolutionHeight = selectedResolution.height;
                 DaggerfallUnity.Settings.Fullscreen = fullscreen.IsChecked;
@@ -652,6 +654,32 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 if (TextManager.Instance.HasText(textTable, options[i]))
                     options[i] = TextManager.Instance.GetText(textTable, options[i]);
             }
+        }
+
+        /// <summary>
+        /// Gets all resolutions without duplicates; when the same resolution support different refresh rates, the highest one is chosen.
+        /// </summary>
+        /// <returns>All supported distinct resolutions.</returns>
+        private static Resolution[] GetDistinctResolutions()
+        {
+            Resolution[] resolutions = Screen.resolutions;
+            var distinctResolutions = new List<Resolution>(resolutions.Length);
+
+            for (int i = 0; i < resolutions.Length; i++)
+            {
+                Resolution current = resolutions[i];
+
+                if (i + 1 < resolutions.Length)
+                {
+                    Resolution next = resolutions[i + 1];
+                    if (current.width == next.width && current.height == next.height)
+                        continue;
+                }
+
+                distinctResolutions.Add(current);
+            }
+
+            return distinctResolutions.ToArray();
         }
 
         #endregion
