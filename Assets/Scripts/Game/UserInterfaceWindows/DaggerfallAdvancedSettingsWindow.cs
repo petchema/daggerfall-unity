@@ -71,7 +71,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         DaggerfallFont titleFont        = DaggerfallUI.Instance.Font2;
         DaggerfallFont pageButtonFont   = DaggerfallUI.Instance.Font3;
 
-        readonly Resolution[] resolutions = GetDistinctResolutions();
+        readonly Resolution[] resolutions = DaggerfallUI.GetDistinctResolutions();
 
         int currentPage = 0;
         float y = 0;
