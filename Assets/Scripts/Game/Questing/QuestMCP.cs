@@ -32,6 +32,13 @@ namespace DaggerfallWorkshop.Game.Questing
                 this.parent = parent;
             }
 
+            public override string Name()
+            {
+                // Set seed to the quest UID before falling through to random name generation. (See t=2108)
+                DFRandom.srand((int) parent.UID);
+                return null;
+            }
+
             public override string FactionOrderName()
             {
                 // Only used for knightly order quests, %kno macro. (removing 'The ' prefix from name for readability)
@@ -103,6 +110,16 @@ namespace DaggerfallWorkshop.Game.Questing
                     case Game.Entity.Genders.Female:
                         return HardStrings.pronounHers;
                 }
+            }
+
+            public override string VampireNpcClan()
+            {   // %vcn
+                if (parent.LastResourceReferenced == null && !(parent.LastResourceReferenced is Person))
+                    return null;
+
+                // TODO: How to find vampire clan of an NPC? Is faction data as used here the right method that covers all cases?
+                Person person = (Person) parent.LastResourceReferenced;
+                return (person.FactionData.type == (int)FactionFile.FactionTypes.VampireClan) ? person.FactionData.name : null;
             }
 
             public override string QuestDate()
