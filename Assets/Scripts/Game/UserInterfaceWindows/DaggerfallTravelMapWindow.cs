@@ -369,7 +369,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                         return;
 
                     string[] locations = currentDFRegion.MapNames.OrderBy(p => p).ToArray();
-                    ShowLocationPicker(locations);
+                    ShowLocationPicker(locations, true);
                 }
                 else if (Input.GetKeyDown(KeyCode.F))
                     FindlocationButtonClickHandler(null, Vector2.zero);
@@ -1424,7 +1424,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 }
                 else
                 {
-                    ShowLocationPicker(matching.ConvertAll(match => match.text).ToArray());
+                    ShowLocationPicker(matching.ConvertAll(match => match.text).ToArray(), false);
                 }
             }
             else
@@ -1458,8 +1458,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             // Check if selected locations actually exist/are visible
 
-            bool first = true;
-            bool perfectMatchExists = false;
+            MatchesCutOff cutoff = null;
             ContentReader.MapSummary findLocationSummary;
 
             foreach (EditDistance.MatchResult match in bestMatches)
@@ -1478,19 +1477,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     if (!checkLocationDiscovered(findLocationSummary))
                         continue;
 
-                    if (first)
+                    if (cutoff == null)
                     {
-                        perfectMatchExists = (match.distance == 0);
+                        cutoff = new MatchesCutOff(match.relevance);
 
                         // Set locationSummary to first result's MapSummary in case we skip the location list picker step
                         locationSummary = findLocationSummary;
-                        first = false;
                     }
                     else
                     {
-                        // If perfect match exist, return all perfect matches only
-                        // Normally there should be only one perfect match, but if string canonization generates collisions that's no longer guaranteed
-                        if (perfectMatchExists && match.distance > 0f)
+                        if (!cutoff.Keep(match.relevance))
                             break;
                     }
                     matching.Add(match);
@@ -1500,9 +1496,26 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             return matching.Count > 0;
         }
 
+        private class MatchesCutOff
+        {
+            private readonly float threshold;
+                
+            public MatchesCutOff(float bestRelevance)
+            {
+                // If perfect match exists, return all perfect matches only
+                // Normally there should be only one perfect match, but if string canonization generates collisions that's no longer guaranteed
+                threshold = bestRelevance == 1f ? 1f : bestRelevance * 0.5f;
+            }
+
+            public bool Keep(float relevance)
+            {
+                return relevance >= threshold;
+            }
+        }
+
         //creates a ListPickerWindow with a list of locations from current region
         //locations displayed will be filtered out depending on the dungeon / town / temple / home button settings
-        private void ShowLocationPicker(string[] locations)
+        private void ShowLocationPicker(string[] locations, bool applyFilters)
         {
             DaggerfallListPickerWindow locationPicker = new DaggerfallListPickerWindow(uiManager, this);
             locationPicker.OnItemPicked += HandleLocationPickEvent;
@@ -1511,10 +1524,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             for (int i = 0; i < locations.Length; i++)
             {
                 int index = currentDFRegion.MapNameLookup[locations[i]];
-                if (GetPixelColorIndex(currentDFRegion.MapTable[index].LocationType) == -1)
+                if (applyFilters && GetPixelColorIndex(currentDFRegion.MapTable[index].LocationType) == -1)
                     continue;
-                else
-                    locationPicker.ListBox.AddItem(locations[i]);
+                locationPicker.ListBox.AddItem(locations[i]);
             }
 
             uiManager.PushWindow(locationPicker);
