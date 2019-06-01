@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
-    public class EditDistance
+    public class EditDistance : IDistance
     {
         private readonly Func<string, string> canonize_string;
         private readonly Func<char, float> insert_cost;
@@ -18,28 +18,6 @@ namespace DaggerfallWorkshop.Game.Utility
         // key: display string
         // value: canonized string
         private SortedDictionary<String, String> dictionary;
-
-        public class MatchResult : IComparable<MatchResult>
-        {
-            public readonly string text;
-            public readonly float relevance; // 0f: low relevance .. 1f: high relevance
-
-            public MatchResult(string answer, float relevance)
-            {
-                this.text = answer;
-                this.relevance = relevance;
-            }
-
-            public int CompareTo(MatchResult otherResult)
-            {
-                if (otherResult == null) return 1;
-
-                int compare = this.relevance.CompareTo(otherResult.relevance);
-                if (compare == 0)
-                    compare = string.Compare(this.text, otherResult.text, StringComparison.InvariantCulture);
-                return compare;
-            }
-        }
 
         private class InternalMatchResult : IComparable<InternalMatchResult>
         {
@@ -60,13 +38,14 @@ namespace DaggerfallWorkshop.Game.Utility
 
                 int compare = this.relevance.CompareTo(otherResult.relevance);
                 if (compare == 0)
-                    compare = string.Compare(this.text, otherResult.text, StringComparison.InvariantCulture);
+                    // Results will be returned in decreasing order
+                    compare = string.Compare(otherResult.text, this.text, StringComparison.InvariantCulture);
                 return compare;
             }
 
-            public MatchResult GetMatchResult()
+            public DistanceMatch GetMatchResult()
             {
-                return new MatchResult(text, relevance);
+                return new DistanceMatch(text, relevance);
             }
         }
 
@@ -101,7 +80,7 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
-        public float distance(string s1, string s2, float upperBound = float.PositiveInfinity)
+        public float GetDistance(string s1, string s2, float upperBound = float.PositiveInfinity)
         {
             int l1 = s1.Length;
             int l2 = s2.Length;
@@ -241,7 +220,7 @@ namespace DaggerfallWorkshop.Game.Utility
             return Mathf.Exp(-RelevanceDrop * distance);
         }
 
-        public MatchResult[] FindBestMatches(string needle, int ntop)
+        public DistanceMatch[] FindBestMatches(string needle, int ntop)
         {
 #if DEBUG_SHOW_EDITDISTANCE_TIMES
             // Start timing
@@ -254,7 +233,7 @@ namespace DaggerfallWorkshop.Game.Utility
             float worseKeptDistance = float.PositiveInfinity;
             foreach (KeyValuePair<String, String> kv in dictionary)
             {
-                float answer_distance = distance(canonized_needle, kv.Value, worseKeptDistance);
+                float answer_distance = GetDistance(canonized_needle, kv.Value, worseKeptDistance);
                 if (answer_distance < worseKeptDistance)
                 {
                     kept.Enqueue(new InternalMatchResult(kv.Key, answer_distance, GetRelevance(answer_distance)));
@@ -268,14 +247,14 @@ namespace DaggerfallWorkshop.Game.Utility
             }
 
             // Dump the heap in reverse order so highest relevances are at the beginning of results
-            MatchResult[] result = new MatchResult[kept.Count()];
+            DistanceMatch[] result = new DistanceMatch[kept.Count()];
             for (int i = kept.Count(); i-- > 0; )
                 result[i] = kept.Dequeue().GetMatchResult();
 
 #if DEBUG_SHOW_EDITDISTANCE_TIMES
             // Show timer
             long totalTime = stopwatch.ElapsedMilliseconds - startTime;
-            DaggerfallUnity.LogMessage(string.Format("Time to findBestMatches: {0}ms", totalTime), true);
+            DaggerfallUnity.LogMessage(string.Format("Time to findBestMatches {0}: {1}ms", needle, totalTime), true);
 #endif
             return result;
         }
