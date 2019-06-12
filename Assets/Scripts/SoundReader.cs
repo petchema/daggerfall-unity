@@ -64,41 +64,44 @@ namespace DaggerfallWorkshop
             if (!ReadyCheck() || !soundFile.IsValidIndex(soundIndex))
                 return null;
 
-            // Look for clip in cache
-            AudioClip cachedClip = GetCachedClip(soundIndex);
-            if (cachedClip)
-                return cachedClip;
-
-            // Get clip
-            AudioClip clip;
-            string name = string.Format("DaggerfallClip [Index={0}, ID={1}]", soundIndex, (int)soundFile.BsaFile.GetRecordId(soundIndex));
-            if (SoundReplacement.TryImportSound((SoundClips)soundIndex, out clip))
+            lock (clipDict)
             {
-                clip.name = name;
+                // Look for clip in cache
+                AudioClip cachedClip = GetCachedClip(soundIndex);
+                if (cachedClip)
+                    return cachedClip;
+
+                // Get clip
+                AudioClip clip;
+                string name = string.Format("DaggerfallClip [Index={0}, ID={1}]", soundIndex, (int)soundFile.BsaFile.GetRecordId(soundIndex));
+                if (SoundReplacement.TryImportSound((SoundClips)soundIndex, out clip))
+                {
+                    clip.name = name;
+                }
+                else
+                {
+                    // Get sound data
+                    DFSound dfSound;
+                    if (!soundFile.GetSound(soundIndex, out dfSound))
+                        return null;
+
+                    // Create audio clip
+                    clip = AudioClip.Create(name, dfSound.WaveData.Length, 1, SndFile.SampleRate, false);
+
+                    // Create data array
+                    float[] data = new float[dfSound.WaveData.Length];
+                    for (int i = 0; i < dfSound.WaveData.Length; i++)
+                        data[i] = (dfSound.WaveData[i] - 128) * divisor;
+
+                    // Set clip data
+                    clip.SetData(data, 0);
+                }
+
+                // Cache the clip
+                CacheClip(soundIndex, clip);
+
+                return clip;
             }
-            else
-            {
-                // Get sound data
-                DFSound dfSound;
-                if (!soundFile.GetSound(soundIndex, out dfSound))
-                    return null;
-
-                // Create audio clip
-                clip = AudioClip.Create(name, dfSound.WaveData.Length, 1, SndFile.SampleRate, false);
-
-                // Create data array
-                float[] data = new float[dfSound.WaveData.Length];
-                for (int i = 0; i < dfSound.WaveData.Length; i++)
-                    data[i] = (dfSound.WaveData[i] - 128) * divisor;
-
-                // Set clip data
-                clip.SetData(data, 0);
-            }
-
-            // Cache the clip
-            CacheClip(soundIndex, clip);
-
-            return clip;
         }
 
         /// <summary>
