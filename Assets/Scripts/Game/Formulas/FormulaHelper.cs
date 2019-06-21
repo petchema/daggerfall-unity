@@ -933,6 +933,9 @@ namespace DaggerfallWorkshop.Game.Formulas
                 chanceToHit -= (target.ImprovedAdrenalineRush) ? improvedAdrenalineRushModifier : adrenalineRushModifier;
             }
 
+            // Apply enchantment modifier
+            chanceToHit += attacker.ChanceToHitModifier;
+
             // Apply luck modifier.
             chanceToHit += ((attacker.Stats.LiveLuck - target.Stats.LiveLuck) / 10);
 
