@@ -355,6 +355,7 @@ namespace DaggerfallWorkshop.Game.Questing
             // Choose random quest from pool and try to parse it
             if (pool.Count > 0)
             {
+                UnityEngine.Random.InitState(System.Environment.TickCount);
                 QuestData questData = pool[UnityEngine.Random.Range(0, pool.Count)];
                 try
                 {
