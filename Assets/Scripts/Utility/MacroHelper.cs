@@ -72,7 +72,7 @@ namespace DaggerfallWorkshop.Utility
             { "%crn", CurrentRegion }, // Current Region
             { "%ct", CityType }, // City type? e.g city, town, village?
             { "%dae", Daedra }, // A daedra
-            { "%dam", DmgMod }, // Damage modifyer
+            { "%dam", DmgMod }, // Damage modifier
             { "%dat", Date }, // Date
             { "%di", LocationDirection },  // Direction
             { "%dip", DaysInPrison }, // Days in prison
@@ -82,24 +82,26 @@ namespace DaggerfallWorkshop.Utility
             { "%ef", null },  // Local shop name
             { "%enc", EncumbranceMax }, // Encumbrance
             { "%end", End }, // Amount of Endurance
+            { "%fa", FactionAlly }, // faction which is both PC and NPC ally (used for greetings)
+            { "%fae", FactionAllyEnemy }, // faction which is PC ally and NPC enemy (used for greetings)
             { "%fcn", LocationOfRegionalBuilding }, // Location with regional building asked about
-            { "%fe", null },  // ?
-            { "%fea", null }, // ?
+            { "%fe", FactionEnemy }, // faction which is both PC and NPC enemy (used for greetings)
+            { "%fea", FactionEnemyAlly }, // faction which is PC enemy and NPC ally (used for greetings)
             { "%fl1", LordOfFaction1 }, // Lord of _fx1
             { "%fl2", LordOfFaction2 }, // Lord of _fx2
             { "%fn", FemaleName },  // Random first name (Female)
             { "%fn2", FemaleFullname }, // Random full name (Female)
-            { "%fnpc", GuildNPC }, // faction of npc that is dialog partner
+            { "%fnpc", FactionNPC }, // faction of npc that is dialog partner
             { "%fon", FactionOrderName }, // Faction order name
             { "%fpa", FactionName }, // faction name? of dialog partner - should return "Kynareth" for npc that are members of "Temple of Kynareth"
-            { "%fpc", FactionPC }, // faction of pc that is from importance to dialog partner (same as his faction)
+            { "%fpc", FactionPC }, // PC faction used for guild related greetings
             { "%fx1", AFactionInNews }, // A faction in news
             { "%fx2", AnotherFactionInNews }, // Another faction in news
             { "%g", Pronoun },   // He/She etc...
             { "%g1", Pronoun },  // He/She ???
             { "%g2", Pronoun2 },  // Him/Her etc...
             { "%g2self", Pronoun2self },// Himself/Herself etc...
-            { "%g3", Pronoun3 },  // His/Hers/Theirs etc...
+            { "%g3", Pronoun3 },  // His/Her
             { "%gii", GoldCarried }, // Amount of gold in hand
             { "%gdd", GodDesc }, // God description i.e. God of Logic
             { "%god", God }, // Some god (listed in TEXT.RSC)
@@ -233,7 +235,7 @@ namespace DaggerfallWorkshop.Utility
             { "%pg1", PlayerPronoun },  // His/Her (player)
             { "%pg2", PlayerPronoun2 }, // Him/Her (player)
             { "%pg2self", PlayerPronoun2self },// Himself/Herself (player)
-            { "%pg3", PlayerPronoun3 },  // His/Hers (player)
+            { "%pg3", PlayerPronoun3 },  // His/Her (player)
             { "%hrn", HomeRegion },  // Home region (of person)
         };
 
@@ -744,7 +746,7 @@ namespace DaggerfallWorkshop.Utility
         }
         private static string PlayerPronoun3(IMacroContextProvider mcp)
         {   // %pg3
-            return (GameManager.Instance.PlayerEntity.Gender == Genders.Female) ? HardStrings.pronounHers : HardStrings.pronounHis;
+            return (GameManager.Instance.PlayerEntity.Gender == Genders.Female) ? HardStrings.pronounHer : HardStrings.pronounHis;
         }
 
         private static string Honorific(IMacroContextProvider mcp)
@@ -826,14 +828,34 @@ namespace DaggerfallWorkshop.Utility
             return ""; // return empty string for now - not known if it does something else in classic
         }
 
+        private static string FactionAlly(IMacroContextProvider mcp)
+        {   // %fa
+            return GameManager.Instance.TalkManager.GetFactionNPCAlly();
+        }
+
+        private static string FactionEnemy(IMacroContextProvider mcp)
+        {   // %fe
+            return GameManager.Instance.TalkManager.GetFactionNPCEnemy();
+        }
+
+        private static string FactionAllyEnemy(IMacroContextProvider mcp)
+        {   // %fae
+            return GameManager.Instance.TalkManager.GetFactionNPCEnemy();
+        }
+
+        private static string FactionEnemyAlly(IMacroContextProvider mcp)
+        {   // %fea
+            return GameManager.Instance.TalkManager.GetFactionNPCAlly();
+        }
+
         private static string FactionPC(IMacroContextProvider mcp)
         {   // %fpc
             return GameManager.Instance.TalkManager.GetFactionPC();
         }
 
-        private static string GuildNPC(IMacroContextProvider mcp)
+        private static string FactionNPC(IMacroContextProvider mcp)
         {   // %fnpc
-            return GameManager.Instance.TalkManager.GetGuildNPC();
+            return GameManager.Instance.TalkManager.GetFactionNPC();
         }
 
         private static string FactionName(IMacroContextProvider mcp)

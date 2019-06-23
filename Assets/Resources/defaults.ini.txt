@@ -74,6 +74,9 @@ BowDrawback = False
 
 [Map]
 AutomapNumberOfDungeons=5
+AutomapDisableMicroMap=False
+AutomapRememberSliceLevel=False
+AutomapAlwaysMaxOutSliceLevel=False
 ExteriorMapDefaultZoomLevel=8
 ExteriorMapResetZoomLevelOnNewLocation=True
 

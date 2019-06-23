@@ -1139,10 +1139,10 @@ namespace DaggerfallWorkshop.Game
             return messageBox;
         }
 
-        public static DaggerfallMessageBox MessageBox(TextFile.Token[] textTokens, IMacroContextProvider mcp = null)
+        public static DaggerfallMessageBox MessageBox(TextFile.Token[] tokens, IMacroContextProvider mcp = null)
         {
             DaggerfallMessageBox messageBox = new DaggerfallMessageBox(Instance.uiManager, Instance.uiManager.TopWindow);
-            messageBox.SetTextTokens(textTokens, mcp);
+            messageBox.SetTextTokens(tokens, mcp);
             messageBox.ClickAnywhereToClose = true;
             messageBox.Show();
             return messageBox;
