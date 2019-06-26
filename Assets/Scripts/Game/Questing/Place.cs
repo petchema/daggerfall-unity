@@ -436,7 +436,7 @@ namespace DaggerfallWorkshop.Game.Questing
                 }
             }
 
-            // Hot-place item if player already at this Place at time of placement
+            // Hot-place resource if player already at this Place at time of placement
             // This means PlayerEnterExit could not have called placement at time of assignment
             // e.g. M0B30Y08 places zombie only when player already inside building after 7pm
             if (IsPlayerHere())
@@ -454,6 +454,12 @@ namespace DaggerfallWorkshop.Game.Questing
                 {
                     GameObjectHelper.AddQuestResourceObjects(SiteTypes.Dungeon, playerEnterExit.Dungeon.transform);
                 }
+            }
+
+            // Hot-remove resource is player already at this Place and resource was moved elsewhere
+            if (!IsPlayerHere() && resource.QuestResourceBehaviour)
+            {
+                resource.QuestResourceBehaviour.gameObject.SetActive(false);
             }
         }
 
@@ -563,7 +569,8 @@ namespace DaggerfallWorkshop.Game.Questing
         /// </summary>
         bool SelectRemoteTownSite(DFLocation.BuildingTypes requiredBuildingType)
         {
-            const int maxAttempts = 500;
+            const int maxAttemptsBeforeFallback = 250;
+            const int maxAttemptsBeforeFailure = 500;
 
             // Get player region
             int regionIndex = GameManager.Instance.PlayerGPS.CurrentRegionIndex;
@@ -574,21 +581,20 @@ namespace DaggerfallWorkshop.Game.Questing
             if (regionData.LocationCount == 0)
                 return false;
 
-            // Hack: Convert House4-House5 back to House2 - not sure where these house types even exist?
-            if (requiredBuildingType == DFLocation.BuildingTypes.House4 ||
-                requiredBuildingType == DFLocation.BuildingTypes.House5)
-            {
-                requiredBuildingType = DFLocation.BuildingTypes.House2;
-                p2 = (int)DFLocation.BuildingTypes.House2;
-            }
-
             // Find random town containing building
             int attempts = 0;
             bool found = false;
             while (!found)
             {
-                // Increment attempts
-                if (++attempts >= maxAttempts)
+                // Increment attempts and do some fallback
+                if (++attempts >= maxAttemptsBeforeFallback &&
+                    requiredBuildingType >= DFLocation.BuildingTypes.House1 &&
+                    requiredBuildingType <= DFLocation.BuildingTypes.House6)
+                {
+                    requiredBuildingType = DFLocation.BuildingTypes.AnyHouse;
+                    p2 = -1;
+                }
+                if (attempts >= maxAttemptsBeforeFailure)
                 {
                     Debug.LogErrorFormat("Could not find remote town site with building type {0} within {1} attempts", requiredBuildingType.ToString(), attempts);
                     break;
@@ -899,6 +905,14 @@ namespace DaggerfallWorkshop.Game.Questing
             // Need to check our parent quest resources separately as not loaded to quest machine during compile
             SiteDetails[] activeQuestSites = QuestMachine.Instance.GetAllActiveQuestSites();
             QuestResource[] parentQuestPlaceResources = ParentQuest.GetAllResources(typeof(Place));
+
+            // Convert House4-House5 back to House2 - not sure where these house types even exist?
+            if (buildingType == DFLocation.BuildingTypes.House4 ||
+                buildingType == DFLocation.BuildingTypes.House5)
+            {
+                buildingType = DFLocation.BuildingTypes.House2;
+                p2 = (int)DFLocation.BuildingTypes.House2;
+            }
 
             // Iterate through all blocks
             DFBlock[] blocks;

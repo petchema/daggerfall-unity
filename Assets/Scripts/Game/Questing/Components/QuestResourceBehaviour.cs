@@ -13,7 +13,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DaggerfallConnect.Save;
 using DaggerfallWorkshop.Game.Entity;
+using DaggerfallWorkshop.Game.MagicAndEffects;
 using FullSerializer;
 
 namespace DaggerfallWorkshop.Game.Questing
@@ -29,6 +31,7 @@ namespace DaggerfallWorkshop.Game.Questing
         ulong questUID;
         Symbol targetSymbol;
         bool isFoeDead = false;
+        int foeSpellQueuePosition = 0;
 
         [NonSerialized] Quest targetQuest;
         [NonSerialized] QuestResource targetResource = null;
@@ -44,6 +47,7 @@ namespace DaggerfallWorkshop.Game.Questing
             public ulong questUID;
             public Symbol targetSymbol;
             public bool isFoeDead;
+            public int foeSpellQueuePosition;
         }
 
         #endregion
@@ -148,6 +152,9 @@ namespace DaggerfallWorkshop.Game.Questing
                     return;
                 }
 
+                // Process spell queue
+                CastSpellQueue(foe, enemyEntityBehaviour);
+
                 // Handle restrained check
                 // This might need some tuning in relation to injured and death checks
                 if (foe.IsRestrained)
@@ -244,6 +251,7 @@ namespace DaggerfallWorkshop.Game.Questing
             data.questUID = questUID;
             data.targetSymbol = targetSymbol;
             data.isFoeDead = isFoeDead;
+            data.foeSpellQueuePosition = foeSpellQueuePosition;
 
             return data;
         }
@@ -257,6 +265,7 @@ namespace DaggerfallWorkshop.Game.Questing
             questUID = data.questUID;
             targetSymbol = data.targetSymbol;
             isFoeDead = data.isFoeDead;
+            foeSpellQueuePosition = data.foeSpellQueuePosition;
             CacheTarget();
         }
 
@@ -337,6 +346,66 @@ namespace DaggerfallWorkshop.Game.Questing
             }
 
             return matched;
+        }
+
+        void CastSpellQueue(Foe foe, DaggerfallEntityBehaviour enemyEntityBehaviour)
+        {
+            // Validate
+            if (!enemyEntityBehaviour || foe == null || foe.SpellQueue == null || foeSpellQueuePosition == foe.SpellQueue.Count)
+                return;
+
+            // Target entity must be alive
+            if (enemyEntityBehaviour.Entity.CurrentHealth == 0)
+                return;
+
+            // Get effect manager on enemy
+            EntityEffectManager enemyEffectManager = enemyEntityBehaviour.GetComponent<EntityEffectManager>();
+            if (!enemyEffectManager)
+                return;
+
+            // Cast queued spells on foe from current position
+            for (int i = foeSpellQueuePosition; i < foe.SpellQueue.Count; i++)
+            {
+                SpellReference spell = foe.SpellQueue[i];
+                EntityEffectBundle spellBundle = null;
+
+                // Create classic or custom spell bundle
+                if (string.IsNullOrEmpty(spell.CustomKey))
+                {
+                    // Get classic spell data
+                    SpellRecord.SpellRecordData spellData;
+                    if (!GameManager.Instance.EntityEffectBroker.GetClassicSpellRecord(spell.ClassicID, out spellData))
+                        continue;
+
+                    // Create classic spell bundle settings
+                    EffectBundleSettings bundleSettings;
+                    if (!GameManager.Instance.EntityEffectBroker.ClassicSpellRecordDataToEffectBundleSettings(spellData, BundleTypes.Spell, out bundleSettings))
+                        continue;
+
+                    // Create classic spell bundle
+                    spellBundle = new EntityEffectBundle(bundleSettings, enemyEntityBehaviour);
+                }
+                else
+                {
+                    // Create custom spell bundle - must be previously registered to broker
+                    try
+                    {
+                        EntityEffectBroker.CustomSpellBundleOffer offer = GameManager.Instance.EntityEffectBroker.GetCustomSpellBundleOffer(spell.CustomKey);
+                        spellBundle = new EntityEffectBundle(offer.BundleSetttings, enemyEntityBehaviour);
+                    }
+                    catch(Exception ex)
+                    {
+                        Debug.LogErrorFormat("QuestResourceBehaviour.CastSpellQueue() could not find custom spell offer with key: {0}, exception: {1}", spell.CustomKey, ex.Message);
+                    }
+                }
+
+                // Assign spell bundle to enemy
+                if (spellBundle != null)
+                    enemyEffectManager.AssignBundle(spellBundle, AssignBundleFlags.BypassSavingThrows);
+            }
+
+            // Set index positon to end of queue
+            foeSpellQueuePosition = foe.SpellQueue.Count;
         }
 
         #endregion

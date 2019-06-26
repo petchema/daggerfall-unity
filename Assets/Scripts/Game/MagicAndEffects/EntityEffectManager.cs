@@ -476,12 +476,12 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                     }
 
                     // Spell Reflection
-                    if (sourceBundle.Settings.BundleType == BundleTypes.Spell && TryReflection(sourceBundle))
+                    if (!bypassSavingThrows && sourceBundle.Settings.BundleType == BundleTypes.Spell && TryReflection(sourceBundle))
                         continue;
                 }
 
                 // Spell Resistance
-                if (sourceBundle.Settings.BundleType == BundleTypes.Spell && TryResistance())
+                if (!bypassSavingThrows && sourceBundle.Settings.BundleType == BundleTypes.Spell && TryResistance())
                     continue;
 
                 // Start effect
@@ -552,7 +552,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             {
                 instancedBundles.Add(instancedBundle);
                 RaiseOnAssignBundle(instancedBundle);
-                Debug.LogFormat("Adding bundle {0}", instancedBundle.GetHashCode());
+                Debug.LogFormat("Adding bundle [{0}] {1}", instancedBundle.name, instancedBundle.GetHashCode());
             }
         }
 
@@ -1560,7 +1560,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                 foreach (LiveEffectBundle bundle in bundlesToRemove)
                 {
                     RemoveBundle(bundle);
-                    Debug.LogFormat("Removing bundle {0}", bundle.GetHashCode());
+                    Debug.LogFormat("Removing bundle [{0}] {1}", bundle.name, bundle.GetHashCode());
                 }
                 bundlesToRemove.Clear();
             }
