@@ -81,8 +81,7 @@ namespace DaggerfallWorkshop
         Dictionary<int, int> terrainIndexDict = new Dictionary<int, int>();
 
         // List of loose objects, such as locations or loot containers
-        // These objects are not recycled and will created/destroyed as needed
-        List<LooseObjectDesc> looseObjectsList = new List<LooseObjectDesc>();
+        LooseObjects looseObjects = new LooseObjects();
 
         // Compensation for floating origin
         Vector3 worldCompensation = Vector3.zero;
@@ -108,6 +107,7 @@ namespace DaggerfallWorkshop
 
         private int? travelStartX = null;
         private int? travelStartZ = null;
+        private float debugTimer = 0f;
 
         #endregion
 
@@ -203,14 +203,6 @@ namespace DaggerfallWorkshop
             public int mapPixelY;
         }
 
-        struct LooseObjectDesc
-        {
-            public GameObject gameObject;
-            public int mapPixelX;
-            public int mapPixelY;
-            public bool statefulObj;
-        }
-
         /// <summary>
         /// Methods for auto-reposition logic.
         /// </summary>
@@ -233,6 +225,17 @@ namespace DaggerfallWorkshop
             // Cannot proceed until ready and player is set
             if (!ReadyCheck())
                 return;
+
+#if SHOW_LOOSEOBJECTS_TIMES
+            if (Time.realtimeSinceStartup > debugTimer + 1f)
+            {
+                if (!looseObjects.IsEmpty)
+                    looseObjects.DebugLog(MapPixelX, MapPixelY, TerrainDistance);
+                else
+                    Debug.Log("No looseObjects");
+            debugTimer = Time.realtimeSinceStartup;
+            }
+#endif
 
             // Handle moving to new map pixel or first-time init
             DFPosition curMapPixel = LocalPlayerGPS.CurrentMapPixel;
@@ -449,14 +452,16 @@ namespace DaggerfallWorkshop
         public void TrackLooseObject(GameObject gameObject, bool statefulObj = false, int mapPixelX = -1, int mapPixelY = -1, bool setParent = false)
         {
             // Create loose object description
-            LooseObjectDesc desc = new LooseObjectDesc();
-            desc.gameObject = gameObject;
+            LooseObjects.Desc desc = new LooseObjects.Desc
+            {
+                gameObject = gameObject,
+                statefulObj = statefulObj
+            };
             if (mapPixelX == -1)
-                desc.mapPixelX = MapPixelX;
+                mapPixelX = MapPixelX;
             if (mapPixelY == -1)
-                desc.mapPixelY = MapPixelY;
-            desc.statefulObj = statefulObj;
-            looseObjectsList.Add(desc);
+                mapPixelY = MapPixelY;
+            looseObjects.Add(mapPixelX, mapPixelY, desc);
 
             // Change object parent
             if (setParent)
@@ -465,7 +470,7 @@ namespace DaggerfallWorkshop
 
         public void ClearStatefulLooseObjects()
         {
-            looseObjectsList.RemoveAll(x => x.statefulObj);
+            looseObjects.ClearStatefulObjects();
         }
 
         /// <summary>
@@ -512,18 +517,7 @@ namespace DaggerfallWorkshop
         private DaggerfallLocation GetPlayerLocationObject()
         {
             // Look for location at current map pixel coords inside loose object list
-            for (int i = 0; i < looseObjectsList.Count; i++)
-            {
-                LooseObjectDesc desc = looseObjectsList[i];
-                if (!desc.statefulObj && desc.gameObject && desc.mapPixelX == MapPixelX && desc.mapPixelY == MapPixelY)
-                {
-                    DaggerfallLocation location = desc.gameObject.GetComponent<DaggerfallLocation>();
-                    if (location)
-                        return location;
-                }
-            }
-
-            return null;
+            return looseObjects.GetLocation(MapPixelX, MapPixelY);
         }
 
         #endregion
@@ -693,12 +687,12 @@ namespace DaggerfallWorkshop
                     buildingDirectory.SetLocation(location);
 
                     // Add location to loose object list
-                    LooseObjectDesc looseObject = new LooseObjectDesc();
-                    looseObject.gameObject = locationObject;
-                    looseObject.mapPixelX = terrainArray[index].mapPixelX;
-                    looseObject.mapPixelY = terrainArray[index].mapPixelY;
-                    looseObject.statefulObj = false;
-                    looseObjectsList.Add(looseObject);
+                    LooseObjects.Desc locationDesc = new LooseObjects.Desc()
+                    {
+                        gameObject = locationObject,
+                        statefulObj = false
+                    };
+                    looseObjects.Add(terrainArray[index].mapPixelX, terrainArray[index].mapPixelY, locationDesc);
 
                     // Create billboard batch game objects for this location
                     // Streaming world always batches for performance, regardless of options
@@ -907,6 +901,7 @@ namespace DaggerfallWorkshop
                     // If terrain out of range then recycle
                     if (!IsInRange(terrainArray[i].mapPixelX, terrainArray[i].mapPixelY))
                     {
+                        MarkTerrainInactive(i);
                         found = i;
                         break;
                     }
@@ -945,6 +940,7 @@ namespace DaggerfallWorkshop
         // Remove managed child objects
         private void ClearStreamingWorld()
         {
+            Debug.Log("ClearStreamingWorld");
             // Collect everything
             CollectTerrains(true);
             CollectLooseObjects(true);
@@ -971,11 +967,7 @@ namespace DaggerfallWorkshop
                 // If terrain out of range then mark inactive for recycling
                 if (!IsInRange(terrainArray[i].mapPixelX, terrainArray[i].mapPixelY) || collectAll)
                 {
-                    // Mark terrain inactive
-                    terrainArray[i].terrainObject.name = "Pooled";
-                    terrainArray[i].active = false;
-                    terrainArray[i].terrainObject.SetActive(false);
-                    terrainArray[i].billboardBatchObject.SetActive(false);
+                    MarkTerrainInactive(i);
 
                     // If collecting all then ensure terrain is out of range
                     // This fixes a bug where continuously loading same location overflows terrain buffer
@@ -989,20 +981,46 @@ namespace DaggerfallWorkshop
             }
         }
 
+        private void MarkTerrainInactive(int i)
+        {
+            terrainArray[i].terrainObject.name = "Pooled";
+            terrainArray[i].active = false;
+            terrainArray[i].terrainObject.SetActive(false);
+            terrainArray[i].billboardBatchObject.SetActive(false);
+        }
+
         // Destroy any loose objects outside of range
         private void CollectLooseObjects(bool collectAll = false)
         {
-            // Walk list backward to RemoveAt doesn't shift unprocessed items
-            for (int i = looseObjectsList.Count; i-- > 0;)
+            int countBefore = looseObjects.Count;
+            looseObjects.RemoveBuckets((x, y, bucket) => {
+                bool remove = !IsInRange(x, y) || collectAll;
+                if (remove)
+                    StartCoroutine(DestroyBucket(bucket));
+                return remove;
+             });
+            int countAfter = looseObjects.Count;
+            Debug.Log(String.Format("CollectLooseObjects({0}): {1} -> {2}", collectAll, countBefore, countAfter));
+        }
+
+        private IEnumerator DestroyBucket(List<LooseObjects.Desc> bucket)
+        {
+            // quickly hide stuff
+            foreach (LooseObjects.Desc desc in bucket)
             {
-                if (!IsInRange(looseObjectsList[i].mapPixelX, looseObjectsList[i].mapPixelY) || collectAll)
+                if (desc.gameObject != null)
                 {
-                    if (looseObjectsList[i].gameObject != null)
-                    {
-                        looseObjectsList[i].gameObject.SetActive(false);
-                        StartCoroutine(DestroyGameObjectIterative(looseObjectsList[i].gameObject));
-                    }
-                    looseObjectsList.RemoveAt(i);
+                    desc.gameObject.SetActive(false);
+                }
+            }
+            // wait a bit, game is probably struggling to create new terrain too
+            yield return new WaitForSeconds(2f);
+            // then start reclaiming
+            foreach (LooseObjects.Desc desc in bucket)
+            {
+                if (desc.gameObject != null)
+                {
+                    yield return DestroyGameObjectIterative(desc.gameObject);
                 }
             }
         }
@@ -1013,12 +1031,12 @@ namespace DaggerfallWorkshop
             // Destroy all children iteratively
             foreach (Transform t in gameObject.transform)
             {
-                DestroyGameObjectIterative(t.gameObject);
-                yield return new WaitForEndOfFrame();
+                yield return DestroyGameObjectIterative(t.gameObject);
             }
 
             // Now destroy this object
             GameObject.Destroy(gameObject.transform.gameObject);
+            yield return null;
         }
 
         #endregion
