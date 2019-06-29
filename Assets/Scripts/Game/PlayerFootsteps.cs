@@ -55,6 +55,7 @@ namespace DaggerfallWorkshop.Game
         Vector3 lastPosition;
         bool lostGrounding;
         float distance;
+        float footstepsJitter = 1.0f;
         bool alternateStep = false;
 
         SoundClips currentFootstepSound1 = SoundClips.None;
@@ -223,6 +224,7 @@ namespace DaggerfallWorkshop.Game
             float threshold = WalkStepInterval;
             if (playerMotor)
                 threshold = (playerMotor.IsRunning) ? RunStepInterval : WalkStepInterval;
+            threshold = threshold * footstepsJitter;
 
             // Play sound if over distance threshold
             if (distance > threshold && customAudioSource && clip1 && clip2)
@@ -234,6 +236,7 @@ namespace DaggerfallWorkshop.Game
 
                 alternateStep = (!alternateStep);
                 distance = 0f;
+                footstepsJitter = Random.Range(0.85f, 1.15f);
             }
         }
 
