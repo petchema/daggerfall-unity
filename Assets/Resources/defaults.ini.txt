@@ -6,6 +6,7 @@ MyDaggerfallUnitySavePath=
 ResolutionWidth=1280
 ResolutionHeight=720
 RetroRenderingMode=0
+UseMipMapsInRetroMode=False
 VSync=True
 Fullscreen=False
 FieldOfView=65
@@ -15,6 +16,11 @@ ShadowResolutionMode=0
 UseLegacyDeferred=False
 DungeonLightShadows=False
 InteriorLightShadows=True
+ExteriorLightShadows=True
+DungeonShadowDistance=20.0
+InteriorShadowDistance=30.0
+ExteriorShadowDistance=90.0
+
 EnableTextureArrays=True
 RandomDungeonTextures=0
 

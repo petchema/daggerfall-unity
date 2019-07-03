@@ -68,6 +68,7 @@ namespace DaggerfallWorkshop
         public int ResolutionWidth { get; set; }
         public int ResolutionHeight { get; set; }
         public int RetroRenderingMode { get; set; }
+        public bool UseMipMapsInRetroMode { get; set; }
         public bool VSync { get; set; }
         public bool Fullscreen { get; set; }
         public int FieldOfView { get; set; }
@@ -77,6 +78,10 @@ namespace DaggerfallWorkshop
         public bool UseLegacyDeferred { get; set; }
         public bool DungeonLightShadows { get; set; }
         public bool InteriorLightShadows { get; set; }
+        public bool ExteriorLightShadows { get; set; }
+        public float DungeonShadowDistance { get; set; }
+        public float InteriorShadowDistance { get; set; }
+        public float ExteriorShadowDistance { get; set; }
         public bool EnableTextureArrays { get; set; }
         public int RandomDungeonTextures { get; set; }
 
@@ -188,6 +193,7 @@ namespace DaggerfallWorkshop
             ResolutionWidth = GetInt(sectionVideo, "ResolutionWidth");
             ResolutionHeight = GetInt(sectionVideo, "ResolutionHeight");
             RetroRenderingMode = GetInt(sectionVideo, "RetroRenderingMode", 0, 2);
+            UseMipMapsInRetroMode = GetBool(sectionVideo, "UseMipMapsInRetroMode");
             VSync = GetBool(sectionVideo, "VSync");
             Fullscreen = GetBool(sectionVideo, "Fullscreen");
             FieldOfView = GetInt(sectionVideo, "FieldOfView", 60, 80);
@@ -197,6 +203,10 @@ namespace DaggerfallWorkshop
             UseLegacyDeferred = GetBool(sectionVideo, "UseLegacyDeferred");
             DungeonLightShadows = GetBool(sectionVideo, "DungeonLightShadows");
             InteriorLightShadows = GetBool(sectionVideo, "InteriorLightShadows");
+            ExteriorLightShadows = GetBool(sectionVideo, "ExteriorLightShadows");
+            DungeonShadowDistance = GetFloat(sectionVideo, "DungeonShadowDistance", 0.1f, 50.0f);
+            InteriorShadowDistance = GetFloat(sectionVideo, "InteriorShadowDistance", 0.1f, 50.0f);
+            ExteriorShadowDistance = GetFloat(sectionVideo, "ExteriorShadowDistance", 0.1f, 150.0f);
             EnableTextureArrays = GetBool(sectionVideo, "EnableTextureArrays");
             RandomDungeonTextures = GetInt(sectionVideo, "RandomDungeonTextures", 0, 4);
 
@@ -292,6 +302,7 @@ namespace DaggerfallWorkshop
             SetInt(sectionVideo, "ResolutionWidth", ResolutionWidth);
             SetInt(sectionVideo, "ResolutionHeight", ResolutionHeight);
             SetInt(sectionVideo, "RetroRenderingMode", RetroRenderingMode);
+            SetBool(sectionVideo, "UseMipMapsInRetroMode", UseMipMapsInRetroMode);
             SetBool(sectionVideo, "VSync", VSync);
             SetBool(sectionVideo, "Fullscreen", Fullscreen);
             SetInt(sectionVideo, "FieldOfView", FieldOfView);
@@ -301,6 +312,10 @@ namespace DaggerfallWorkshop
             SetBool(sectionVideo, "UseLegacyDeferred", UseLegacyDeferred);
             SetBool(sectionVideo, "DungeonLightShadows", DungeonLightShadows);
             SetBool(sectionVideo, "InteriorLightShadows", InteriorLightShadows);
+            SetBool(sectionVideo, "ExteriorLightShadows", ExteriorLightShadows);
+            SetFloat(sectionVideo, "DungeonShadowDistance", DungeonShadowDistance);
+            SetFloat(sectionVideo, "InteriorShadowDistance", InteriorShadowDistance);
+            SetFloat(sectionVideo, "ExteriorShadowDistance", ExteriorShadowDistance);
             SetBool(sectionVideo, "EnableTextureArrays", EnableTextureArrays);
             SetInt(sectionVideo, "RandomDungeonTextures", RandomDungeonTextures);
 
