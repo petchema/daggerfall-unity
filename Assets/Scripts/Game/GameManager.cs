@@ -46,6 +46,7 @@ namespace DaggerfallWorkshop.Game
 
         GameObject playerObject = null;
         Camera mainCamera = null;
+        RetroRenderer retroRenderer = null;
         PlayerMouseLook playerMouseLook = null;
         PlayerHealth playerHealth = null;
         VitalsChangeDetector vitalsChangeDetector = null;
@@ -116,6 +117,12 @@ namespace DaggerfallWorkshop.Game
         {
             get { return (mainCamera) ? mainCamera : mainCamera = GetComponentFromObject<Camera>(MainCameraObject, "MainCamera"); }
             set { mainCamera = value;}
+        }
+
+        public RetroRenderer RetroRenderer
+        {
+            get { return (retroRenderer) ? retroRenderer : retroRenderer = GetMonoBehaviour<RetroRenderer>(false); }
+            set { retroRenderer = value; }
         }
 
         public GameObject PlayerObject
@@ -841,10 +848,10 @@ namespace DaggerfallWorkshop.Game
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static T GetMonoBehaviour<T>() where T : MonoBehaviour
+        public static T GetMonoBehaviour<T>(bool errorIfNotFound = true) where T : MonoBehaviour
         {
             T result = (T)GameObject.FindObjectOfType<T>();
-            if (result == null)
+            if (result == null && errorIfNotFound)
             {
                 string errorText = string.Format("GameManager could not find {0}.", typeof(T));
                 Debug.LogError(errorText);
