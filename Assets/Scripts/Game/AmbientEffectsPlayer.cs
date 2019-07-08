@@ -35,6 +35,7 @@ namespace DaggerfallWorkshop.Game
         DaggerfallAudioSource dfAudioSource;
         AudioSource loopAudioSource;
         Stack<AudioSource> ambientAudioSourcePool;
+        static float ambientSpread = 15f;
         int allocatedAmbientAudioSources = 0;      // for statistics only
         private Coroutine relativePositionCoroutine = null;
 
@@ -146,7 +147,7 @@ namespace DaggerfallWorkshop.Game
                         waterSoundPosition.y = playerEnterExit.blockWaterLevel * -1 * MeshReader.GlobalScale;
                         waterSoundPosition.x += Random.Range(-3f, 3f);
                         waterSoundPosition.z += Random.Range(-3f, 3f);
-                        SpatializedPlayOneShot(SoundClips.WaterGentle, waterSoundPosition, 3f);
+                        SpatializedPlayOneShot(SoundClips.WaterGentle, waterSoundPosition, 1f);
                     }
 
                     // Chance to play water bubbles sound if player is underwater
@@ -175,6 +176,7 @@ namespace DaggerfallWorkshop.Game
             audioSource.loop = false;
             audioSource.dopplerLevel = 0f;
             audioSource.spatialBlend = 0f;
+            audioSource.spread = ambientSpread;
             audioSource.volume = DaggerfallUnity.Settings.SoundVolume;
         }
 
@@ -237,52 +239,37 @@ namespace DaggerfallWorkshop.Game
             });
         }
 
-        private void SpatializedPlayOneShot(SoundClips clip, Vector3 position, float volumeScale, float spatialBlend = 1f)
+        private void SpatializedPlayOneShot(SoundClips clip, Vector3 position, float volumeScale, float minDistance = 8f)
         {
             WithAudioSource(ambientAudioSource =>
             {
                 AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
                 ambientAudioSource.transform.position = position;
-                ambientAudioSource.spatialBlend = spatialBlend;
-                ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
-            });
-        }
-
-        private void RelativePlayOneShot(SoundClips clip, Vector3 relativePosition, float volumeScale)
-        {
-            WithAudioSource(ambientAudioSource =>
-            {
-                AudioClip audioClip = dfAudioSource.GetAudioClip((int)clip);
                 ambientAudioSource.spatialBlend = 1f;
+                ambientAudioSource.minDistance = minDistance;
+                ambientAudioSource.maxDistance = minDistance * 8;
                 ambientAudioSource.PlayOneShotWhenReady(audioClip, volumeScale);
-                if (relativePositionCoroutine != null)
-                    StopCoroutine(relativePositionCoroutine);
-                relativePositionCoroutine = StartCoroutine(UpdateAmbientSoundRelativePosition(ambientAudioSource, relativePosition));
             });
         }
 
-        private IEnumerator UpdateAmbientSoundRelativePosition(AudioSource audioSource, Vector3 relativePosition)
+        private float sqr(float x) 
         {
-            while (audioSource.isPlaying)
-            {
-                audioSource.transform.position = playerBehaviour.transform.position + relativePosition;
-                yield return new WaitForEndOfFrame();
-            }
+            return x * x;
         }
 
-        private void PlaySomewhereAround(SoundClips clip, float volumeScale, float spatialBlend = 1f)
+        private void PlaySomewhereAround(SoundClips clip, float volumeScale)
         {
-            //Debug.LogFormat("Playing clip {0}", clip.ToString());
             Vector3 randomPos = playerBehaviour.transform.position +
-                Random.onUnitSphere * 5.2f;
-            SpatializedPlayOneShot(clip, randomPos, volumeScale, spatialBlend);
+                Random.onUnitSphere * Mathf.Sqrt(Random.Range(sqr(10f), sqr(20f)));
+            SpatializedPlayOneShot(clip, randomPos, volumeScale, 13f);
         }
 
         private void PlaySomewhereOnHorizon(SoundClips clip, float volumeScale)
         {
             // Somewhere around, 20° above horizon
-            Vector3 randomPos = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.up) * new Vector3(0.94f, 0.34f, 0f);
-            RelativePlayOneShot(clip, randomPos, volumeScale);
+            Vector3 randomPos = playerBehaviour.transform.position + 
+                Quaternion.AngleAxis(Mathf.Sqrt(Random.Range(0f, sqr(10000f))), Vector3.up) * new Vector3(0.94f, 0.34f, 0f);
+            SpatializedPlayOneShot(clip, randomPos, volumeScale, 3000f);
         }
 
         private void PlayEffects()
@@ -306,7 +293,7 @@ namespace DaggerfallWorkshop.Game
                 {
                     // Play ambient sound as a one-shot 3D sound
                     SoundClips clip = ambientSounds[index];
-                    PlaySomewhereOnHorizon(clip, 5f);
+                    PlaySomewhereOnHorizon(clip, 1f);
 
                     // AmbientPlayOneShot(clip, 5f);
                     RaiseOnPlayEffectEvent(clip);
@@ -327,7 +314,7 @@ namespace DaggerfallWorkshop.Game
 
                 // Play ambient sound as a one-shot 3D sound
                 SoundClips clip = ambientSounds[index];
-                PlaySomewhereAround(clip, 10f, 0.25f);
+                PlaySomewhereAround(clip, 1f);
                 RaiseOnPlayEffectEvent(clip);
             }
         }
@@ -403,7 +390,7 @@ namespace DaggerfallWorkshop.Game
                 yield return new WaitForSeconds(soundDelay);
 
             // Play sound effect
-            PlaySomewhereOnHorizon(clip, 5f);
+            PlaySomewhereOnHorizon(clip, 1f);
 
             // Raise event
             RaiseOnPlayEffectEvent(clip);
@@ -422,71 +409,64 @@ namespace DaggerfallWorkshop.Game
 
         private void ApplyPresets()
         {
-            switch (Presets)
+            if (Presets == AmbientSoundPresets.Dungeon)
             {
-                case AmbientSoundPresets.Dungeon:
-                    // Set dungeon one-shots
-                    ambientSounds = new SoundClips[] {
-                        SoundClips.AmbientDripShort,
-                        SoundClips.AmbientDripLong,
-                        SoundClips.AmbientWindMoan,
-                        SoundClips.AmbientWindMoanDeep,
-                        SoundClips.AmbientDoorOpen,
-                        SoundClips.AmbientGrind,
-                        SoundClips.AmbientStrumming,
-                        SoundClips.AmbientWindBlow1,
-                        SoundClips.AmbientWindBlow1a,
-                        SoundClips.AmbientWindBlow1b,
-                        SoundClips.AmbientMonsterRoar,
-                        SoundClips.AmbientGoldPieces,
-                        SoundClips.AmbientBirdCall,
-                        SoundClips.AmbientDoorClose,
-                    };
-                    break;
-
-                case AmbientSoundPresets.Storm:
-                    // Set storm one-shots
-                    ambientSounds = new SoundClips[] {
-                        SoundClips.StormLightningShort,
-                        SoundClips.StormLightningThunder,
-                        SoundClips.StormThunderRoll,
-                    };
-                    break;
-
-                case AmbientSoundPresets.SunnyDay:
-                    ambientSounds = new SoundClips[]
-                    {
-                        SoundClips.BirdCall1,
-                        SoundClips.BirdCall2,
-                    };
-                    break;
-
-                case AmbientSoundPresets.ColdDay:
-                    ambientSounds = new SoundClips[]
-                    {
-                        SoundClips.AmbientCreepyBirdCall,
-                        SoundClips.AmbientWindBlow1,
-                        SoundClips.AmbientWindBlow1a,
-                        SoundClips.AmbientWindBlow1b,
-                    };
-                    break;
-
-                case AmbientSoundPresets.ColdNight:
-                    ambientSounds = new SoundClips[]
-                    {
-                        SoundClips.AmbientDistantHowl,
-                        SoundClips.AmbientWindBlow1,
-                        SoundClips.AmbientWindBlow1a,
-                        SoundClips.AmbientWindBlow1b,
-                    };
-                    break;
-
-                default:
-                    ambientSounds = null;
-                    break;
+                // Set dungeon one-shots
+                ambientSounds = new SoundClips[] {
+                    SoundClips.AmbientDripShort,
+                    SoundClips.AmbientDripLong,
+                    SoundClips.AmbientWindMoan,
+                    SoundClips.AmbientWindMoanDeep,
+                    SoundClips.AmbientDoorOpen,
+                    SoundClips.AmbientGrind,
+                    SoundClips.AmbientStrumming,
+                    SoundClips.AmbientWindBlow1,
+                    SoundClips.AmbientWindBlow1a,
+                    SoundClips.AmbientWindBlow1b,
+                    SoundClips.AmbientMonsterRoar,
+                    SoundClips.AmbientGoldPieces,
+                    SoundClips.AmbientBirdCall,
+                    SoundClips.AmbientDoorClose,
+                };
+                AmbientInteriorPresets();
+            }
+            else if (Presets == AmbientSoundPresets.Storm)
+            {
+                // Set storm one-shots
+                ambientSounds = new SoundClips[] {
+                    SoundClips.StormLightningShort,
+                    SoundClips.StormLightningThunder,
+                    SoundClips.StormThunderRoll,
+                };
+                AmbientExteriorPresets();
+            }
+            else if (Presets == AmbientSoundPresets.SunnyDay)
+            {
+                ambientSounds = new SoundClips[]
+                {
+                    SoundClips.BirdCall1,
+                    SoundClips.BirdCall2,
+                };
+                AmbientExteriorPresets();
+            }
+            else
+            {
+                ambientSounds = null;
             }
 
             lastPresets = Presets;
+        }
+
+        private void AmbientInteriorPresets()
+        {
+            // Wider spread angle because of environment reverberation
+            ambientSpread = 45f;
+        }
+
+        private void AmbientExteriorPresets()
+        {
+            // Narroer spread angle because of lesser environment reverberation
+            ambientSpread = 15f;
         }
 
         #endregion
