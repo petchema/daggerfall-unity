@@ -313,10 +313,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             // Setup initial state
             SelectTabPage(TabPages.WeaponsAndArmor);
-            if (lootTarget != null)
-                SelectActionMode(ActionModes.Remove);
-            else
-                SelectActionMode(ActionModes.Equip);
+            SetupDefaultActionMode();
 
             // Setup initial display
             FilterLocalItems();
@@ -545,6 +542,32 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             }
         }
 
+        private void SetupDefaultActionMode()
+        {
+            bool proximityWagonAccess = false;
+            if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon && !allowDungeonWagonAccess)
+                proximityWagonAccess = DungeonWagonAccessProximityCheck();
+
+            if (lootTarget != null)
+                SelectActionMode(ActionModes.Remove);
+            // Start with wagon if accessing from dungeon
+            else
+            {
+                // Fast access: autoselect wagon when nearby
+                if (!DaggerfallUnity.Settings.DungeonExitWagonPrompt)
+                    allowDungeonWagonAccess |= proximityWagonAccess;
+
+                if (allowDungeonWagonAccess)
+                {
+                    ShowWagon(true);
+                    SelectActionMode(ActionModes.Remove);
+                }
+                else
+                    SelectActionMode(ActionModes.Equip);
+            }
+            allowDungeonWagonAccess |= proximityWagonAccess;
+        }
+
         public override void OnPush()
         {
             // Racial override can suppress inventory
@@ -620,11 +643,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             }
             if (IsSetup)
             {
-                // Start with wagon if accessing from dungeon
-                if (allowDungeonWagonAccess) {
-                    ShowWagon(true);
-                    SelectActionMode(ActionModes.Remove);
-                }
+                SetupDefaultActionMode();
                 // Reset item list scroll
                 localItemListScroller.ResetScroll();
                 remoteItemListScroller.ResetScroll();
@@ -635,9 +654,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             // Update tracked weapons for setting equip delay
             SetEquipDelayTime(false);
-
-            if (GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeon && !allowDungeonWagonAccess)
-                DungeonWagonAccessProximityCheck();
 
             // Refresh window
             Refresh();
@@ -1034,14 +1050,26 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             Refresh(false);
         }
 
-        void DungeonWagonAccessProximityCheck()
+        bool DungeonWagonAccessProximityCheck()
         {
             // Set allow wagon access if close enough (10m) to exit.
             GameObject playerAdvancedGO = GameObject.Find("PlayerAdvanced");
             DaggerfallDungeon dungeon = GameManager.Instance.DungeonParent.GetComponentInChildren<DaggerfallDungeon>();
-            Vector3 exitVector = dungeon.StartMarker.transform.position - playerAdvancedGO.transform.position;
-            if (exitVector.magnitude < 10)
-                allowDungeonWagonAccess = true;
+            Vector3 exitVector = playerAdvancedGO.transform.position - dungeon.StartMarker.transform.position;
+            if (exitVector.magnitude < 2)
+                // fix bad case when you've just been spawned on StartMarker
+                return true;
+            else if (exitVector.magnitude < 10f)
+            {
+                RaycastHit hit;
+                Ray ray = new Ray(dungeon.StartMarker.transform.position, exitVector);
+                if (Physics.Raycast(ray, out hit))
+                {
+                    if (hit.transform.gameObject == playerAdvancedGO)
+                        return true;
+                }
+            }
+            return false;
         }
 
         void UpdateItemInfoPanel(DaggerfallUnityItem item)
