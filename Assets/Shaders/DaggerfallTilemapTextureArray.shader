@@ -54,7 +54,7 @@ Shader "Daggerfall/TilemapTextureArray" {
 		struct Input
 		{
 			float2 uv_MainTex : TEXCOORD0;
-			//float2 uv_BumpMap : TEXCOORD0;
+			//float2 uv_BumpMap : TEXCOORD1;
 		};
 
 		// compute all 4 posible configurations of terrain tiles (normal, rotated, flipped, rotated and flipped)
@@ -92,7 +92,7 @@ Shader "Daggerfall/TilemapTextureArray" {
 			float2 uv = mul(rotations[index % 4], frac(unwrappedUV)) + translations[index % 4];
 
 			// Sample based on gradient and set output
-			float3 uv3 = float3(uv, (float)(index/4)); // compute correct texture array index from index
+			float3 uv3 = float3(uv, index / 4); // compute correct texture array index from index
 
 			float mipMapLevel = GetMipLevel(unwrappedUV, _TileTexArr_TexelSize);
 			half4 c = UNITY_SAMPLE_TEX2DARRAY_SAMPLER_LOD(_TileTexArr, _TileTexArr, uv3, mipMapLevel);
