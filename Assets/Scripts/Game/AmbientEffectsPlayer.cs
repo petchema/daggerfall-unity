@@ -38,6 +38,7 @@ namespace DaggerfallWorkshop.Game
         static float ambientSpread = 15f;
         int allocatedAmbientAudioSources = 0;      // for statistics only
         private Coroutine relativePositionCoroutine = null;
+        //private Coroutine relativePositionCoroutine = null;
 
         SoundClips[] ambientSounds;
         AudioClip rainLoop;
