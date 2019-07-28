@@ -9,8 +9,11 @@
 // Notes:
 //
 
+using System;
+using System.Collections.Generic;
 using DaggerfallConnect;
 using DaggerfallConnect.FallExe;
+using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Items;
 
@@ -23,7 +26,11 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
     /// </summary>
     public class SoulBound : BaseEntityEffect
     {
+        const int monsterIDCount = 43;
+
         public static readonly string EffectKey = EnchantmentTypes.SoulBound.ToString();
+
+        int[] enumeratedTraps = new int[monsterIDCount];
 
         public override void SetProperties()
         {
@@ -31,36 +38,102 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
             properties.GroupName = TextManager.Instance.GetText(textDatabase, EffectKey);
             properties.ShowSpellIcon = false;
             properties.AllowedCraftingStations = MagicCraftingStations.ItemMaker;
-            properties.ItemMakerFlags = ItemMakerFlags.None;
-            properties.EnchantmentPayloadFlags = EnchantmentPayloadFlags.Enchanted;
+            properties.ItemMakerFlags = ItemMakerFlags.AlphaSortSecondaryList;
+            properties.EnchantmentPayloadFlags = EnchantmentPayloadFlags.Enchanted | EnchantmentPayloadFlags.Breaks;
         }
 
         public override EnchantmentSettings[] GetEnchantmentSettings()
         {
-            // TODO: Enumerate available soul traps in player inventory without duplicates
+            List<EnchantmentSettings> enchantments = new List<EnchantmentSettings>();
 
-            EnchantmentSettings[] enchantments = new EnchantmentSettings[1];
-            enchantments[0] = new EnchantmentSettings()
+            // Enumerate available soul traps in player inventory without showing duplicates
+            EnumerateFilledTraps();
+            for (int i = 0; i < enumeratedTraps.Length; i++)
             {
-                Version = 1,
-                EffectKey = EffectKey,
-                ClassicType = EnchantmentTypes.SoulBound,
-                ClassicParam = -1,
-                PrimaryDisplayName = properties.GroupName,
-                EnchantCost = -1,//classicParamCosts[i],
-            };
+                if (enumeratedTraps[i] == 0)
+                    continue;
 
-            return enchantments;
+                EnchantmentSettings enchantment = new EnchantmentSettings()
+                {
+                    Version = 1,
+                    EffectKey = EffectKey,
+                    ClassicType = EnchantmentTypes.SoulBound,
+                    ClassicParam = (short)i,
+                    PrimaryDisplayName = properties.GroupName,
+                    SecondaryDisplayName = EnemyBasics.Enemies[i].Name,
+                    EnchantCost = classicParamCosts[i],
+                };
+
+                enchantments.Add(enchantment);
+            }
+
+            return enchantments.ToArray();
         }
 
         public override ForcedEnchantmentSet? GetForcedEnchantments(EnchantmentParam? param = null)
         {
-            return base.GetForcedEnchantments();
+            // Must have a param set
+            if (param == null)
+                return null;
+
+            // Find forced enchantments for monster ID
+            foreach (ForcedEnchantmentSet set in MobileForcedEnchantmentSets)
+            {
+                if (param.Value.ClassicParam == (short)set.soulType)
+                    return set;
+            }
+
+            return null;
         }
 
         public override PayloadCallbackResults? EnchantmentPayloadCallback(EnchantmentPayloadFlags context, EnchantmentParam? param = null, DaggerfallEntityBehaviour sourceEntity = null, DaggerfallEntityBehaviour targetEntity = null, DaggerfallUnityItem sourceItem = null, int sourceDamage = 0)
         {
-            return base.EnchantmentPayloadCallback(context, param, sourceEntity, targetEntity, sourceItem);
+            base.EnchantmentPayloadCallback(context, param, sourceEntity, targetEntity, sourceItem);
+
+            // Remove soul trap item filled with enemy type
+            if (param != null && context == EnchantmentPayloadFlags.Enchanted)
+                RemoveFilledTrap(param.Value.ClassicParam);
+
+            // Spawn enemy for trapped soul when item breaks
+            if (param != null && context == EnchantmentPayloadFlags.Breaks)
+                GameObjectHelper.CreateFoeSpawner(false, (MobileTypes)param.Value.ClassicParam, 1);
+
+            return null;
+        }
+
+        void EnumerateFilledTraps()
+        {
+            Array.Clear(enumeratedTraps, 0, enumeratedTraps.Length);
+            ItemCollection playerItems = GameManager.Instance.PlayerEntity.Items;
+            for (int i = 0; i < playerItems.Count; i++)
+            {
+                DaggerfallUnityItem item = playerItems.GetItem(i);
+                if (item != null && item.IsOfTemplate(ItemGroups.MiscItems, (int)MiscItems.Soul_trap))
+                {
+                    if (item.TrappedSoulType != MobileTypes.None && (int)item.TrappedSoulType < monsterIDCount)
+                        enumeratedTraps[(int)item.TrappedSoulType]++;
+                }
+            }
+        }
+
+        void RemoveFilledTrap(int monsterID)
+        {
+            if (monsterID < 0 || monsterID >= monsterIDCount)
+                return;
+
+            ItemCollection playerItems = GameManager.Instance.PlayerEntity.Items;
+            for (int i = 0; i < playerItems.Count; i++)
+            {
+                DaggerfallUnityItem item = playerItems.GetItem(i);
+                if (item != null && item.IsOfTemplate(ItemGroups.MiscItems, (int)MiscItems.Soul_trap))
+                {
+                    if ((int)item.TrappedSoulType == monsterID)
+                    {
+                        playerItems.RemoveItem(item);
+                        break;
+                    }
+                }
+            }
         }
 
         #region Classic Support
@@ -68,49 +141,49 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         // Matches monster IDs 0-42
         static short[] classicParamCosts =
         {
-            0,      //Rat
-            10,     //Imp
-            20,     //Spriggan
-            0,      //GiantBat
-            0,      //GrizzlyBear
-            0,      //SabertoothTiger
-            0,      //Spider
-            10,     //Orc
-            30,     //Centaur
-            90,     //Werewolf
-            100,    //Nymph
-            0,      //Slaughterfish
-            10,     //OrcSergeant
-            30,     //Harpy
-            140,    //Wereboar
-            0,      //SkeletalWarrior
-            30,     //Giant
-            0,      //Zombie
-            300,    //Ghost
-            100,    //Mummy
-            0,      //GiantScorpion
-            30,     //OrcShaman
-            30,     //Gargoyle
-            300,    //Wraith
-            10,     //OrcWarlord
-            500,    //FrostDaedra
-            500,    //FireDaedra
-            100,    //Daedroth
-            700,    //Vampire
-            1500,   //DaedraSeducer
-            1000,   //VampireAncient
-            8000,   //DaedraLord
-            1000,   //Lich
-            2500,   //AncientLich
-            0,      //Dragonling (no soul, general spawn)
-            300,    //FireAtronach
-            300,    //IronAtronach
-            300,    //FleshAtronach
-            300,    //IceAtronach
-            0,      //Horse_Invalid
-            5000,   //Dragonling_Alternate (has soul, quest spawn only)
-            100,    //Dreugh
-            100,    //Lamia
+            -0,      //Rat
+            -10,     //Imp
+            -20,     //Spriggan
+            -0,      //GiantBat
+            -0,      //GrizzlyBear
+            -0,      //SabertoothTiger
+            -0,      //Spider
+            -10,     //Orc
+            -30,     //Centaur
+            -90,     //Werewolf
+            -100,    //Nymph
+            -0,      //Slaughterfish
+            -10,     //OrcSergeant
+            -30,     //Harpy
+            -140,    //Wereboar
+            -0,      //SkeletalWarrior
+            -30,     //Giant
+            -0,      //Zombie
+            -300,    //Ghost
+            -100,    //Mummy
+            -0,      //GiantScorpion
+            -30,     //OrcShaman
+            -30,     //Gargoyle
+            -300,    //Wraith
+            -10,     //OrcWarlord
+            -500,    //FrostDaedra
+            -500,    //FireDaedra
+            -100,    //Daedroth
+            -700,    //Vampire
+            -1500,   //DaedraSeducer
+            -1000,   //VampireAncient
+            -8000,   //DaedraLord
+            -1000,   //Lich
+            -2500,   //AncientLich
+            -0,      //Dragonling (no soul, general spawn)
+            -300,    //FireAtronach
+            -300,    //IronAtronach
+            -300,    //FleshAtronach
+            -300,    //IceAtronach
+            -0,      //Horse_Invalid
+            -5000,   //Dragonling_Alternate (has soul, quest spawn only)
+            -100,    //Dreugh
+            -100,    //Lamia
         };
 
         // Forced effects for each mobile type
@@ -133,9 +206,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.DaedraLord,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.PotentVs, (short)PotentVs.Params.Daedra),
-                    new ForcedEnchantment(EnchantmentTypes.UserTakesDamage, (short)UserTakesDamage.Params.InHolyPlaces),
-                    new ForcedEnchantment(EnchantmentTypes.ExtraWeight),
+                    new ForcedEnchantment(PotentVs.EffectKey, (short)PotentVs.Params.Daedra),
+                    new ForcedEnchantment(UserTakesDamage.EffectKey, (short)UserTakesDamage.Params.InHolyPlaces),
+                    new ForcedEnchantment(ExtraWeight.EffectKey),
                 }
             },
 
@@ -145,11 +218,11 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.DaedraSeducer,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.GoodRepWith, (short)GoodRepWith.Params.All),
-                    new ForcedEnchantment(EnchantmentTypes.ItemDeteriorates, (short)ItemDeteriorates.Params.InSunlight),
-                    new ForcedEnchantment(EnchantmentTypes.UserTakesDamage, (short)UserTakesDamage.Params.InHolyPlaces),
-                    new ForcedEnchantment(EnchantmentTypes.HealthLeech, (short)HealthLeech.Params.UnlessUsedWeekly),
-                    new ForcedEnchantment(EnchantmentTypes.BadReactionsFrom, (short)BadReactionsFrom.Params.Animals),
+                    new ForcedEnchantment(GoodRepWith.EffectKey, (short)GoodRepWith.Params.All),
+                    new ForcedEnchantment(ItemDeteriorates.EffectKey, (short)ItemDeteriorates.Params.InSunlight),
+                    new ForcedEnchantment(UserTakesDamage.EffectKey, (short)UserTakesDamage.Params.InHolyPlaces),
+                    new ForcedEnchantment(HealthLeech.EffectKey, (short)HealthLeech.Params.UnlessUsedWeekly),
+                    new ForcedEnchantment(BadReactionsFrom.EffectKey, (short)BadReactionsFrom.Params.Animals),
                 }
             },
 
@@ -159,9 +232,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.Daedroth,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.LowDamageVs, (short)LowDamageVs.Params.Daedra),
-                    new ForcedEnchantment(EnchantmentTypes.BadReactionsFrom, (short)BadReactionsFrom.Params.Daedra),
-                    new ForcedEnchantment(EnchantmentTypes.ItemDeteriorates, (short)ItemDeteriorates.Params.InHolyPlaces),
+                    new ForcedEnchantment(LowDamageVs.EffectKey, (short)LowDamageVs.Params.Daedra),
+                    new ForcedEnchantment(BadReactionsFrom.EffectKey, (short)BadReactionsFrom.Params.Daedra),
+                    new ForcedEnchantment(ItemDeteriorates.EffectKey, (short)ItemDeteriorates.Params.InHolyPlaces),
                 }
             },
 
@@ -173,7 +246,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.FireAtronach,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.CastWhenUsed, 12), // 12=Resist Fire
+                    new ForcedEnchantment(CastWhenUsed.EffectKey, 12), // 12=Resist Fire
                 }
             },
 
@@ -183,9 +256,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.FireDaedra,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.EnhancesSkill, (short)DFCareer.Skills.Daedric),
-                    new ForcedEnchantment(EnchantmentTypes.CastWhenUsed, 12), // 12=Resist Fire
-                    new ForcedEnchantment(EnchantmentTypes.BadReactionsFrom, (short)BadReactionsFrom.Params.Animals),
+                    new ForcedEnchantment(EnhancesSkill.EffectKey, (short)DFCareer.Skills.Daedric),
+                    new ForcedEnchantment(CastWhenUsed.EffectKey, 12), // 12=Resist Fire
+                    new ForcedEnchantment(BadReactionsFrom.EffectKey, (short)BadReactionsFrom.Params.Animals),
                 }
             },
 
@@ -195,9 +268,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.FrostDaedra,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.EnhancesSkill, (short)DFCareer.Skills.Daedric),
-                    new ForcedEnchantment(EnchantmentTypes.CastWhenUsed, 11), // 11=Resist Cold
-                    new ForcedEnchantment(EnchantmentTypes.ItemDeteriorates, (short)ItemDeteriorates.Params.InHolyPlaces),
+                    new ForcedEnchantment(EnhancesSkill.EffectKey, (short)DFCareer.Skills.Daedric),
+                    new ForcedEnchantment(CastWhenUsed.EffectKey, 11), // 11=Resist Cold
+                    new ForcedEnchantment(ItemDeteriorates.EffectKey, (short)ItemDeteriorates.Params.InHolyPlaces),
                 }
             },
 
@@ -207,9 +280,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.Ghost,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.FeatherWeight),
-                    new ForcedEnchantment(EnchantmentTypes.ItemDeteriorates, (short)ItemDeteriorates.Params.InHolyPlaces),
-                    new ForcedEnchantment(EnchantmentTypes.LowDamageVs, (short)LowDamageVs.Params.Undead),
+                    new ForcedEnchantment(FeatherWeight.EffectKey),
+                    new ForcedEnchantment(ItemDeteriorates.EffectKey, (short)ItemDeteriorates.Params.InHolyPlaces),
+                    new ForcedEnchantment(LowDamageVs.EffectKey, (short)LowDamageVs.Params.Undead),
                 }
             },
 
@@ -219,9 +292,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.Lich,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.EnhancesSkill, (short)DFCareer.Skills.Destruction),
-                    new ForcedEnchantment(EnchantmentTypes.ItemDeteriorates, (short)ItemDeteriorates.Params.InSunlight),
-                    new ForcedEnchantment(EnchantmentTypes.LowDamageVs, (short)LowDamageVs.Params.Undead),
+                    new ForcedEnchantment(EnhancesSkill.EffectKey, (short)DFCareer.Skills.Destruction),
+                    new ForcedEnchantment(ItemDeteriorates.EffectKey, (short)ItemDeteriorates.Params.InSunlight),
+                    new ForcedEnchantment(LowDamageVs.EffectKey, (short)LowDamageVs.Params.Undead),
                 }
             },
 
@@ -233,9 +306,9 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
                 soulType = MobileTypes.Wraith,
                 forcedEffects = new ForcedEnchantment[]
                 {
-                    new ForcedEnchantment(EnchantmentTypes.RegensHealth, (short)RegensHealth.Params.InDarkness),
-                    new ForcedEnchantment(EnchantmentTypes.ItemDeteriorates, (short)ItemDeteriorates.Params.InHolyPlaces),
-                    new ForcedEnchantment(EnchantmentTypes.LowDamageVs, (short)LowDamageVs.Params.Undead),
+                    new ForcedEnchantment(RegensHealth.EffectKey, (short)RegensHealth.Params.InDarkness),
+                    new ForcedEnchantment(ItemDeteriorates.EffectKey, (short)ItemDeteriorates.Params.InHolyPlaces),
+                    new ForcedEnchantment(LowDamageVs.EffectKey, (short)LowDamageVs.Params.Undead),
                 }
             },
         };
