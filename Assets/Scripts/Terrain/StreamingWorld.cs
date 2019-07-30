@@ -1288,7 +1288,7 @@ namespace DaggerfallWorkshop
                 float height = terrain.SampleHeight(targetPosition + terrain.transform.position) + worldCompensation.y;
                 targetPosition.y = height + controller.height / 2f + 0.15f;
 
-                // If desired position is higher then minimum position then we can safely use that
+                // Use position height if available (for example to spawn on top of a location)
                 if (position.y > targetPosition.y)
                     targetPosition.y = position.y;
 
