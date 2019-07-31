@@ -283,7 +283,7 @@ namespace DaggerfallWorkshop
                         break;
                     default:
                     case RepositionMethods.Origin:
-                        RepositionPlayer(MapPixelX, MapPixelY, Vector3.zero);
+                        RepositionPlayer(MapPixelX, MapPixelY, new Vector3(0, float.MinValue, 0));
                         break;
                 }
                 autoRepositionMethod = RepositionMethods.None;
@@ -1326,7 +1326,7 @@ namespace DaggerfallWorkshop
             // If no doors found then just position to origin
             if (doors == null || doors.Length == 0)
             {
-                RepositionPlayer(MapPixelX, MapPixelY, Vector3.zero);
+                RepositionPlayer(MapPixelX, MapPixelY, new Vector3(0, float.MinValue, 0));
                 return;
             }
 
@@ -1362,7 +1362,7 @@ namespace DaggerfallWorkshop
             }
             else
             {
-                RepositionPlayer(MapPixelX, MapPixelY, Vector3.zero);
+                RepositionPlayer(MapPixelX, MapPixelY, new Vector3(0, float.MinValue, 0));
             }
 
             // Set player facing away from door
@@ -1380,7 +1380,7 @@ namespace DaggerfallWorkshop
             if (!currentLocation)
             {
                 // No location found, fail back to terrain origin
-                RepositionPlayer(MapPixelX, MapPixelY, Vector3.zero);
+                RepositionPlayer(MapPixelX, MapPixelY, new Vector3(0, float.MinValue, 0));
                 return;
             }
 
@@ -1476,25 +1476,25 @@ namespace DaggerfallWorkshop
                 switch (side)
                 {
                     case 0:         // North
-                        newPlayerPosition += new Vector3(0, 0, (halfHeight + extraDistance));
+                        newPlayerPosition += new Vector3(0, float.MinValue, (halfHeight + extraDistance));
                         mouseLook.SetFacing(180, 0);
                         //LocalPlayerGPS.gameObject.SendMessage("SetFacing", Vector3.back, SendMessageOptions.DontRequireReceiver);
                         //Debug.Log("Spawned player north.");
                         break;
                     case 1:         // South
-                        newPlayerPosition += new Vector3(0, 0, -(halfHeight + extraDistance));
+                        newPlayerPosition += new Vector3(0, float.MinValue, -(halfHeight + extraDistance));
                         mouseLook.SetFacing(0, 0);
                         //LocalPlayerGPS.gameObject.SendMessage("SetFacing", Vector3.forward, SendMessageOptions.DontRequireReceiver);
                         //Debug.Log("Spawned player south.");
                         break;
                     case 2:         // East
-                        newPlayerPosition += new Vector3((halfWidth + extraDistance), 0, 0);
+                        newPlayerPosition += new Vector3((halfWidth + extraDistance), float.MinValue, 0);
                         mouseLook.SetFacing(270, 0);
                         //LocalPlayerGPS.gameObject.SendMessage("SetFacing", Vector3.left, SendMessageOptions.DontRequireReceiver);
                         //Debug.Log("Spawned player east.");
                         break;
                     case 3:         // West
-                        newPlayerPosition += new Vector3(-(halfWidth + extraDistance), 0, 0);
+                        newPlayerPosition += new Vector3(-(halfWidth + extraDistance), float.MinValue, 0);
                         mouseLook.SetFacing(90, 0);
                         //LocalPlayerGPS.gameObject.SendMessage("SetFacing", Vector3.right, SendMessageOptions.DontRequireReceiver);
                         //Debug.Log("Spawned player west.");
