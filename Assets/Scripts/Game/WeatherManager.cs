@@ -327,7 +327,7 @@ namespace DaggerfallWorkshop.Game
                 shadowStrength = OvercastShadowStrength;
             }
 
-            shadowStrength *= Mathf.Exp(-50f * currentOutdoorFogSettings.density);
+            shadowStrength *= Mathf.Exp(-25f * currentOutdoorFogSettings.density);
 
             // Apply scale to sunlight manager
             if (SunlightManager)
