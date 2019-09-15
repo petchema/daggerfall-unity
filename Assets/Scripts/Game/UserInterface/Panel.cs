@@ -13,6 +13,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using DaggerfallWorkshop.Game.UserInterfaceWindows;
 
 namespace DaggerfallWorkshop.Game.UserInterface
 {
@@ -208,6 +209,20 @@ namespace DaggerfallWorkshop.Game.UserInterface
                 base.LostFocus();
                 Outline.Color = LostFocusOutlineColor;
             }
+        }
+
+        public bool KeyboardActivation(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            foreach (BaseScreenComponent component in components)
+            {
+                if (component.Enabled && component is Button)
+                {
+                    Button buttonComponent = (Button)component;
+                    if (buttonComponent.KeyboardActivation(keyModifiers))
+                        return true;
+                }
+            }
+            return false;
         }
 
         #region Private Methods

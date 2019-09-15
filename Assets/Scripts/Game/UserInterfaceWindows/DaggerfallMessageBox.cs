@@ -9,14 +9,13 @@
 // Notes:
 //
 
-using UnityEngine;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Game.UserInterface;
-using DaggerfallWorkshop.Utility.AssetInjection;
 using DaggerfallWorkshop.Utility;
+using DaggerfallWorkshop.Utility.AssetInjection;
+using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {
@@ -79,6 +78,28 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             YesNo,
             AnchorTeleport,
         }
+
+        private readonly Dictionary<MessageBoxButtons, DaggerfallShortcut.Buttons> toShortcutButton = new Dictionary<MessageBoxButtons, DaggerfallShortcut.Buttons>()
+        {
+            { MessageBoxButtons.Accept, DaggerfallShortcut.Buttons.Accept },
+            { MessageBoxButtons.Reject, DaggerfallShortcut.Buttons.Reject },
+            { MessageBoxButtons.Cancel, DaggerfallShortcut.Buttons.Cancel },
+            { MessageBoxButtons.Yes, DaggerfallShortcut.Buttons.Yes },
+            { MessageBoxButtons.No, DaggerfallShortcut.Buttons.No },
+            { MessageBoxButtons.OK, DaggerfallShortcut.Buttons.OK },
+            { MessageBoxButtons.Male, DaggerfallShortcut.Buttons.Male },
+            { MessageBoxButtons.Female, DaggerfallShortcut.Buttons.Female },
+            { MessageBoxButtons.Add, DaggerfallShortcut.Buttons.Add },
+            { MessageBoxButtons.Delete, DaggerfallShortcut.Buttons.Delete },
+            { MessageBoxButtons.Edit, DaggerfallShortcut.Buttons.Edit },
+            { MessageBoxButtons.Copy, DaggerfallShortcut.Buttons.Copy },
+            { MessageBoxButtons.Guilty, DaggerfallShortcut.Buttons.Guilty },
+            { MessageBoxButtons.NotGuilty, DaggerfallShortcut.Buttons.NotGuilty },
+            { MessageBoxButtons.Debate, DaggerfallShortcut.Buttons.Debate },
+            { MessageBoxButtons.Lie, DaggerfallShortcut.Buttons.Lie },
+            { MessageBoxButtons.Anchor, DaggerfallShortcut.Buttons.Anchor },
+            { MessageBoxButtons.Teleport, DaggerfallShortcut.Buttons.Teleport },
+        };
 
         public int ButtonSpacing
         {
@@ -240,7 +261,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     if (nextMessageBox == null)
                         return;
                 }
-
                 // if there is a nested next message box show it
                 if (this.nextMessageBox != null)
                 {
@@ -248,8 +268,14 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 }
                 else // or close window if there is no next message box to show
                 {
-                    CloseWindow();                    
+                    CloseWindow();
                 }
+            }
+            else if (buttonPanel.KeyboardActivation(HotkeySequence.GetKeyboardKeyModifiers()))
+            {
+                // if there is a nested next message box show it
+                if (nextMessageBox != null)
+                    nextMessageBox.Show();
             }
         }
 
@@ -274,6 +300,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             button.Tag = messageBoxButton;
             button.OnMouseClick += ButtonClickHandler;
             button.DefaultButton = defaultButton;
+            button.Hotkey = DaggerfallShortcut.GetBinding(toShortcutButton[messageBoxButton]);
             buttons.Add(button);
 
             // Once a button has been added the owner is expecting some kind of input from player
