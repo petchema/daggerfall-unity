@@ -946,6 +946,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             mapIndex = newIndex;
             SetupArrowButtons();
             UpdateMapTextures();
+            UpdateCrosshair();
         }
 
         /// <summary>
