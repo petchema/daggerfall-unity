@@ -31,6 +31,17 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             Anchor,
             Teleport,
 
+            // Game Setup menu
+            GameSetupPlay,
+            GameSetupAdvancedSettings,
+            GameSetupMods,
+            GameSetupClose,
+            GameSetupBackToOptions,
+            GameSetupRestart,
+            GameSetupRefresh,
+            GameSetupSaveAndClose,
+            GameSetupExit,
+
             // Main menu
             MainMenuLoad,
             MainMenuStart,
@@ -45,6 +56,14 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             OptionsFullScreen,
             OptionsHeadBobbing,
 
+            // General
+            HUDToggle,
+
+            // Debugger
+            DebuggerToggle,
+            DebuggerPrevQuest,
+            DebuggerNextQuest,
+
             // Rest menu
             RestForAWhile,
             RestUntilHealed,
@@ -58,9 +77,38 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             TransportShip,
             TransportExit,
 
-            // TravelMap
+            // Travel Map screen
             TravelMapFind,
             TravelMapList,
+
+            // Talk screen
+            TalkTellMeAbout,
+            TalkWhereIs,
+            TalkCategoryLocation,
+            TalkCategoryPeople,
+            TalkCategoryThings,
+            TalkCategoryWork,
+            TalkAsk,
+            TalkExit,
+            TalkCopy,
+            TalkTonePolite,
+            TalkToneNormal,
+            TalkToneBlunt,
+
+            // Spellbook screen
+            SpellbookDelete,
+            SpellbookUp,
+            SpellbookSort,
+            SpellbookDown,
+            SpellbookBuy,
+            SpellbookExit,
+
+            // Travel menu
+            TravelBegin,
+            TravelExit,
+            TravelSpeedToggle,
+            TravelTransportModeToggle,
+            TravelInnCampOutToggle,
 
             // Inventory screen
             InventoryWeapons,
@@ -86,6 +134,62 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             TradeSell,
             TradeClear,
             TradeExit,
+
+            // Taverns menu
+            TavernRoom,
+            TavernTalk,
+            TavernFood,
+            TavernExit,
+
+            // Guilds
+            GuildsJoin,
+            GuildsTalk,
+            GuildsExit,
+            GuildsTraining,
+            GuildsGetQuest,
+            GuildsRepair,
+            GuildsIdentify,
+            GuildsDonate,
+            GuildsCure,
+            GuildsBuyPotions,
+            GuildsMakePotions,
+            GuildsBuySpells,
+            GuildsMakeSpells,
+            GuildsBuyMagicItems,
+            GuildsMakeMagicItems,
+            GuildsSellMagicItems,
+            GuildsTeleport,
+            GuildsDaedraSummon,
+            GuildsSpymaster,
+            GuildsBuySoulgems,
+            GuildsReceiveArmor,
+            GuildsReceiveHouse,
+
+            // Witches Covens
+            WitchesTalk,
+            WitchesDaedraSummon,
+            WitchesQuest,
+            WitchesExit,
+
+            // Spellmaker screen
+            SpellMakerAddEffect,
+            SpellMakerBuySpell,
+            SpellMakerNewSpell,
+            SpellMakerExit,
+            SpellMakerNameSpell,
+            SpellMakerTargetCaster,
+            SpellMakerTargetTouch,
+            SpellMakerTargetSingleAtRange,
+            SpellMakerTargetAroundCaster,
+            SpellMakerTargetAreaAtRange,
+            SpellMakerElementFire,
+            SpellMakerElementCold,
+            SpellMakerElementPoison,
+            SpellMakerElementShock,
+            SpellMakerElementMagic,
+            SpellMakerNextIcon,
+            SpellMakerPrevIcon,
+            SpellMakerSelectIcon,
 
             // Automap screen
             AutomapSwitchAutomapGridMode,
@@ -123,35 +227,37 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             AutomapIncreaseCameraFieldOfFiew,
             AutomapDecreaseCameraFieldOfFiew,
 
-            // Guilds
-            GuildsJoin,
-            GuildsTalk,
-            GuildsExit,
-            GuildsTraining,
-            GuildsGetQuest,
-            GuildsRepair,
-            GuildsIdentify,
-            GuildsDonate,
-            GuildsCure,
-            GuildsBuyPotions,
-            GuildsMakePotions,
-            GuildsBuySpells,
-            GuildsMakeSpells,
-            GuildsBuyMagicItems,
-            GuildsMakeMagicItems,
-            GuildsSellMagicItems,
-            GuildsTeleport,
-            GuildsDaedraSummon,
-            GuildsSpymaster,
-            GuildsBuySoulgems,
-            GuildsReceiveArmor,
-            GuildsReceiveHouse,
-
-            // Witches Covens
-            WitchesTalk,
-            WitchesDaedraSummon,
-            WitchesQuest,
-            WitchesExit,
+            // Exterior automap screen
+            ExtAutomapFocusPlayerPosition,
+            ExtAutomapResetView,
+            ExtAutomapSwitchToNextExteriorAutomapViewMode,
+            ExtAutomapSwitchToExteriorAutomapViewModeOriginal,
+            ExtAutomapSwitchToExteriorAutomapViewModeExtra,
+            ExtAutomapSwitchToExteriorAutomapViewModeAll,
+            ExtAutomapSwitchToExteriorAutomapBackgroundOriginal,
+            ExtAutomapSwitchToExteriorAutomapBackgroundAlternative1,
+            ExtAutomapSwitchToExteriorAutomapBackgroundAlternative2,
+            ExtAutomapSwitchToExteriorAutomapBackgroundAlternative3,
+            ExtAutomapMoveLeft,
+            ExtAutomapMoveRight,
+            ExtAutomapMoveForward,
+            ExtAutomapMoveBackward,
+            ExtAutomapMoveToWestLocationBorder,
+            ExtAutomapMoveToEastLocationBorder,
+            ExtAutomapMoveToNorthLocationBorder,
+            ExtAutomapMoveToSouthLocationBorder,
+            ExtAutomapRotateLeft,
+            ExtAutomapRotateRight,
+            ExtAutomapRotateAroundPlayerPosLeft,
+            ExtAutomapRotateAroundPlayerPosRight,
+            ExtAutomapUpstairs,
+            ExtAutomapDownstairs,
+            ExtAutomapZoomIn,
+            ExtAutomapZoomOut,
+            ExtAutomapMaxZoom1,
+            ExtAutomapMinZoom1,
+            ExtAutomapMinZoom2,
+            ExtAutomapMaxZoom2,
         }
 
         public static Dictionary<Buttons, HotkeySequence> keys = null;
