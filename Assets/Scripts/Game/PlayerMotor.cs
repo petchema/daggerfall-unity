@@ -426,7 +426,8 @@ namespace DaggerfallWorkshop.Game
 
                 if (smoothFollowerReset)
                 {
-                    // Debug.Log("smooth follower reset");
+                    Debug.Log("smooth follower reset");
+                    DaggerfallUI.Instance.DaggerfallAudioSource.PlayOneShot(SoundClips.ButtonClick);
                     smoothFollowerPrevWorldPos = transform.position;
                     smoothFollowerReset = false;
                 }

@@ -146,7 +146,7 @@ namespace DaggerfallWorkshop.Game
                     stuckFrameCount++;
                     if (stuckFrameCount > stuckFrameThreshold)
                     {
-                        //Debug.LogFormat("Stuck for {0} frames", stuckFrameCount);
+                        Debug.LogFormat("Stuck for {0} frames", stuckFrameCount);
 
                         // Attempt resolution by first checking if nothing in the way using a spherecast
                         // Then teleport player forwards until stuck test is cleared by normal movement
@@ -156,7 +156,7 @@ namespace DaggerfallWorkshop.Game
                         Ray sampleRay = new Ray(myTransform.position, sampleDirection);
                         if (!Physics.SphereCast(sampleRay, controller.radius - 0.01f, stuckSampleDistance))
                         {
-                            //Debug.LogFormat("Trying to resolve stuck for {0} frames", stuckFrameCount);
+                            Debug.LogFormat("Trying to resolve stuck for {0} frames", stuckFrameCount);
 
                             // Do not unstick farther than stuckSampleDistance or player may teleport through a nearby wall
                             myTransform.position += sampleDirection * stuckSampleDistance;
