@@ -317,6 +317,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             // Setup initial state
             SelectTabPage(TabPages.WeaponsAndArmor);
             SelectActionMode((lootTarget != null) ? ActionModes.Remove : ActionModes.Equip);
+            CheckWagonAccess();
 
             // Setup initial display
             FilterLocalItems();
@@ -1064,7 +1065,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                      DungeonWagonAccessProximityCheck())
             {
                 allowDungeonWagonAccess = true;
-                ShowWagon(true);
+                if (lootTarget == null)
+                    ShowWagon(true);
             }
         }
 
