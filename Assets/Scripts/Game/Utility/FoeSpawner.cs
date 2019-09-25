@@ -115,6 +115,9 @@ namespace DaggerfallWorkshop.Game.Utility
             const float overlapSphereRadius = 0.65f;
             const float separationDistance = 1.25f;
             const float maxFloorDistance = 4f;
+            float hearingAlertDistanceMultiplier = DaggerfallEnemy.HearingDistanceMultiplier();
+            minDistance *= hearingAlertDistanceMultiplier;
+            maxDistance *= hearingAlertDistanceMultiplier;
 
             // Must have received a valid array
             if (gameObjects == null || gameObjects.Length == 0)
