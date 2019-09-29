@@ -1062,6 +1062,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             stateManager.ClearSceneCache();
             PlayerEntity playerEntity = GameManager.Instance.PlayerEntity;
             playerEntity.Reset();
+            Resources.UnloadUnusedAssets();
 
             // Read save data from files
             string saveDataJson = ReadSaveFile(Path.Combine(path, saveDataFilename));
