@@ -554,6 +554,7 @@ namespace DaggerfallWorkshop
 
             // Init streaming world
             ClearStreamingWorld();
+            Resources.UnloadUnusedAssets();
             worldCompensation = Vector3.zero;
             mapOrigin = LocalPlayerGPS.CurrentMapPixel;
             MapPixelX = mapOrigin.X;

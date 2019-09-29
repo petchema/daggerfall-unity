@@ -418,6 +418,7 @@ namespace DaggerfallWorkshop.Game
 
             // Deregister all serializable objects
             SaveLoadManager.DeregisterAllSerializableGameObjects();
+            Resources.UnloadUnusedAssets();
 
             // Start respawn process
             isRespawning = true;
