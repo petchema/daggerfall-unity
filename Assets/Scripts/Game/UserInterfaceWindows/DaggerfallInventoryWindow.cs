@@ -1634,6 +1634,14 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 }
             }
 
+            // Try to handle use with a registered delegate
+            ItemHelper.ItemUseHander itemUseHander;
+            if (DaggerfallUnity.Instance.ItemHelper.GetItemUseHander(item.TemplateIndex, out itemUseHander))
+            {
+                if (itemUseHander(item, collection))
+                    return;
+            }
+
             // Handle normal items
             if (item.ItemGroup == ItemGroups.Books && !item.IsArtifact)
             {

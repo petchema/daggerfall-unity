@@ -329,12 +329,9 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         /// </summary>
         /// <param name="filter">A filter that accepts or rejects a mod; can be used to check if a contribute is present.</param>
         /// <returns>An enumeration of mods with contributes.</returns>
-        internal IOrderedEnumerable<Mod> GetAllModsWithContributes(Predicate<ModContributes> filter = null)
+        internal IEnumerable<Mod> GetAllModsWithContributes(Predicate<ModContributes> filter = null)
         {
-            return from mod in mods
-                   where mod.ModInfo.Contributes != null && (filter == null || filter(mod.ModInfo.Contributes))
-                   orderby mod.LoadPriority descending
-                   select mod;
+            return EnumerateModsReverse().Where(x => x.Enabled && x.ModInfo.Contributes != null && (filter == null || filter(x.ModInfo.Contributes)));
         }
 
         /// <summary>
@@ -959,6 +956,42 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
             {
                 Debug.LogException(e);
             }
+        }
+
+        /// <summary>
+        /// Checks if a given version is lower or equal to another version.
+        /// For example <c>"9.0.8"</c> is lower than <c>"10.0.2"</c>.
+        /// </summary>
+        /// <param name="first">A version with format x.y.z, x.y or just x that is expected to be lower or equal.</param>
+        /// <param name="second">A version with format x.y.z, x.y or just x that is expected to be higher or equal.</param>
+        /// <returns>true if first is lower or equal to second, false is first is higher than second, null if parse failed.</returns>
+        internal static bool? IsVersionLowerOrEqual(string first, string second)
+        {
+            if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second))
+                return null;
+
+            string[] firstParts = first.Split('.');
+            if (firstParts.Length < 1 || firstParts.Length > 3)
+                return null;
+
+            string[] secondParts = second.Split('.');
+            if (secondParts.Length < 1 || secondParts.Length > 3)
+                return null;
+
+            for (int i = 0; i < firstParts.Length && i < secondParts.Length; i++)
+            {
+                int firstPart, secondPart;
+                if (!int.TryParse(firstParts[i], out firstPart) || !int.TryParse(secondParts[i], out secondPart))
+                    return null;
+
+                if (firstPart > secondPart)
+                    return false;
+
+                if (firstPart < secondPart)
+                    break;
+            }
+
+            return true;
         }
 
         #endregion
