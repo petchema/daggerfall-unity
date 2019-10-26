@@ -292,6 +292,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 return;
             }
             // Handle known service
+            DaggerfallTradeWindow tradeWindow;
             switch (service)
             {
                 case GuildServices.Quests:
@@ -300,12 +301,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                 case GuildServices.Identify:
                     CloseWindow();
-                    uiManager.PushWindow(new DaggerfallTradeWindow(uiManager, DaggerfallTradeWindow.WindowModes.Identify, this, guild));
+                    uiManager.PushWindow(UIWindowFactory.GetInstanceWithArgs(UIWindowType.Trade, new object[] { uiManager, this, DaggerfallTradeWindow.WindowModes.Identify, guild }));
                     break;
 
                 case GuildServices.Repair:
                     CloseWindow();
-                    uiManager.PushWindow(new DaggerfallTradeWindow(uiManager, DaggerfallTradeWindow.WindowModes.Repair, this, guild));
+                    uiManager.PushWindow(UIWindowFactory.GetInstanceWithArgs(UIWindowType.Trade, new object[] { uiManager, this, DaggerfallTradeWindow.WindowModes.Repair, guild }));
                     break;
 
                 case GuildServices.Training:
@@ -322,9 +323,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                 case GuildServices.BuyPotions:
                     CloseWindow();
-                    uiManager.PushWindow(new DaggerfallTradeWindow(uiManager, DaggerfallTradeWindow.WindowModes.Buy, this, guild) {
-                        MerchantItems = GetMerchantPotions()
-                    });
+                    tradeWindow = (DaggerfallTradeWindow)UIWindowFactory.GetInstanceWithArgs(UIWindowType.Trade, new object[] { uiManager, this, DaggerfallTradeWindow.WindowModes.Buy, guild });
+                    tradeWindow.MerchantItems = GetMerchantPotions();
+                    uiManager.PushWindow(tradeWindow);
                     break;
 
                 case GuildServices.MakePotions:
@@ -334,12 +335,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 case GuildServices.BuySpells:
                 case GuildServices.BuySpellsMages:
                     CloseWindow();
-                    uiManager.PushWindow(new DaggerfallSpellBookWindow(uiManager, this, true));
+                    uiManager.PushWindow(UIWindowFactory.GetInstanceWithArgs(UIWindowType.SpellBook, new object[] { uiManager, this, true }));
                     break;
 
                 case GuildServices.MakeSpells:
                     CloseWindow();
-                    if (GameManager.Instance.PlayerEntity.Items.Contains(Items.ItemGroups.MiscItems, (int)Items.MiscItems.Spellbook))
+                    if (GameManager.Instance.PlayerEntity.Items.Contains(ItemGroups.MiscItems, (int)MiscItems.Spellbook))
                         uiManager.PushWindow(DaggerfallUI.Instance.DfSpellMakerWindow);
                     else
                         DaggerfallUI.MessageBox(TextManager.Instance.GetText("ClassicEffects", "noSpellbook"));
@@ -347,9 +348,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                 case GuildServices.BuyMagicItems:   // TODO: switch items depending on npcService?
                     CloseWindow();
-                    uiManager.PushWindow(new DaggerfallTradeWindow(uiManager, DaggerfallTradeWindow.WindowModes.Buy, this, guild) {
-                        MerchantItems = GetMerchantMagicItems()
-                    });
+                    tradeWindow = (DaggerfallTradeWindow)UIWindowFactory.GetInstanceWithArgs(UIWindowType.Trade, new object[] { uiManager, this, DaggerfallTradeWindow.WindowModes.Buy, guild });
+                    tradeWindow.MerchantItems = GetMerchantMagicItems();
+                    uiManager.PushWindow(tradeWindow);
                     break;
 
                 case GuildServices.MakeMagicItems:
@@ -359,7 +360,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                 case GuildServices.SellMagicItems:
                     CloseWindow();
-                    uiManager.PushWindow(new DaggerfallTradeWindow(uiManager, DaggerfallTradeWindow.WindowModes.SellMagic, this, guild));
+                    uiManager.PushWindow(UIWindowFactory.GetInstanceWithArgs(UIWindowType.Trade, new object[] { uiManager, this, DaggerfallTradeWindow.WindowModes.SellMagic, guild }));
                     break;
 
                 case GuildServices.Teleport:
@@ -391,10 +392,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
                 case GuildServices.BuySoulgems:
                     CloseWindow();
-                    uiManager.PushWindow(new DaggerfallTradeWindow(uiManager, DaggerfallTradeWindow.WindowModes.Buy, this, guild)
-                    {
-                        MerchantItems = GetMerchantMagicItems(true)
-                    });
+                    tradeWindow = (DaggerfallTradeWindow)UIWindowFactory.GetInstanceWithArgs(UIWindowType.Trade, new object[] { uiManager, this, DaggerfallTradeWindow.WindowModes.Buy, guild });
+                    tradeWindow.MerchantItems = GetMerchantMagicItems(true);
+                    uiManager.PushWindow(tradeWindow);
                     break;
 
                 default:
