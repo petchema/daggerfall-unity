@@ -1094,6 +1094,11 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             if (item.ItemGroup == ItemGroups.Paintings)
                 tokens = new TextFile.Token[] { new TextFile.Token() { formatting = TextFile.Formatting.Text, text = tokens[tokens.Length - 1].text.Trim() } };
 
+            UpdateItemInfoPanel(tokens);
+        }
+
+        private void UpdateItemInfoPanel(TextFile.Token[] tokens)
+        {
             for (int tokenIdx = 0; tokenIdx < tokens.Length; tokenIdx++)
             {
                 if (tokens[tokenIdx].formatting == TextFile.Formatting.JustifyCenter)
@@ -2028,12 +2033,59 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             UpdateItemInfoPanel(item);
         }
 
+        const int miscTextId = 1003;
+
+        private class GoldMacroDataSource : MacroDataSource
+        {
+            private int goldPieces;
+
+            public GoldMacroDataSource(int goldPieces)
+            {
+                this.goldPieces = goldPieces;
+            }
+
+            public override string ItemName()
+            {
+                return "Gold pieces";
+            }
+
+            public override string Condition()
+            {
+                return HardStrings.New;
+            }
+
+            public override string Worth()
+            {
+                return goldPieces.ToString();
+            }
+
+            public override string Weight()
+            {
+                return (goldPieces * DaggerfallBankManager.goldUnitWeightInKg).ToString();
+            }
+
+        }
+
+        private class GoldMacroContextProvider : IMacroContextProvider
+        {
+            MacroDataSource macroDataSource;
+
+            public GoldMacroContextProvider(int goldPieces)
+            {
+                macroDataSource = new GoldMacroDataSource(goldPieces);
+            }
+
+            MacroDataSource IMacroContextProvider.GetMacroDataSource()
+            {
+                return macroDataSource;
+            }
+        }
+
         protected virtual void GoldButton_OnMouseEnter(BaseScreenComponent sender)
         {
-            // UpdateItemInfoPanel wants a item, so temporarily reify gold
-            int playerGold = GameManager.Instance.PlayerEntity.GoldPieces;
-            DaggerfallUnityItem goldPieces = ItemBuilder.CreateGoldPieces(playerGold);
-            UpdateItemInfoPanel(goldPieces);
+            TextFile.Token[] tokens = DaggerfallUnity.TextProvider.GetRSCTokens(miscTextId);
+            MacroHelper.ExpandMacros(ref tokens, new GoldMacroContextProvider(GameManager.Instance.PlayerEntity.GoldPieces));
+            UpdateItemInfoPanel(tokens);
         }
 
         protected virtual void StartGameBehaviour_OnNewGame()
