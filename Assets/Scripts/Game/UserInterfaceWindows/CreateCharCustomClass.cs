@@ -11,16 +11,10 @@
 
 using UnityEngine;
 using System;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using DaggerfallConnect;
-using DaggerfallConnect.Arena2;
-using DaggerfallWorkshop;
 using DaggerfallWorkshop.Game.UserInterface;
-using DaggerfallWorkshop.Game.Player;
-using DaggerfallWorkshop.Game.Entity;
-using DaggerfallWorkshop.Game.Formulas;
+using System.Collections;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {
@@ -37,6 +31,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const int defaultHpPerLevel = 8;
         const int minDifficultyPoints = -12;
         const int maxDifficultyPoints = 40;
+
+        const float daggerAnimationTime = 1.0f;
 
         const int strNameYourClass = 301;
         const int strSetSkills = 300;
@@ -75,7 +71,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         #region UI Panels
 
+
         Panel daggerPanel = new Panel();
+        Panel daggerTrailPanel = new Panel();
+        private IEnumerator daggerCoroutine = null;
+        readonly float daggerSpeed = 3.0f;
+        int daggerYTarget = -1;
 
         #endregion
 
@@ -167,6 +168,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             font = DaggerfallUI.DefaultFont;
             SetupButtons();
             hpLabel = DaggerfallUI.AddTextLabel(font, new Vector2(285, 55), createdClass.HitPointsPerLevel.ToString(), NativePanel);
+            daggerTrailPanel.Size = new Vector2(24, 9);
+            daggerTrailPanel.BackgroundTexture = nativeDaggerTexture;
+            NativePanel.Components.Add(daggerTrailPanel);
             daggerPanel.Size = new Vector2(24, 9);
             daggerPanel.BackgroundTexture = nativeDaggerTexture;
             NativePanel.Components.Add(daggerPanel);
@@ -475,14 +479,45 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 daggerY = Math.Min(maxDaggerY, (int)(defaultDaggerY + (41 * (-difficultyPoints / 12f))));
             }
-            daggerPanel.Position = new Vector2(defaultDaggerX, daggerY);
+
+            if (daggerYTarget == -1)
+            {
+                // Initial position
+                daggerYTarget = daggerY;
+                daggerTrailPanel.Position = new Vector2(defaultDaggerX, daggerYTarget);
+            }
+            else
+            {
+                // Animate dagger
+                daggerYTarget = daggerY;
+                if (daggerCoroutine != null)
+                    DaggerfallUI.Instance.StopCoroutine(daggerCoroutine);
+                daggerCoroutine = AnimateDagger();
+                DaggerfallUI.Instance.StartCoroutine(daggerCoroutine);
+            }
+            daggerPanel.Position = new Vector2(defaultDaggerX, daggerYTarget);
         }
 
-        #endregion
+        IEnumerator AnimateDagger()
+        {
+            float daggerX = daggerTrailPanel.Position.x;
 
-        #region Properties
+            while (true)
+            {
+                float daggerY = daggerTrailPanel.Position.y;
+                if (Mathf.Abs(daggerY - daggerYTarget) < 0.1f)
+                    break;
+                daggerTrailPanel.Position = new Vector2(daggerX, daggerY + (daggerYTarget - daggerY) * daggerSpeed * Time.unscaledDeltaTime);
+                yield return new WaitForEndOfFrame();
+            }
+            daggerTrailPanel.Position = new Vector2(daggerX, daggerYTarget);
+    }
 
-        public int AdvantageAdjust
+    #endregion
+
+    #region Properties
+
+    public int AdvantageAdjust
         {
             set { advantageAdjust = value; UpdateDifficulty(); }
         }
