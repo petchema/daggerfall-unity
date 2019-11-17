@@ -75,8 +75,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         Panel daggerPanel = new Panel();
         Panel daggerTrailPanel = new Panel();
         private IEnumerator daggerCoroutine = null;
-        readonly float daggerSpeed = 3.0f;
+        readonly float daggerSpeed = 5.0f;
         int daggerYTarget = -1;
+        private float daggerYDirection;
 
         #endregion
 
@@ -169,7 +170,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             SetupButtons();
             hpLabel = DaggerfallUI.AddTextLabel(font, new Vector2(285, 55), createdClass.HitPointsPerLevel.ToString(), NativePanel);
             daggerTrailPanel.Size = new Vector2(24, 9);
-            daggerTrailPanel.BackgroundTexture = nativeDaggerTexture;
+            // daggerTrailPanel.BackgroundTexture = nativeDaggerTexture;
+            daggerTrailPanel.AnimatedBackgroundTextures = new Texture2D[] { nativeDaggerTexture, null };
+            daggerTrailPanel.AnimationDelayInSeconds = 0.1f;
             NativePanel.Components.Add(daggerTrailPanel);
             daggerPanel.Size = new Vector2(24, 9);
             daggerPanel.BackgroundTexture = nativeDaggerTexture;
@@ -490,6 +493,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 // Animate dagger
                 daggerYTarget = daggerY;
+                daggerYDirection = Mathf.Sign(daggerYTarget - daggerTrailPanel.Position.y) * daggerSpeed;
                 if (daggerCoroutine != null)
                     DaggerfallUI.Instance.StopCoroutine(daggerCoroutine);
                 daggerCoroutine = AnimateDagger();
@@ -505,9 +509,9 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             while (true)
             {
                 float daggerY = daggerTrailPanel.Position.y;
-                if (Mathf.Abs(daggerY - daggerYTarget) < 0.1f)
+                if ((daggerYTarget - daggerY) * daggerYDirection <= 0)
                     break;
-                daggerTrailPanel.Position = new Vector2(daggerX, daggerY + (daggerYTarget - daggerY) * daggerSpeed * Time.unscaledDeltaTime);
+                daggerTrailPanel.Position = new Vector2(daggerX, daggerY + daggerYDirection * Time.unscaledDeltaTime);
                 yield return new WaitForEndOfFrame();
             }
             daggerTrailPanel.Position = new Vector2(daggerX, daggerYTarget);
