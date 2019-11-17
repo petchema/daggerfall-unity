@@ -9,20 +9,16 @@
 // Notes:
 //
 
-using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using DaggerfallConnect;
-using DaggerfallConnect.Utility;
 using DaggerfallConnect.Arena2;
 using DaggerfallWorkshop.Game;
-using DaggerfallWorkshop.Game.Serialization;
-using DaggerfallWorkshop.Utility;
-using DaggerfallWorkshop.Utility.AssetInjection;
-using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Game.Items;
+using DaggerfallWorkshop.Game.Questing;
+using DaggerfallWorkshop.Game.Serialization;
+using DaggerfallWorkshop.Utility.AssetInjection;
+using UnityEngine;
 
 namespace DaggerfallWorkshop.Utility
 {
@@ -1325,20 +1321,14 @@ namespace DaggerfallWorkshop.Utility
                 }
 
                 // Get base monster index into table
-                int baseMonsterIndex = (int)(table.Enemies.Length * monsterPower);
-
-                // Set min index
-                int minMonsterIndex = baseMonsterIndex - monsterVariance;
-                if (minMonsterIndex < 0)
-                    minMonsterIndex = 0;
-
-                // Set max index
-                int maxMonsterIndex = baseMonsterIndex + monsterVariance;
-                if (maxMonsterIndex >= table.Enemies.Length)
-                    maxMonsterIndex = table.Enemies.Length - 1;
+                int monsterIndex;
+                do
+                {
+                    monsterIndex = (int)(GenerateNormalRandom(table.Enemies.Length * monsterPower, monsterVariance / 2.0f));
+                } while (monsterIndex < 0 || monsterIndex >= table.Enemies.Length);
 
                 // Get random monster from table
-                MobileTypes type = table.Enemies[UnityEngine.Random.Range(minMonsterIndex, maxMonsterIndex + 1)];
+                MobileTypes type = table.Enemies[monsterIndex];
 
                 // Create unique LoadID for save sytem
                 ulong loadID = 0;
@@ -1354,6 +1344,16 @@ namespace DaggerfallWorkshop.Utility
             {
                 DaggerfallUnity.LogMessage(string.Format("RDBLayout: Dungeon type {0} is out of range or unknown.", dungeonType), true);
             }
+        }
+
+        private static float GenerateNormalRandom(float mu, float sigma)
+        {
+            float rand1 = UnityEngine.Random.Range(0.0f, 1.0f);
+            float rand2 = UnityEngine.Random.Range(0.0f, 1.0f);
+
+            float n = Mathf.Sqrt(-2.0f * Mathf.Log(rand1)) * Mathf.Cos(2.0f * Mathf.PI * rand2);
+
+            return mu + sigma * n;
         }
 
         private static void AddRandomRDBEnemyClassic(
