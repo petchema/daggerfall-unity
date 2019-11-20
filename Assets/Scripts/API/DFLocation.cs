@@ -500,6 +500,9 @@ namespace DaggerfallConnect
 
             /// <summary>Exterior map data including layout information.</summary>
             public ExteriorData ExteriorData;
+
+            /// <summary>List of RMB blocks.</summary>
+            public DFBlock[] Blocks;
         }
 
         /// <summary>
