@@ -17,7 +17,6 @@ using DaggerfallWorkshop.Game.Formulas;
 using DaggerfallWorkshop.Game.Serialization;
 using DaggerfallConnect;
 using DaggerfallWorkshop.Game.Banking;
-using DaggerfallWorkshop.Game.Utility;
 
 namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 {
@@ -128,10 +127,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             // Create buttons
             whileButton = DaggerfallUI.AddButton(whileButtonRect, mainPanel);
             whileButton.OnMouseClick += WhileButton_OnMouseClick;
+            whileButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.RestForAWhile);
             healedButton = DaggerfallUI.AddButton(healedButtonRect, mainPanel);
             healedButton.OnMouseClick += HealedButton_OnMouseClick;
+            healedButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.RestUntilHealed);
             loiterButton = DaggerfallUI.AddButton(loiterButtonRect, mainPanel);
             loiterButton.OnMouseClick += LoiterButton_OnMouseClick;
+            loiterButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.RestLoiter);
 
             // Setup counter panel
             counterPanel.Position = new Vector2(counterPanelRect.x, counterPanelRect.y);
@@ -149,6 +151,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             // Stop button
             stopButton = DaggerfallUI.AddButton(stopButtonRect, counterPanel);
             stopButton.OnMouseClick += StopButton_OnMouseClick;
+            stopButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.RestStop);
 
             // Store toggle closed binding for this window
             toggleClosedBinding = InputManager.Instance.GetBinding(InputManager.Actions.Rest);
@@ -177,7 +180,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 RaiseOnSleepTickEvent();
 
             ShowStatus();
-            if (currentRestMode != RestModes.Selection)
+
+            HotkeySequence.KeyModifiers keyModifiers = HotkeySequence.GetKeyboardKeyModifiers();
+            if (currentRestMode == RestModes.Selection)
+            {
+                mainPanel.KeyboardActivation(keyModifiers);
+            }
+            else
             {
                 if ((currentRestMode == RestModes.FullRest) && IsPlayerFullyHealed())
                     EndRest();
@@ -185,6 +194,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     EndRest();
                 else if (TickRest())
                     EndRest();
+                else 
+                    counterPanel.KeyboardActivation(keyModifiers);
             }
         }
 

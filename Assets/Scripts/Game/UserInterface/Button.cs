@@ -16,7 +16,6 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using DaggerfallWorkshop.Game.UserInterfaceWindows;
 
 namespace DaggerfallWorkshop.Game.UserInterface
 {
@@ -27,6 +26,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
     {
         TextLabel label = new TextLabel();
         AudioClip clickSound;
+        HotkeySequence shortcutKey = HotkeySequence.None;
 
         public string ClickMessage { get; set; }
         public string DoubleClickMessage { get; set; }
@@ -41,6 +41,12 @@ namespace DaggerfallWorkshop.Game.UserInterface
         {
             get { return clickSound; }
             set { clickSound = value; }
+        }
+
+        public HotkeySequence Hotkey
+        {
+            get { return shortcutKey; }
+            set { shortcutKey = value; }
         }
 
         public Button()
@@ -71,6 +77,14 @@ namespace DaggerfallWorkshop.Game.UserInterface
         {
             base.Draw();
             label.Draw();
+        }
+
+        new public bool KeyboardActivation(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            bool isActivated = shortcutKey.IsUpWith(keyModifiers);
+            if (isActivated)
+                TriggerMouseClick();
+            return isActivated;
         }
 
         void ClickHandler(BaseScreenComponent sender, Vector2 position)

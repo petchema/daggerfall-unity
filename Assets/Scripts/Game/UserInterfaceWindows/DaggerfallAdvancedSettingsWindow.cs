@@ -182,6 +182,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             closeButton.Outline.Enabled = true;
             closeButton.Label.Text = closeButtonText;
             closeButton.OnMouseClick += CloseButton_OnMouseClick;
+            closeButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.GameSetupClose);
             NativePanel.Components.Add(closeButton);
         }
 
@@ -189,8 +190,11 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             base.Update();
 
+            HotkeySequence.KeyModifiers keyModifiers = HotkeySequence.GetKeyboardKeyModifiers();
             if (Input.GetKeyDown(KeyCode.Tab))
                 NextPage();
+            else
+                NativePanel.KeyboardActivation(keyModifiers);
         }
 
         #endregion

@@ -145,6 +145,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             exitButton.Outline.Enabled = true;
             exitButton.Label.Text = GetText("exit");
             exitButton.OnMouseClick += ExitButton_OnMouseClick;
+            exitButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.GameSetupExit);
             NativePanel.Components.Add(exitButton);
 
             // If actually validated and we just want to see settings then move direct to settings page
@@ -185,6 +186,19 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 ShowNextStage();
                 moveNextStage = false;
             }
+
+            HotkeySequence.KeyModifiers keyModifiers = HotkeySequence.GetKeyboardKeyModifiers();
+            if (!NativePanel.KeyboardActivation(keyModifiers))
+                switch (currentStage)
+                {
+                    case SetupStages.GameFolder:
+                        break;
+                    case SetupStages.Resolution:
+                        break;
+                    case SetupStages.Options:
+                        optionsPanel.KeyboardActivation(keyModifiers);
+                        break;
+                }
         }
 
         void ShowGameFolderStage()
@@ -481,6 +495,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             optionsConfirmButton.BackgroundColor = new Color(0.0f, 0.5f, 0.0f, 0.4f);
             optionsConfirmButton.HorizontalAlignment = HorizontalAlignment.Center;
             optionsConfirmButton.OnMouseClick += OptionsConfirmButton_OnMouseClick;
+            optionsConfirmButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.GameSetupPlay);
             optionsPanel.Components.Add(optionsConfirmButton);
 
             // Restart button
@@ -495,6 +510,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             restartButton.VerticalAlignment = VerticalAlignment.Top;
             restartButton.HorizontalAlignment = HorizontalAlignment.Left;
             restartButton.OnMouseClick += RestartButton_OnMouseClick;
+            restartButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.GameSetupRestart);
             optionsPanel.Components.Add(restartButton);
 
             if (DaggerfallUnity.Settings.LypyL_ModSystem)
@@ -508,6 +524,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 ShowModsButton.Outline.Enabled = true;
                 optionsPanel.Components.Add(ShowModsButton);
                 ShowModsButton.OnMouseClick += ModsButton_OnOnMouseBlick;
+                ShowModsButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.GameSetupMods);
             }
 
             // Advanced Settings
@@ -520,6 +537,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             AdvancedSettingsButton.Outline.Enabled = true;
             optionsPanel.Components.Add(AdvancedSettingsButton);
             AdvancedSettingsButton.OnMouseClick += AdvancedSettingsButton_OnOnMouseBlick;
+            AdvancedSettingsButton.Hotkey = DaggerfallShortcut.GetBinding(DaggerfallShortcut.Buttons.GameSetupAdvancedSettings);
 
         }
 
