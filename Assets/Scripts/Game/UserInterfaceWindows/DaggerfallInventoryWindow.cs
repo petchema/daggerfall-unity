@@ -1551,6 +1551,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         protected void ShowInfoPopup(DaggerfallUnityItem item)
         {
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             TextFile.Token[] tokens = ItemHelper.GetItemInfo(item, DaggerfallUnity.TextProvider);
             if (tokens != null && tokens.Length > 0)
             {
@@ -1820,6 +1821,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         protected virtual void AccessoryItemsButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             // Get item
             EquipSlots slot = (EquipSlots)sender.Tag;
             DaggerfallUnityItem item = playerEntity.ItemEquipTable.GetItem(slot);
@@ -1844,6 +1846,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         protected virtual void PaperDoll_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             // Get equip value
             byte value = paperDoll.GetEquipIndex((int)position.x, (int)position.y);
             if (value == 0xff)
@@ -1980,6 +1983,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void RemoteTargetIconPanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             // If items are being dropped by player, iterate up through drop textures
             if (CanChangeDropIcon())
             {
@@ -1992,6 +1996,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void RemoteTargetIconPanel_OnRightMouseClick(BaseScreenComponent sender, Vector2 position)
         {
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             // If items are being dropped by player, iterate down through drop textures
             if (CanChangeDropIcon())
             {
