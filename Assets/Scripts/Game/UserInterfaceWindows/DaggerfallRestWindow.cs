@@ -574,6 +574,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             if (DaggerfallUnity.Settings.IllegalRestWarning && GameManager.Instance.PlayerGPS.IsPlayerInTown(true, true))
             {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
                 DaggerfallMessageBox mb = DaggerfallUI.MessageBox(TextManager.Instance.GetText("DaggerfallUI", "illegalRestWarning"));
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.Yes);
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.No);
@@ -597,6 +598,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             if (DaggerfallUnity.Settings.IllegalRestWarning && GameManager.Instance.PlayerGPS.IsPlayerInTown(true, true))
             {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
                 DaggerfallMessageBox mb = DaggerfallUI.MessageBox(TextManager.Instance.GetText("DaggerfallUI", "illegalRestWarning"));
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.Yes);
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.No);
@@ -618,6 +620,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void LoiterButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             DaggerfallInputMessageBox mb = new DaggerfallInputMessageBox(uiManager, this);
             mb.SetTextBoxLabel(HardStrings.loiterHowManyHours);
             mb.TextPanelDistanceX = 5;
@@ -633,6 +636,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         private void StopButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
             DaggerfallUI.Instance.PopToHUD();
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
         }
 
         private void RestFinishedPopup_OnClose()
