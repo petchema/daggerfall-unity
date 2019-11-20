@@ -15,6 +15,7 @@ using System.IO;
 using System.Collections.Generic;
 using DaggerfallConnect.Utility;
 using DaggerfallWorkshop.Utility;
+using DaggerfallWorkshop.Utility.AssetInjection;
 #endregion
 
 namespace DaggerfallConnect.Arena2
