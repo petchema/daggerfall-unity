@@ -32,8 +32,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const int minDifficultyPoints = -12;
         const int maxDifficultyPoints = 40;
 
-        const float daggerAnimationTime = 1.0f;
-
         const int strNameYourClass = 301;
         const int strSetSkills = 300;
         const int strDistributeStats = 302;
@@ -70,7 +68,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         #endregion
 
         #region UI Panels
-
 
         Panel daggerPanel = new Panel();
         Panel daggerTrailPanel = new Panel();
@@ -170,9 +167,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             SetupButtons();
             hpLabel = DaggerfallUI.AddTextLabel(font, new Vector2(285, 55), createdClass.HitPointsPerLevel.ToString(), NativePanel);
             daggerTrailPanel.Size = new Vector2(24, 9);
-            // daggerTrailPanel.BackgroundTexture = nativeDaggerTexture;
-            daggerTrailPanel.AnimatedBackgroundTextures = new Texture2D[] { nativeDaggerTexture, null };
-            daggerTrailPanel.AnimationDelayInSeconds = 0.1f;
+            daggerTrailPanel.BackgroundTexture = nativeDaggerTexture;
             NativePanel.Components.Add(daggerTrailPanel);
             daggerPanel.Size = new Vector2(24, 9);
             daggerPanel.BackgroundTexture = nativeDaggerTexture;
