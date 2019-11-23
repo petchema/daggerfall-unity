@@ -61,14 +61,14 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const float nearClipPlaneCameraMode2D = 100f; // simulate classic Daggerfall near clip plane
         const float defaultFieldOfViewCameraMode3D = 45.0f; // default camera field of view used for 3D mode
         float fieldOfViewCameraMode3D = defaultFieldOfViewCameraMode3D; // camera field of view used for 3D mode (can be changed with mouse wheel over grid button)
-        const float nearClipPlaneCameraMode3D = 0.3f; // default Unity3D value
+        const float nearClipPlaneCameraMode3D = 20f;
         const float minFieldOfViewCameraMode3D = 15.0f; // minimum value of camera field of view that can be adjusted in 3D mode
         const float maxFieldOfViewCameraMode3D = 65.0f; // maximum value of camera field of view that can be adjusted in 3D mode
 
-        const float defaultSlicingBiasY = 0.2f;
+        const float defaultSlicingBiasY = 0.6f;
 
         const float cameraHeightViewFromTop = 150.0f; // initial camera height in 2D mode
-        const float cameraHeightView3D = 8.0f; // initial camera height in 3D mode
+        const float cameraHeightView3D = 30.0f; // initial camera height in 3D mode
         const float cameraBackwardDistance = 20.0f; // initial camera distance "backwards" in 3D mode
 
         // this is a helper class to implement behaviour and easier use of hotkeys and key modifiers (left-shift, right-shift, ...) in conjunction
