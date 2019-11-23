@@ -58,14 +58,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const float changeSpeedCameraFieldOfView = 50.0f; // mouse wheel over grid button will change camera field of view in 3D mode with this speed
 
         const float fieldOfViewCameraMode2D = 15.0f; // camera field of view used for 2D mode
+        const float nearClipPlaneCameraMode2D = 100f; // simulate classic Daggerfall near clip plane
         const float defaultFieldOfViewCameraMode3D = 45.0f; // default camera field of view used for 3D mode
         float fieldOfViewCameraMode3D = defaultFieldOfViewCameraMode3D; // camera field of view used for 3D mode (can be changed with mouse wheel over grid button)
+        const float nearClipPlaneCameraMode3D = 0.3f; // default Unity3D value
         const float minFieldOfViewCameraMode3D = 15.0f; // minimum value of camera field of view that can be adjusted in 3D mode
         const float maxFieldOfViewCameraMode3D = 65.0f; // maximum value of camera field of view that can be adjusted in 3D mode
 
         const float defaultSlicingBiasY = 0.2f;
 
-        const float cameraHeightViewFromTop = 90.0f; // initial camera height in 2D mode
+        const float cameraHeightViewFromTop = 150.0f; // initial camera height in 2D mode
         const float cameraHeightView3D = 8.0f; // initial camera height in 3D mode
         const float cameraBackwardDistance = 20.0f; // initial camera distance "backwards" in 3D mode
 
@@ -828,9 +830,11 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 case AutomapViewMode.View2D: default:
                     cameraAutomap.fieldOfView = fieldOfViewCameraMode2D;
+                    cameraAutomap.nearClipPlane = nearClipPlaneCameraMode2D;
                     break;
                 case AutomapViewMode.View3D:
                     cameraAutomap.fieldOfView = fieldOfViewCameraMode3D;
+                    cameraAutomap.nearClipPlane = nearClipPlaneCameraMode3D;
                     break;
             }
 
@@ -1887,6 +1891,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 fieldOfViewCameraMode3D = Mathf.Max(minFieldOfViewCameraMode3D, Mathf.Min(maxFieldOfViewCameraMode3D, fieldOfViewCameraMode3D + changeSpeedCameraFieldOfView * Time.unscaledDeltaTime));
                 cameraAutomap.fieldOfView = fieldOfViewCameraMode3D;
+                cameraAutomap.nearClipPlane = nearClipPlaneCameraMode3D;
                 UpdateAutomapView();
             }            
         }
@@ -1900,6 +1905,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 fieldOfViewCameraMode3D = Mathf.Max(minFieldOfViewCameraMode3D, Mathf.Min(maxFieldOfViewCameraMode3D, fieldOfViewCameraMode3D - changeSpeedCameraFieldOfView * Time.unscaledDeltaTime));
                 cameraAutomap.fieldOfView = fieldOfViewCameraMode3D;
+                cameraAutomap.nearClipPlane = nearClipPlaneCameraMode3D;
                 UpdateAutomapView();
             }
         }
@@ -1993,6 +1999,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     SaveCameraTransformView3D();
                     RestoreOldCameraTransformViewFromTop();
                     cameraAutomap.fieldOfView = fieldOfViewCameraMode2D;
+                    cameraAutomap.nearClipPlane = nearClipPlaneCameraMode2D;
                     automap.RotationPivotAxisPosition = rotationPivotAxisPositionViewFromTop;
                     UpdateAutomapView();
                     break;
@@ -2002,6 +2009,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     SaveCameraTransformViewFromTop();
                     RestoreOldCameraTransformView3D();
                     cameraAutomap.fieldOfView = fieldOfViewCameraMode3D;
+                    cameraAutomap.nearClipPlane = nearClipPlaneCameraMode3D;
                     automap.RotationPivotAxisPosition = rotationPivotAxisPositionView3D;
                     UpdateAutomapView();
                     break;
@@ -2022,10 +2030,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 case AutomapViewMode.View2D:
                     cameraAutomap.fieldOfView = fieldOfViewCameraMode2D;
+                    cameraAutomap.nearClipPlane = nearClipPlaneCameraMode2D;
                     ResetRotationPivotAxisPositionViewFromTop(); // reset rotation pivot axis                 
                     break;
                 case AutomapViewMode.View3D:
                     cameraAutomap.fieldOfView = fieldOfViewCameraMode3D;
+                    cameraAutomap.nearClipPlane = nearClipPlaneCameraMode3D;
                     ResetRotationPivotAxisPositionView3D(); // reset rotation pivot axis
                     break;
             }            
