@@ -35,6 +35,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         Color32 toggleBorderColor = new Color32(58, 217, 0, 255);
         const int toggleBorderThickness = 1;
 
+        public bool ClassicToggleMode = false; // Can you switch between options by clicking on any one of them?
+
         Panel travelPanel;
         Panel speedToggleColorPanel;
         Panel transportToggleColorPanel;
@@ -42,8 +44,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         Button beginButton;
         Button exitButton;
-        Button speedToggleButton;
-        Button transportModeToggleButton;
+        Button cautiousToggleButton;
+        Button recklessToggleButton;
+        Button footHorseToggleButton;
+        Button shipToggleButton;
         Button campOutToggleButton;
         Button innToggleButton;
         Texture2D nativeTexture;
@@ -52,8 +56,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         Rect nativePanelRect        = new Rect(49, 28, 223, 97);
         Rect exitButtonRect         = new Rect(222, 112, 48, 10);
         Rect beginButtonRect        = new Rect(222, 98, 48, 10);
-        Rect speedButtonRect        = new Rect(50, 51, 108, 20);
-        Rect transportButtonRect    = new Rect(163, 51, 108, 20);
+        Rect cautiousButtonRect     = new Rect(50, 51, 108, 9);
+        Rect recklessButtonRect     = new Rect(50, 61, 108, 9);
+        Rect footHorseButtonRect    = new Rect(163, 51, 108, 9);
+        Rect shipButtonRect         = new Rect(163, 61, 108, 9);
         Rect innsButtonRect         = new Rect(50, 83, 108, 9);
         Rect campoutButtonRect      = new Rect(163, 83, 108, 9);
 
@@ -172,17 +178,65 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             exitButton = DaggerfallUI.AddButton(exitButtonRect, NativePanel);
             exitButton.OnMouseClick += ExitButtonOnClickHandler;
 
-            speedToggleButton = DaggerfallUI.AddButton(speedButtonRect, NativePanel);
-            speedToggleButton.OnMouseClick += SpeedButtonOnClickHandler;
+            cautiousToggleButton = DaggerfallUI.AddButton(cautiousButtonRect, NativePanel);
+            if (ClassicToggleMode)
+                cautiousToggleButton.OnMouseClick += ToggleSpeedButtonOnClickHandler;
+            else
+            {
+                cautiousToggleButton.OnMouseClick += SpeedButtonOnClickHandler;
+                cautiousToggleButton.OnMouseScrollUp += (sender) => ToggleSpeedButtonOnClickHandler(sender, Vector2.zero);
+                cautiousToggleButton.OnMouseScrollDown += (sender) => ToggleSpeedButtonOnClickHandler(sender, Vector2.zero);
+            }
 
-            transportModeToggleButton = DaggerfallUI.AddButton(transportButtonRect, NativePanel);
-            transportModeToggleButton.OnMouseClick += TransportModeButtonOnClickHandler;
+            recklessToggleButton = DaggerfallUI.AddButton(recklessButtonRect, NativePanel);
+            if (ClassicToggleMode)
+                recklessToggleButton.OnMouseClick += ToggleSpeedButtonOnClickHandler;
+            else
+            {
+                recklessToggleButton.OnMouseClick += SpeedButtonOnClickHandler;
+                recklessToggleButton.OnMouseScrollUp += (sender) => ToggleSpeedButtonOnClickHandler(sender, Vector2.zero);
+                recklessToggleButton.OnMouseScrollDown += (sender) => ToggleSpeedButtonOnClickHandler(sender, Vector2.zero);
+            }
+
+            footHorseToggleButton = DaggerfallUI.AddButton(footHorseButtonRect, NativePanel);
+            if (ClassicToggleMode)
+                footHorseToggleButton.OnMouseClick += ToggleTransportModeButtonOnClickHandler;
+            else
+            {
+                footHorseToggleButton.OnMouseClick += TransportModeButtonOnClickHandler;
+                footHorseToggleButton.OnMouseScrollUp += (sender) => ToggleTransportModeButtonOnClickHandler(sender, Vector2.zero);
+                footHorseToggleButton.OnMouseScrollDown += (sender) => ToggleTransportModeButtonOnClickHandler(sender, Vector2.zero);
+            }
+
+            shipToggleButton = DaggerfallUI.AddButton(shipButtonRect, NativePanel);
+            if (ClassicToggleMode)
+                shipToggleButton.OnMouseClick += ToggleTransportModeButtonOnClickHandler;
+            else
+            {
+                shipToggleButton.OnMouseClick += TransportModeButtonOnClickHandler;
+                shipToggleButton.OnMouseScrollUp += (sender) => ToggleTransportModeButtonOnClickHandler(sender, Vector2.zero);
+                shipToggleButton.OnMouseScrollDown += (sender) => ToggleTransportModeButtonOnClickHandler(sender, Vector2.zero);
+            }
 
             innToggleButton = DaggerfallUI.AddButton(innsButtonRect, NativePanel);
-            innToggleButton.OnMouseClick += SleepModeButtonOnClickHandler;
+            if (ClassicToggleMode)
+                innToggleButton.OnMouseClick += ToggleSleepModeButtonOnClickHandler;
+            else
+            {
+                innToggleButton.OnMouseClick += SleepModeButtonOnClickHandler;
+                innToggleButton.OnMouseScrollUp += (sender) => ToggleSleepModeButtonOnClickHandler(sender, Vector2.zero);
+                innToggleButton.OnMouseScrollDown += (sender) => ToggleSleepModeButtonOnClickHandler(sender, Vector2.zero);
+            }
 
             campOutToggleButton = DaggerfallUI.AddButton(campoutButtonRect, NativePanel);
-            campOutToggleButton.OnMouseClick += SleepModeButtonOnClickHandler;
+            if (ClassicToggleMode)
+                campOutToggleButton.OnMouseClick += ToggleSleepModeButtonOnClickHandler;
+            else
+            {
+                campOutToggleButton.OnMouseClick += SleepModeButtonOnClickHandler;
+                campOutToggleButton.OnMouseScrollUp += (sender) => ToggleSleepModeButtonOnClickHandler(sender, Vector2.zero);
+                campOutToggleButton.OnMouseScrollDown += (sender) => ToggleSleepModeButtonOnClickHandler(sender, Vector2.zero);
+            }
         }
 
 
@@ -447,17 +501,35 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         public void SpeedButtonOnClickHandler(BaseScreenComponent sender, Vector2 position)
         {
+            speedCautious = (sender == cautiousToggleButton);
+            Refresh();
+        }
+
+        public void ToggleSpeedButtonOnClickHandler(BaseScreenComponent sender, Vector2 position)
+        {
             speedCautious = !speedCautious;
             Refresh();
         }
 
         public void TransportModeButtonOnClickHandler(BaseScreenComponent sender, Vector2 position)
         {
+            travelShip = (sender == shipToggleButton);
+            Refresh();
+        }
+
+        public void ToggleTransportModeButtonOnClickHandler(BaseScreenComponent sender, Vector2 position)
+        {
             travelShip = !travelShip;
             Refresh();
         }
 
         public void SleepModeButtonOnClickHandler(BaseScreenComponent sender, Vector2 position)
+        {
+            sleepModeInn = (sender == innToggleButton);
+            Refresh();
+        }
+
+        public void ToggleSleepModeButtonOnClickHandler(BaseScreenComponent sender, Vector2 position)
         {
             sleepModeInn = !sleepModeInn;
             Refresh();
