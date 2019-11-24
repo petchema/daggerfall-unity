@@ -61,15 +61,17 @@ Shader "Daggerfall/Automap"
     			float4  pos : SV_POSITION;				
     			float2  uv : TEXCOORD0;
 				float3 worldPos : TEXCOORD5;
+                float3 viewPos : TEXCOORD1;
 				float3 normal : NORMAL;
                 //fixed4 color : COLOR;
-			};		
+			};
 
 			void vert(appdata_full v, out v2f OUT)
 			{
     			OUT.pos = UnityObjectToClipPos(v.vertex);
     			OUT.uv = v.texcoord;
 				OUT.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                OUT.viewPos = UnityObjectToViewPos(v.vertex);
 				OUT.normal = v.normal;
                 //OUT.color.xyz = _Color;
 			}
@@ -84,7 +86,11 @@ Shader "Daggerfall/Automap"
 				                
 				//half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
                 outColor.rgb = albedo.rgb; // -emission; // Emission cancels out other lights
-				outColor.a = albedo.a;
+                // float viewD2 = IN.viewPos.x * IN.viewPos.x + IN.viewPos.y * IN.viewPos.y;
+                // float viewClip = -IN.viewPos.z - _ProjectionParams.y - (20 + 20 * exp(-0.02*viewD2));
+                float viewClip = -IN.viewPos.z - _ProjectionParams.y;
+                clip(viewClip);
+				outColor.a = albedo.a * saturate(viewClip * 0.25);
 				if (IN.worldPos.y > _SclicingPositionY)
 				{				
 					discard;				
@@ -92,7 +98,7 @@ Shader "Daggerfall/Automap"
 
 			    float dist = distance(IN.worldPos.y, _SclicingPositionY);
 				//float dist = 40.0f / distance(IN.worldPos.y, 20.0f); // _SclicingPositionY);
-				outColor.rgb *= 1.0f - max(0.0f, min(0.6f, dist/20.0f));
+				outColor.rgb *= 1.0f - clamp(dist/20.0f, 0.0f, 0.6f);
 
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
@@ -176,6 +182,7 @@ Shader "Daggerfall/Automap"
 				float4  pos : SV_POSITION;
 				float2  uv : TEXCOORD0;
 				float3 worldPos : TEXCOORD5;
+                float3 viewPos : TEXCOORD1;
 				float3 normal : NORMAL;
 			};
 
@@ -184,6 +191,7 @@ Shader "Daggerfall/Automap"
 				OUT.pos = UnityObjectToClipPos(v.vertex);
 				OUT.uv = v.texcoord;
 				OUT.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                OUT.viewPos = UnityObjectToViewPos(v.vertex);
 				OUT.normal = v.normal;
 			}
 
@@ -193,6 +201,7 @@ Shader "Daggerfall/Automap"
 				float2  uv : TEXCOORD0;
 				float3 dist : TEXCOORD1;
 				float3 worldPos : TEXCOORD5;
+                float3 viewPos : TEXCOORD2;
 				float3 normal : NORMAL;
 			};
 
@@ -219,6 +228,7 @@ Shader "Daggerfall/Automap"
 				OUT.uv = IN[0].uv;
 				OUT.dist = float3(area / length(v0),0,0);
 				OUT.worldPos = IN[0].worldPos;
+                OUT.viewPos = IN[0].viewPos;
 				OUT.normal = IN[0].normal;
 				triStream.Append(OUT);
 
@@ -226,6 +236,7 @@ Shader "Daggerfall/Automap"
 				OUT.uv = IN[1].uv;
 				OUT.dist = float3(0,area / length(v1),0);
 				OUT.worldPos = IN[1].worldPos;
+                OUT.viewPos = IN[1].viewPos;
 				OUT.normal = IN[1].normal;
 				triStream.Append(OUT);
 
@@ -233,6 +244,7 @@ Shader "Daggerfall/Automap"
 				OUT.uv = IN[2].uv;
 				OUT.dist = float3(0,0,area / length(v2));
 				OUT.worldPos = IN[2].worldPos;
+                OUT.viewPos = IN[2].viewPos;
 				OUT.normal = IN[2].normal;
 				triStream.Append(OUT);
 			}
@@ -244,7 +256,11 @@ Shader "Daggerfall/Automap"
                 //half4 albedo = tex2Dlod(_MainTex, float4(IN.uv.x, IN.uv.y, 0.0f, 7.0f));
 				//half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
 				outColor.rgb = albedo.rgb; // - emission; // Emission cancels out other lights
-				outColor.a = albedo.a;
+                // float viewD2 = IN.viewPos.x * IN.viewPos.x + IN.viewPos.y * IN.viewPos.y;
+                // float viewClip = -IN.viewPos.z - _ProjectionParams.y - (20 + 20 * exp(-0.02*viewD2));
+                float viewClip = -IN.viewPos.z - _ProjectionParams.y;
+                clip(viewClip);
+                outColor.a = albedo.a * saturate(viewClip * 0.25);
 				if (IN.worldPos.y > _SclicingPositionY)
 				{
 					#if defined(AUTOMAP_RENDER_MODE_WIREFRAME)
@@ -267,7 +283,7 @@ Shader "Daggerfall/Automap"
 							#endif
 						}
 					#elif defined(AUTOMAP_RENDER_MODE_TRANSPARENT)
-					outColor.a = 0.75;
+					outColor.a *= 0.75;
 					#else //#elif defined(AUTOMAP_RENDER_MODE_CUTOUT)
 						clip(-1.0);
 						outColor = half4(1.0, 0.0, 0.0, 1.0);
@@ -338,6 +354,7 @@ Shader "Daggerfall/Automap"
 				float4  pos : SV_POSITION;
 				float2  uv : TEXCOORD0;
 				float3 worldPos : TEXCOORD5;
+                float3 viewPos : TEXCOORD1;
 			};
 
 			void vert(appdata_full v, out v2f OUT)
@@ -345,32 +362,36 @@ Shader "Daggerfall/Automap"
 				OUT.pos = UnityObjectToClipPos(v.vertex);
 				OUT.uv = v.texcoord;
 				OUT.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                OUT.viewPos = UnityObjectToViewPos(v.vertex);
 			}
 
 
 			half4 frag(v2f IN) : COLOR
 			{
 				float4 outColor;
-			half4 albedo = tex2D(_MainTex, IN.uv) * _Color;
-			//half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
-			outColor.rgb = albedo.rgb; // - emission; // Emission cancels out other lights
-			outColor.a = albedo.a;
-			if (IN.worldPos.y > _SclicingPositionY)
-			{
-				discard;
-			}
+			    half4 albedo = tex2D(_MainTex, IN.uv) * _Color;
+			    //half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
+			    outColor.rgb = albedo.rgb; // - emission; // Emission cancels out other lights
+                // float viewD2 = IN.viewPos.x * IN.viewPos.x + IN.viewPos.y * IN.viewPos.y;
+                // float viewClip = -IN.viewPos.z - _ProjectionParams.y - (20 + 20 * exp(-0.02*viewD2));
+                float viewClip = -IN.viewPos.z - _ProjectionParams.y;
+                clip(viewClip);
+                outColor.a = albedo.a * saturate(viewClip * 0.25);
+			    if (IN.worldPos.y > _SclicingPositionY)
+			    {
+				    discard;
+			    }
 
-			float dist = distance(IN.worldPos.y, _SclicingPositionY);
-			outColor.rgb *= 1.0f - max(0.0f, min(0.6f, dist / 20.0f));
+			    float dist = distance(IN.worldPos.y, _SclicingPositionY);
+			    outColor.rgb *= 1.0f - clamp(dist / 20.0f, 0.0f, 0.6f);
 
-			#if defined(RENDER_IN_GRAYSCALE)
-				half3 color = outColor;
-				float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
-				outColor.rgb = half3(grayValue, grayValue, grayValue);
-			#endif
+			    #if defined(RENDER_IN_GRAYSCALE)
+				    half3 color = outColor;
+				    float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
+				    outColor.rgb = half3(grayValue, grayValue, grayValue);
+			    #endif
 
-			return outColor;
-
+			    return outColor;
 			}
 
 			ENDCG
@@ -411,6 +432,7 @@ Shader "Daggerfall/Automap"
 				float4  pos : SV_POSITION;
 				float2  uv : TEXCOORD0;
 				float3 worldPos : TEXCOORD5;
+                float3 viewPos : TEXCOORD1;
 			};
 
 			void vert(appdata_full v, out v2f OUT)
@@ -418,6 +440,7 @@ Shader "Daggerfall/Automap"
 				OUT.pos = UnityObjectToClipPos(v.vertex);
 				OUT.uv = v.texcoord;
 				OUT.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                OUT.viewPos = UnityObjectToViewPos(v.vertex);
 			}
 
 
@@ -427,11 +450,15 @@ Shader "Daggerfall/Automap"
 				half4 albedo = tex2D(_MainTex, IN.uv) * _Color;
 				//half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
 				outColor.rgb = albedo.rgb; // - emission; // Emission cancels out other lights
-				outColor.a = albedo.a;
+                // float viewD2 = IN.viewPos.x * IN.viewPos.x + IN.viewPos.y * IN.viewPos.y;
+                // float viewClip = -IN.viewPos.z - _ProjectionParams.y - (20 + 20 * exp(-0.02*viewD2));
+                float viewClip = -IN.viewPos.z - _ProjectionParams.y;
+                clip(viewClip);
+                outColor.a = albedo.a * saturate(viewClip * 0.25);
 				if (IN.worldPos.y > _SclicingPositionY)
 				{
 					#if defined(AUTOMAP_RENDER_MODE_TRANSPARENT)
-						outColor.a = 0.65;
+						outColor.a *= 0.65;
 					#else //#elif defined(AUTOMAP_RENDER_MODE_CUTOUT)
 						clip(-1.0);
 						outColor = half4(1.0, 0.0, 0.0, 1.0);
@@ -443,7 +470,7 @@ Shader "Daggerfall/Automap"
 				}
 
 				float dist = distance(IN.worldPos.y, _SclicingPositionY);
-				outColor.rgb *= 1.0f - max(0.0f, min(0.6f, dist / 20.0f));
+				outColor.rgb *= 1.0f - clamp(dist / 20.0f, 0.0f, 0.6f);
 
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
