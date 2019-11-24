@@ -31,9 +31,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const float secondsCountdownTickFastTravel = 0.05f; // time used for fast travel countdown for one tick
         TravelTimeCalculator travelTimeCalculator = new TravelTimeCalculator();
 
-        Color32 toggleColor = new Color32(68, 255, 0, 255); // Classic: 85, 117, 48
-        Color32 toggleBorderColor = new Color32(58, 217, 0, 255);
-        const int toggleBorderThickness = 1;
+        Color32 toggleColor = new Color32(85, 117, 48, 255);
+        const string greenCheckboxTextureFilename = "GreenCheckbox";
 
         Panel travelPanel;
         Panel speedToggleColorPanel;
@@ -47,6 +46,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         Button campOutToggleButton;
         Button innToggleButton;
         Texture2D nativeTexture;
+        Texture2D greenCheckboxTexture;
 
         //rects
         Rect nativePanelRect        = new Rect(49, 28, 223, 97);
@@ -57,12 +57,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         Rect innsButtonRect         = new Rect(50, 83, 108, 9);
         Rect campoutButtonRect      = new Rect(163, 83, 108, 9);
 
-        Vector2 colorPanelSize      = new Vector2(4.5f, 4.5f);
-        Vector2 cautiousPanelPos    = new Vector2(52, 53.25f);
-        Vector2 recklessPanelPos    = new Vector2(52, 63.25f);
-        Vector2 innPanelPos         = new Vector2(52, 85.5f);
+        Vector2 colorPanelSize      = new Vector2(4.75f, 4.75f);
+
+        Vector2 cautiousPanelPos    = new Vector2(52.25f, 53);
+        Vector2 recklessPanelPos    = new Vector2(52.25f, 63.25f);
+        Vector2 innPanelPos         = new Vector2(52.25f, 85.5f);
         Vector2 campoutPos          = new Vector2(165, 85.5f);
-        Vector2 footPos             = new Vector2(165, 53.25f);
+        Vector2 footPos             = new Vector2(165, 53);
         Vector2 shipPos             = new Vector2(165, 63.25f);
         DFPosition endPos           = new DFPosition(109, 158);
 
@@ -116,6 +117,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             if (!nativeTexture)
                 throw new System.Exception("DaggerfallTravelMap: Could not load native texture.");
 
+            greenCheckboxTexture = DaggerfallUI.GetTextureFromResources(greenCheckboxTextureFilename);
+
             ParentPanel.BackgroundColor = Color.clear;
 
             travelPanel = DaggerfallUI.AddPanel(nativePanelRect, NativePanel);
@@ -145,23 +148,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         private void SetToggleLook(Panel toggle)
         {
-            toggle.BackgroundColor = toggleColor;
-            Texture2D borderColor = ColorTexture(toggleBorderColor);
-            Texture2D fillColor = ColorTexture(toggleColor);
-            toggle.SetBorderTextures(
-                borderColor, borderColor, borderColor,
-                borderColor, fillColor, borderColor,
-                borderColor, borderColor, borderColor,
-                DaggerfallUI.Instance.GlobalFilterMode,
-                new Border<Vector2Int>(new Vector2Int(toggleBorderThickness, toggleBorderThickness)));
-        }
-
-        private Texture2D ColorTexture(Color32 color)
-        {
-            Texture2D colorTexture = new Texture2D(1, 1);
-            colorTexture.SetPixels32(new Color32[] { color });
-            colorTexture.Apply();
-            return colorTexture;
+            if (greenCheckboxTexture)
+                toggle.BackgroundTexture = greenCheckboxTexture;
+            else
+                toggle.BackgroundColor = toggleColor;
         }
 
         void SetupButtons()
