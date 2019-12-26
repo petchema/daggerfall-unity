@@ -68,14 +68,15 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         #region Unity
 
-        public override void Update()
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
         {
-            base.Update();
-
-            if (!AllowCancel && Input.GetKeyDown(KeyCode.Escape))
+            if (!AllowCancel && Input.GetKeyUp(exitKey))
             {
                 ShowMultipleAssignmentsMessage();
+                return true;
             }
+
+            return false;
         }
 
         #endregion

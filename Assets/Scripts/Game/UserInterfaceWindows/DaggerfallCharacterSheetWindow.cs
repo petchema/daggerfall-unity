@@ -218,14 +218,17 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         #region Overrides
 
-        public override void Update()
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
         {
-            base.Update();
-
             // Toggle window closed with same hotkey used to open it
-            if (Input.GetKeyUp(toggleClosedBinding))
+            if (Input.GetKeyUp(exitKey) || Input.GetKeyUp(toggleClosedBinding))
                 if (CheckIfDoneLeveling())
+                {
                     CloseWindow();
+                    return true;
+                }
+
+            return false;
         }
 
         public override void OnPush()

@@ -271,7 +271,17 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             base.Update();
 
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyUp(extraProceedBinding))
+            if (buttonClicked)
+            {
+                // if there is a nested next message box show it
+                if (nextMessageBox != null)
+                    nextMessageBox.Show();
+            }
+        }
+
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            if (Input.GetKeyUp(KeyCode.Return) || Input.GetKeyUp(KeyCode.KeypadEnter) || Input.GetKeyUp(extraProceedBinding))
             {
                 // Special handling for message boxes with buttons
                 if (buttons.Count > 0)
@@ -284,7 +294,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     // Exit here if no other message boxes queued
                     // Most of the time this won't be the case and we don't want message boxes waiting for input to close prematurely
                     if (nextMessageBox == null)
-                        return;
+                        return true;
                 }
                 // if there is a nested next message box show it
                 if (this.nextMessageBox != null)
@@ -295,13 +305,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 {
                     CloseWindow();
                 }
+                return true;
             }
-            else if (buttonClicked)
-            {
-                // if there is a nested next message box show it
-                if (nextMessageBox != null)
-                    nextMessageBox.Show();
-            }
+
+            return false;
         }
 
         public Button AddButton(MessageBoxButtons messageBoxButton, bool defaultButton = false)

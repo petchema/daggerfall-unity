@@ -165,10 +165,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             base.Update();
 
-            // Toggle window closed with same hotkey used to open it
-            if (Input.GetKeyUp(toggleClosedBinding))
-                CloseWindow();
-
             // Update HUD
             if (hud != null)
             {
@@ -190,6 +186,18 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 else if (TickRest())
                     EndRest();
             }
+        }
+
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            // Toggle window closed with same hotkey used to open it
+            if (Input.GetKeyUp(exitKey) || Input.GetKeyUp(toggleClosedBinding))
+            {
+                CloseWindow();
+                return true;
+            }
+
+            return false;
         }
 
         public override void Draw()

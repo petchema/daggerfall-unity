@@ -196,13 +196,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             UpdateSelection();
         }
 
-        public override void Update()
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
         {
-            base.Update();
-
             // Toggle window closed with same hotkey used to open it
-            if (Input.GetKeyUp(toggleClosedBinding))
+            if (Input.GetKeyUp(exitKey) || Input.GetKeyUp(toggleClosedBinding))
+            {
                 CloseWindow();
+                return true;
+            }
+
+            return false;
         }
 
         void RefreshSpellsList(bool preservePosition)

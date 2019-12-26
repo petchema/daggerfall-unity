@@ -338,10 +338,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             base.Update();
 
-            // Toggle window closed with same hotkey used to open it
-            if (Input.GetKeyUp(toggleClosedBinding))
-                CloseWindow();
-
             // Close window immediately if inventory suppressed
             if (suppressInventory)
             {
@@ -350,6 +346,21 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     DaggerfallUI.MessageBox(suppressInventoryMessage);
                 return;
             }
+        }
+
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            if (base.CustomKeysProcessing(keyModifiers))
+                return true;
+
+            // Toggle window closed with same hotkey used to open it
+            if (Input.GetKeyUp(toggleClosedBinding))
+            {
+                CloseWindow();
+                return true;
+            }
+
+            return false;
         }
 
         protected void SetupItemListScrollers()

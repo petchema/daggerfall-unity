@@ -23,6 +23,8 @@ namespace DaggerfallWorkshop.Game.UserInterface
         BaseScreenComponent FocusControl { get; }
         void SetFocus(BaseScreenComponent control);
         void Update();
+        // Return whether a hotkey sequence was processed
+        bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers);
         void Draw();
         void ProcessMessages();
         void OnPush();
@@ -80,6 +82,11 @@ namespace DaggerfallWorkshop.Game.UserInterface
             {
                 parentPanel.Update();
             }
+        }
+
+        public virtual bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            return false;
         }
 
         public virtual void Draw()

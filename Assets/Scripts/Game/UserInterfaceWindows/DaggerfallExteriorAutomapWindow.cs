@@ -568,145 +568,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             base.Update();
             ResizeGUIelementsOnDemand();
 
-            HotkeySequence.KeyModifiers keyModifiers = HotkeySequence.GetKeyboardKeyModifiers();
-
-            if (Input.GetKeyUp(KeyCode.Escape) ||
-                // Toggle window closed with same hotkey used to open it
-                HotkeySequence_toggleClose.IsUpWith(keyModifiers))
-            {
-                CloseWindow();
-                return;
-            }
-
-            // check hotkeys and assign actions
-            if (HotkeySequence_FocusPlayerPosition.IsDownWith(keyModifiers))
-            {
-                ActionFocusPlayerPosition();
-            }
-            if (HotkeySequence_ResetView.IsDownWith(keyModifiers))
-            {
-                ActionResetView();
-            }
-
-            if (HotkeySequence_SwitchToNextExteriorAutomapViewMode.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToNextExteriorAutomapViewMode();
-            }
-            if (HotkeySequence_SwitchToExteriorAutomapViewModeOriginal.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToExteriorAutomapViewModeOriginal();
-            }
-            if (HotkeySequence_SwitchToExteriorAutomapViewModeExtra.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToExteriorAutomapViewModeExtra();
-            }
-            if (HotkeySequence_SwitchToExteriorAutomapViewModeAll.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToExteriorAutomapViewModeAll();
-            }
-
-            if (HotkeySequence_SwitchToExteriorAutomapBackgroundOriginal.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToExteriorAutomapBackgroundOriginal();
-            }
-            if (HotkeySequence_SwitchToExteriorAutomapBackgroundAlternative1.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToExteriorAutomapBackgroundAlternative1();
-            }
-            if (HotkeySequence_SwitchToExteriorAutomapBackgroundAlternative2.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToExteriorAutomapBackgroundAlternative2();
-            }
-            if (HotkeySequence_SwitchToExteriorAutomapBackgroundAlternative3.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToExteriorAutomapBackgroundAlternative3();
-            }
-
-            if (HotkeySequence_MoveForward.IsPressedWith(keyModifiers))
-            {
-                ActionMoveForward();
-            }
-            if (HotkeySequence_MoveBackward.IsPressedWith(keyModifiers))
-            {
-                ActionMoveBackward();
-            }
-            if (HotkeySequence_MoveLeft.IsPressedWith(keyModifiers))
-            {
-                ActionMoveLeft();
-            }
-            if (HotkeySequence_MoveRight.IsPressedWith(keyModifiers))
-            {
-                ActionMoveRight();
-            }
-
-            if (HotkeySequence_MoveToNorthLocationBorder.IsPressedWith(keyModifiers))
-            {
-                ActionMoveToNorthLocationBorder();
-            }
-            if (HotkeySequence_MoveToSouthLocationBorder.IsPressedWith(keyModifiers))
-            {
-                ActionMoveToSouthLocationBorder();
-            }
-            if (HotkeySequence_MoveToWestLocationBorder.IsPressedWith(keyModifiers))
-            {
-                ActionMoveToWestLocationBorder();
-            }
-            if (HotkeySequence_MoveToEastLocationBorder.IsPressedWith(keyModifiers))
-            {
-                ActionMoveToEastLocationBorder();
-            }        
-
-            if (HotkeySequence_RotateLeft.IsPressedWith(keyModifiers))
-            {
-                ActionRotateLeft();
-            }
-            if (HotkeySequence_RotateRight.IsPressedWith(keyModifiers))
-            {
-                ActionRotateRight();
-            }
-            if (HotkeySequence_RotateAroundPlayerPosLeft.IsPressedWith(keyModifiers))
-            {
-                ActionRotateAroundPlayerPosLeft();
-            }
-            if (HotkeySequence_RotateAroundPlayerPosRight.IsPressedWith(keyModifiers))
-            {
-                ActionRotateAroundPlayerPosRight();
-            }
-
-            if (HotkeySequence_Upstairs.IsPressedWith(keyModifiers))
-            {
-                ActionMoveUpstairs();
-            }
-            if (HotkeySequence_Downstairs.IsPressedWith(keyModifiers))
-            {
-                ActionMoveDownstairs();
-            }
-            if (HotkeySequence_ZoomIn.IsPressedWith(keyModifiers))
-            {             
-                ActionZoom(-zoomSpeed * Time.unscaledDeltaTime);
-            }
-            if (HotkeySequence_ZoomOut.IsPressedWith(keyModifiers))
-            {                
-                ActionZoom(zoomSpeed * Time.unscaledDeltaTime);
-            }
-
-            if (HotkeySequence_MaxZoom1.IsPressedWith(keyModifiers))
-            {
-                ActionApplyMaxZoom();
-            }
-            if (HotkeySequence_MinZoom1.IsPressedWith(keyModifiers))
-            {
-                ActionApplyMinZoom();
-            }
-            if (HotkeySequence_MinZoom2.IsPressedWith(keyModifiers))
-            {
-                ActionApplyMinZoom();
-            }
-            if (HotkeySequence_MaxZoom2.IsPressedWith(keyModifiers))
-            {
-                ActionApplyMaxZoom();
-            }            
-
             // check mouse input and assign actions
             if (leftMouseDownOnPanelAutomap)
             {
@@ -816,6 +677,178 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 ActionApplyMinZoom();
             }
+        }
+
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            if (Input.GetKeyUp(exitKey) ||
+                // Toggle window closed with same hotkey used to open it
+                HotkeySequence_toggleClose.IsUpWith(keyModifiers))
+            {
+                CloseWindow();
+                return true;
+            }
+
+            // check hotkeys and assign actions
+            if (HotkeySequence_FocusPlayerPosition.IsDownWith(keyModifiers))
+            {
+                ActionFocusPlayerPosition();
+                return true;
+            }
+            if (HotkeySequence_ResetView.IsDownWith(keyModifiers))
+            {
+                ActionResetView();
+                return true;
+            }
+
+            if (HotkeySequence_SwitchToNextExteriorAutomapViewMode.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToNextExteriorAutomapViewMode();
+                return true;
+            }
+            if (HotkeySequence_SwitchToExteriorAutomapViewModeOriginal.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToExteriorAutomapViewModeOriginal();
+                return true;
+            }
+            if (HotkeySequence_SwitchToExteriorAutomapViewModeExtra.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToExteriorAutomapViewModeExtra();
+                return true;
+            }
+            if (HotkeySequence_SwitchToExteriorAutomapViewModeAll.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToExteriorAutomapViewModeAll();
+                return true;
+            }
+
+            if (HotkeySequence_SwitchToExteriorAutomapBackgroundOriginal.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToExteriorAutomapBackgroundOriginal();
+                return true;
+            }
+            if (HotkeySequence_SwitchToExteriorAutomapBackgroundAlternative1.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToExteriorAutomapBackgroundAlternative1();
+                return true;
+            }
+            if (HotkeySequence_SwitchToExteriorAutomapBackgroundAlternative2.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToExteriorAutomapBackgroundAlternative2();
+                return true;
+            }
+            if (HotkeySequence_SwitchToExteriorAutomapBackgroundAlternative3.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToExteriorAutomapBackgroundAlternative3();
+                return true;
+            }
+
+            if (HotkeySequence_MoveForward.IsPressedWith(keyModifiers))
+            {
+                ActionMoveForward();
+                return true;
+            }
+            if (HotkeySequence_MoveBackward.IsPressedWith(keyModifiers))
+            {
+                ActionMoveBackward();
+                return true;
+            }
+            if (HotkeySequence_MoveLeft.IsPressedWith(keyModifiers))
+            {
+                ActionMoveLeft();
+                return true;
+            }
+            if (HotkeySequence_MoveRight.IsPressedWith(keyModifiers))
+            {
+                ActionMoveRight();
+                return true;
+            }
+
+            if (HotkeySequence_MoveToNorthLocationBorder.IsPressedWith(keyModifiers))
+            {
+                ActionMoveToNorthLocationBorder();
+                return true;
+            }
+            if (HotkeySequence_MoveToSouthLocationBorder.IsPressedWith(keyModifiers))
+            {
+                ActionMoveToSouthLocationBorder();
+                return true;
+            }
+            if (HotkeySequence_MoveToWestLocationBorder.IsPressedWith(keyModifiers))
+            {
+                ActionMoveToWestLocationBorder();
+                return true;
+            }
+            if (HotkeySequence_MoveToEastLocationBorder.IsPressedWith(keyModifiers))
+            {
+                ActionMoveToEastLocationBorder();
+                return true;
+            }
+
+            if (HotkeySequence_RotateLeft.IsPressedWith(keyModifiers))
+            {
+                ActionRotateLeft();
+                return true;
+            }
+            if (HotkeySequence_RotateRight.IsPressedWith(keyModifiers))
+            {
+                ActionRotateRight();
+                return true;
+            }
+            if (HotkeySequence_RotateAroundPlayerPosLeft.IsPressedWith(keyModifiers))
+            {
+                ActionRotateAroundPlayerPosLeft();
+                return true;
+            }
+            if (HotkeySequence_RotateAroundPlayerPosRight.IsPressedWith(keyModifiers))
+            {
+                ActionRotateAroundPlayerPosRight();
+                return true;
+            }
+
+            if (HotkeySequence_Upstairs.IsPressedWith(keyModifiers))
+            {
+                ActionMoveUpstairs();
+                return true;
+            }
+            if (HotkeySequence_Downstairs.IsPressedWith(keyModifiers))
+            {
+                ActionMoveDownstairs();
+                return true;
+            }
+            if (HotkeySequence_ZoomIn.IsPressedWith(keyModifiers))
+            {
+                ActionZoom(-zoomSpeed * Time.unscaledDeltaTime);
+                return true;
+            }
+            if (HotkeySequence_ZoomOut.IsPressedWith(keyModifiers))
+            {
+                ActionZoom(zoomSpeed * Time.unscaledDeltaTime);
+                return true;
+            }
+
+            if (HotkeySequence_MaxZoom1.IsPressedWith(keyModifiers))
+            {
+                ActionApplyMaxZoom();
+                return true;
+            }
+            if (HotkeySequence_MinZoom1.IsPressedWith(keyModifiers))
+            {
+                ActionApplyMinZoom();
+                return true;
+            }
+            if (HotkeySequence_MinZoom2.IsPressedWith(keyModifiers))
+            {
+                ActionApplyMinZoom();
+                return true;
+            }
+            if (HotkeySequence_MaxZoom2.IsPressedWith(keyModifiers))
+            {
+                ActionApplyMaxZoom();
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

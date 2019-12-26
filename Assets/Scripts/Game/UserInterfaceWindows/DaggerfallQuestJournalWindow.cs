@@ -201,10 +201,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             base.Update();
 
-            // Toggle window closed with same hotkey used to open it
-            if (Input.GetKeyUp(toggleClosedBinding1) || Input.GetKeyUp(toggleClosedBinding2))
-                CloseWindow();
-
             if (lastMessageIndex != currentMessageIndex)
             {
                 lastMessageIndex = currentMessageIndex;
@@ -226,6 +222,18 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                         break;
                 }
             }
+        }
+
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            // Toggle window closed with same hotkey used to open it
+            if (Input.GetKeyUp(exitKey) || Input.GetKeyUp(toggleClosedBinding1) || Input.GetKeyUp(toggleClosedBinding2))
+            {
+                CloseWindow();
+                return true;
+            }
+
+            return false;
         }
 
         #endregion

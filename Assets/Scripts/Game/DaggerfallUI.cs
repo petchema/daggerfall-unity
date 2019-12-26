@@ -382,9 +382,9 @@ namespace DaggerfallWorkshop.Game
 
                 if (lastCharacterTyped > 255)
                     lastCharacterTyped = (char)0;
-
-                ProcessHotKeySequences();
             }
+
+            ProcessHotkeySequences();
 
             if (Event.current.type == EventType.Repaint)
             {
@@ -609,13 +609,16 @@ namespace DaggerfallWorkshop.Game
             }
         }
 
-        public bool ProcessHotKeySequences()
+        public bool ProcessHotkeySequences()
         {
-            if (uiManager.TopWindow != null && uiManager.TopWindow.ParentPanel != null)
-            {
+            if (uiManager.TopWindow == null)
+                return false;
+            else if (uiManager.TopWindow.CustomKeysProcessing(lastKeyModifiers))
+                return true;
+            else if (uiManager.TopWindow.ParentPanel != null && (Event.current.type == EventType.KeyDown || Event.current.type == EventType.KeyUp))
                 return uiManager.TopWindow.ParentPanel.ProcessHotkeySequences(lastKeyModifiers);
-            }
-            return false;
+            else
+                return false;
         }
 
         #region Helpers

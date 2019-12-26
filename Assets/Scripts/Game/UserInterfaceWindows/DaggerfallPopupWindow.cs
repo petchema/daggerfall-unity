@@ -62,13 +62,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
         }
 
-        public override void Update()
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
         {
-            base.Update();
-
             cancelled = false;
-            if (allowCancel && Input.GetKeyDown(exitKey))
+            if (allowCancel && Input.GetKeyUp(exitKey))
+            {
                 CancelWindow();
+                return true;
+            }
+
+            return false;
         }
 
         public override void Draw()

@@ -700,16 +700,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             base.Update();
             ResizeGUIelementsOnDemand();
 
-            HotkeySequence.KeyModifiers keyModifiers = HotkeySequence.GetKeyboardKeyModifiers();
-
-            if (Input.GetKeyUp(KeyCode.Escape) ||
-                // Toggle window closed with same hotkey used to open it
-                HotkeySequence_toggleClose.IsUpWith(keyModifiers))
-            {
-                CloseWindow();
-                return;
-            }
-
             // debug teleport mode action
             if (
                 (automap.DebugTeleportMode == true) &&
@@ -723,148 +713,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 mousePosition.y = panelRenderAutomap.Size.y - mousePosition.y;
                 automap.TryTeleportPlayerToDungeonSegmentAtScreenPosition(mousePosition);
                 UpdateAutomapView();
-            }
-
-            // check hotkeys and assign actions
-            if (HotkeySequence_SwitchAutomapGridMode.IsDownWith(keyModifiers))
-            {
-                ActionChangeAutomapGridMode();
-            }
-            if (HotkeySequence_ResetView.IsDownWith(keyModifiers))
-            {
-                ActionResetView();
-            }
-            if (HotkeySequence_ResetRotationPivotAxisView.IsDownWith(keyModifiers))
-            {
-                ActionResetRotationPivotAxis();
-            }
-            if (HotkeySequence_SwitchFocusToNextBeaconObject.IsDownWith(keyModifiers))
-            {
-                ActionSwitchFocusToNextBeaconObject();
-            }
-            if (HotkeySequence_SwitchToNextAutomapRenderMode.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToNextAutomapRenderMode();
-            }
-
-            if (HotkeySequence_SwitchToAutomapRenderModeTransparent.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToAutomapRenderModeTransparent();
-            }
-            if (HotkeySequence_SwitchToAutomapRenderModeWireframe.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToAutomapRenderModeWireframe();
-            }
-            if (HotkeySequence_SwitchToAutomapRenderModeCutout.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToAutomapRenderModeCutout();
-            }
-
-            if (HotkeySequence_SwitchToAutomapBackgroundOriginal.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToAutomapBackgroundOriginal();
-            }
-            if (HotkeySequence_SwitchToAutomapBackgroundAlternative1.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToAutomapBackgroundAlternative1();
-            }
-            if (HotkeySequence_SwitchToAutomapBackgroundAlternative2.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToAutomapBackgroundAlternative2();
-            }
-            if (HotkeySequence_SwitchToAutomapBackgroundAlternative3.IsDownWith(keyModifiers))
-            {
-                ActionSwitchToAutomapBackgroundAlternative3();
-            }
-
-
-            if (HotkeySequence_MoveForward.IsPressedWith(keyModifiers))
-            {
-                ActionMoveForward();
-            }
-            if (HotkeySequence_MoveBackward.IsPressedWith(keyModifiers))
-            {
-                ActionMoveBackward();
-            }
-            if (HotkeySequence_MoveLeft.IsPressedWith(keyModifiers))
-            {
-                ActionMoveLeft();
-            }
-            if (HotkeySequence_MoveRight.IsPressedWith(keyModifiers))
-            {
-                ActionMoveRight();
-            }
-            if (HotkeySequence_MoveRotationPivotAxisForward.IsPressedWith(keyModifiers))
-            {
-                ActionMoveRotationPivotAxisForward();
-            }
-            if (HotkeySequence_MoveRotationPivotAxisBackward.IsPressedWith(keyModifiers))
-            {
-                ActionMoveRotationPivotAxisBackward();
-            }
-            if (HotkeySequence_MoveRotationPivotAxisLeft.IsPressedWith(keyModifiers))
-            {
-                ActionMoveRotationPivotAxisLeft();
-            }
-            if (HotkeySequence_MoveRotationPivotAxisRight.IsPressedWith(keyModifiers))
-            {
-                ActionMoveRotationPivotAxisRight();
-            }
-            if (HotkeySequence_RotateLeft.IsPressedWith(keyModifiers))
-            {
-                ActionRotateLeft();
-            }
-            if (HotkeySequence_RotateRight.IsPressedWith(keyModifiers))
-            {
-                ActionRotateRight();
-            }
-            if (HotkeySequence_RotateCameraLeft.IsPressedWith(keyModifiers))
-            {
-                ActionRotateCamera(rotateCameraSpeed);
-            }
-            if (HotkeySequence_RotateCameraRight.IsPressedWith(keyModifiers))
-            {
-                ActionRotateCamera(-rotateCameraSpeed);
-            }
-            if (HotkeySequence_RotateCameraOnCameraYZplaneAroundObjectUp.IsPressedWith(keyModifiers))
-            {
-                ActionrotateCameraOnCameraYZplaneAroundObject(rotateCameraOnCameraYZplaneAroundObjectSpeedInView3D);
-            }
-            if (HotkeySequence_RotateCameraOnCameraYZplaneAroundObjectDown.IsPressedWith(keyModifiers))
-            {
-                ActionrotateCameraOnCameraYZplaneAroundObject(-rotateCameraOnCameraYZplaneAroundObjectSpeedInView3D);
-            }
-            if (HotkeySequence_Upstairs.IsPressedWith(keyModifiers))
-            {
-                ActionMoveUpstairs();
-            }
-            if (HotkeySequence_Downstairs.IsPressedWith(keyModifiers))
-            {
-                ActionMoveDownstairs();
-            }
-            if (HotkeySequence_IncreaseSliceLevel.IsPressedWith(keyModifiers))
-            {
-                ActionIncreaseSliceLevel();
-            }
-            if (HotkeySequence_DecreaseSliceLevel.IsPressedWith(keyModifiers))
-            {
-                ActionDecreaseSliceLevel();
-            }
-            if (HotkeySequence_ZoomIn.IsPressedWith(keyModifiers))
-            {
-                ActionZoomIn(zoomSpeed * Time.unscaledDeltaTime);
-            }
-            if (HotkeySequence_ZoomOut.IsPressedWith(keyModifiers))
-            {
-                ActionZoomOut(zoomSpeed * Time.unscaledDeltaTime);
-            }
-            if (HotkeySequence_IncreaseCameraFieldOfFiew.IsPressedWith(keyModifiers))
-            {
-                ActionIncreaseCameraFieldOfView();
-            }
-            if (HotkeySequence_DecreaseCameraFieldOfFiew.IsPressedWith(keyModifiers))
-            {
-                ActionDecreaseCameraFieldOfView();
             }
 
             // check mouse input and assign actions
@@ -1008,6 +856,197 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             UpdateMouseHoverOverText();
             UpdateMouseHoverOverGameObjects();
+        }
+
+        public override bool CustomKeysProcessing(HotkeySequence.KeyModifiers keyModifiers)
+        {
+            if (base.CustomKeysProcessing(keyModifiers))
+                return true;
+
+            // Toggle window closed with same hotkey used to open it
+            if (HotkeySequence_toggleClose.IsUpWith(keyModifiers))
+            {
+                CloseWindow();
+                return true;
+            }
+
+            // check hotkeys and assign actions
+            if (HotkeySequence_SwitchAutomapGridMode.IsDownWith(keyModifiers))
+            {
+                ActionChangeAutomapGridMode();
+                return true;
+            }
+            if (HotkeySequence_ResetView.IsDownWith(keyModifiers))
+            {
+                ActionResetView();
+                return true;
+            }
+            if (HotkeySequence_ResetRotationPivotAxisView.IsDownWith(keyModifiers))
+            {
+                ActionResetRotationPivotAxis();
+                return true;
+            }
+            if (HotkeySequence_SwitchFocusToNextBeaconObject.IsDownWith(keyModifiers))
+            {
+                ActionSwitchFocusToNextBeaconObject();
+                return true;
+            }
+            if (HotkeySequence_SwitchToNextAutomapRenderMode.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToNextAutomapRenderMode();
+                return true;
+            }
+
+            if (HotkeySequence_SwitchToAutomapRenderModeTransparent.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToAutomapRenderModeTransparent();
+                return true;
+            }
+            if (HotkeySequence_SwitchToAutomapRenderModeWireframe.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToAutomapRenderModeWireframe();
+                return true;
+            }
+            if (HotkeySequence_SwitchToAutomapRenderModeCutout.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToAutomapRenderModeCutout();
+                return true;
+            }
+
+            if (HotkeySequence_SwitchToAutomapBackgroundOriginal.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToAutomapBackgroundOriginal();
+                return true;
+            }
+            if (HotkeySequence_SwitchToAutomapBackgroundAlternative1.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToAutomapBackgroundAlternative1();
+                return true;
+            }
+            if (HotkeySequence_SwitchToAutomapBackgroundAlternative2.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToAutomapBackgroundAlternative2();
+                return true;
+            }
+            if (HotkeySequence_SwitchToAutomapBackgroundAlternative3.IsDownWith(keyModifiers))
+            {
+                ActionSwitchToAutomapBackgroundAlternative3();
+                return true;
+            }
+
+
+            if (HotkeySequence_MoveForward.IsPressedWith(keyModifiers))
+            {
+                ActionMoveForward();
+                return true;
+            }
+            if (HotkeySequence_MoveBackward.IsPressedWith(keyModifiers))
+            {
+                ActionMoveBackward();
+                return true;
+            }
+            if (HotkeySequence_MoveLeft.IsPressedWith(keyModifiers))
+            {
+                ActionMoveLeft();
+                return true;
+            }
+            if (HotkeySequence_MoveRight.IsPressedWith(keyModifiers))
+            {
+                ActionMoveRight();
+                return true;
+            }
+            if (HotkeySequence_MoveRotationPivotAxisForward.IsPressedWith(keyModifiers))
+            {
+                ActionMoveRotationPivotAxisForward();
+                return true;
+            }
+            if (HotkeySequence_MoveRotationPivotAxisBackward.IsPressedWith(keyModifiers))
+            {
+                ActionMoveRotationPivotAxisBackward();
+                return true;
+            }
+            if (HotkeySequence_MoveRotationPivotAxisLeft.IsPressedWith(keyModifiers))
+            {
+                ActionMoveRotationPivotAxisLeft();
+                return true;
+            }
+            if (HotkeySequence_MoveRotationPivotAxisRight.IsPressedWith(keyModifiers))
+            {
+                ActionMoveRotationPivotAxisRight();
+                return true;
+            }
+            if (HotkeySequence_RotateLeft.IsPressedWith(keyModifiers))
+            {
+                ActionRotateLeft();
+                return true;
+            }
+            if (HotkeySequence_RotateRight.IsPressedWith(keyModifiers))
+            {
+                ActionRotateRight();
+                return true;
+            }
+            if (HotkeySequence_RotateCameraLeft.IsPressedWith(keyModifiers))
+            {
+                ActionRotateCamera(rotateCameraSpeed);
+                return true;
+            }
+            if (HotkeySequence_RotateCameraRight.IsPressedWith(keyModifiers))
+            {
+                ActionRotateCamera(-rotateCameraSpeed);
+                return true;
+            }
+            if (HotkeySequence_RotateCameraOnCameraYZplaneAroundObjectUp.IsPressedWith(keyModifiers))
+            {
+                ActionrotateCameraOnCameraYZplaneAroundObject(rotateCameraOnCameraYZplaneAroundObjectSpeedInView3D);
+                return true;
+            }
+            if (HotkeySequence_RotateCameraOnCameraYZplaneAroundObjectDown.IsPressedWith(keyModifiers))
+            {
+                ActionrotateCameraOnCameraYZplaneAroundObject(-rotateCameraOnCameraYZplaneAroundObjectSpeedInView3D);
+                return true;
+            }
+            if (HotkeySequence_Upstairs.IsPressedWith(keyModifiers))
+            {
+                ActionMoveUpstairs();
+                return true;
+            }
+            if (HotkeySequence_Downstairs.IsPressedWith(keyModifiers))
+            {
+                ActionMoveDownstairs();
+                return true;
+            }
+            if (HotkeySequence_IncreaseSliceLevel.IsPressedWith(keyModifiers))
+            {
+                ActionIncreaseSliceLevel();
+                return true;
+            }
+            if (HotkeySequence_DecreaseSliceLevel.IsPressedWith(keyModifiers))
+            {
+                ActionDecreaseSliceLevel();
+                return true;
+            }
+            if (HotkeySequence_ZoomIn.IsPressedWith(keyModifiers))
+            {
+                ActionZoomIn(zoomSpeed * Time.unscaledDeltaTime);
+                return true;
+            }
+            if (HotkeySequence_ZoomOut.IsPressedWith(keyModifiers))
+            {
+                ActionZoomOut(zoomSpeed * Time.unscaledDeltaTime);
+                return true;
+            }
+            if (HotkeySequence_IncreaseCameraFieldOfFiew.IsPressedWith(keyModifiers))
+            {
+                ActionIncreaseCameraFieldOfView();
+                return true;
+            }
+            if (HotkeySequence_DecreaseCameraFieldOfFiew.IsPressedWith(keyModifiers))
+            {
+                ActionDecreaseCameraFieldOfView();
+                return true;
+            }
+
+            return false;
         }
 
         #region Private Methods
