@@ -47,6 +47,7 @@ namespace DaggerfallWorkshop
         public bool IsNight = false;                                        // Swaps sky to night variant based on index
         public bool ShowStars = true;                                       // Draw stars onto night skies
         public Color SkyTintColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);      // Modulates output texture colour
+        float skyLighting = 1f;
         public float SkyColorScale = 1.0f;                                  // Scales sky color brighter or darker
         public AnimationCurve SkyCurve;                                     // Animation curve of sky
         public WeatherStyle WeatherStyle = WeatherStyle.Normal;             // Style of weather for texture changes
@@ -66,6 +67,7 @@ namespace DaggerfallWorkshop
         Texture2D westTexture;
         Texture2D eastTexture;
         Color cameraClearColor;
+        Color unlitFogColor; // fog color before lighting
         Rect fullTextureRect = new Rect(0, 0, 1, 1);
         int lastSkyIndex = -1;
         int lastSkyFrame = -1;
@@ -324,10 +326,10 @@ namespace DaggerfallWorkshop
             westTexture.Apply(false, true);
             eastTexture.Apply(false, true);
 
-            SetSkyFogColor(colors);
+            SetSkyColor(colors);
         }
 
-        public void SetSkyFogColor(SkyColors colors)
+        public void SetSkyColor(SkyColors colors)
         {
             // Set camera clear colour
             cameraClearColor = colors.clearColor;
@@ -340,14 +342,27 @@ namespace DaggerfallWorkshop
                 WeatherManager.FogSettings currentFogSettings = GameManager.Instance.WeatherManager.currentOutdoorFogSettings;
                 WeatherManager.FogSettings rainyFogSettings = GameManager.Instance.WeatherManager.RainyFogSettings;
                 if (currentFogSettings.fogMode == FogMode.Exponential && currentFogSettings.density > rainyFogSettings.density)
-                    RenderSettings.fogColor = Color.gray;
+                    unlitFogColor = Color.gray;
                 else
-                    RenderSettings.fogColor = cameraClearColor;
+                    unlitFogColor = cameraClearColor;
             }
             else
             {
-                RenderSettings.fogColor = cameraClearColor;
+                unlitFogColor = cameraClearColor;
             }
+            UpdateFogColor();
+        }
+
+        public void SetSkyLighting(float intensity)
+        {
+            skyLighting = intensity;
+            UpdateFogColor();
+        }
+
+        private void UpdateFogColor()
+        {
+            Debug.Log("Updating fog color");
+            RenderSettings.fogColor = unlitFogColor * skyLighting;
         }
 
         private void ApplyTimeAndSpace()

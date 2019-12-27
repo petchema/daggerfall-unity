@@ -193,6 +193,7 @@ namespace DaggerfallWorkshop.Game
                 IndirectLight.intensity = indirectLightIntensity * scale;
                 IndirectLight.shadowStrength = shadowStrength;
             }
+            GameManager.Instance.SkyRig.SetSkyLighting(scale);
         }
 
         #endregion
