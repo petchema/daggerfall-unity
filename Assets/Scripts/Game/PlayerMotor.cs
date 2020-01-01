@@ -273,12 +273,17 @@ namespace DaggerfallWorkshop.Game
 
             playerScanner.FindHeadHit(new Ray(controller.transform.position, Vector3.up));
             playerScanner.SetHitSomethingInFront();
-            // Check if should hang
-            //hangingMotor.HangingChecks();
-            // Handle Rappeling
-            rappelMotor.RappelChecks();
-            // Handle climbing
-            climbingMotor.ClimbingCheck();
+
+            // Can only engage climbing/rappel mode when on foot
+            if (GameManager.Instance.TransportManager.IsOnFoot)
+            {
+                // Check if should hang
+                //hangingMotor.HangingChecks();
+                // Handle Rappeling
+                rappelMotor.RappelChecks();
+                // Handle climbing
+                climbingMotor.ClimbingCheck();
+            }
 
             // Do nothing if player levitating/swimming or climbing - replacement motor will take over movement for levitating/swimming
             if (levitateMotor && (levitateMotor.IsLevitating || levitateMotor.IsSwimming) || climbingMotor.IsClimbing /*|| hangingMotor.IsHanging*/)
@@ -415,17 +420,19 @@ namespace DaggerfallWorkshop.Game
             if (smoothFollower != null && controller != null)
             {
                 float distanceMoved = Vector3.Distance(smoothFollowerPrevWorldPos, smoothFollower.position);        // Assuming the follower is a child of this motor transform we can get the distance travelled.
-                float maxPossibleDistanceByMotorVelocity = controller.velocity.magnitude * 2.0f * Time.deltaTime;   // Theoretically the max distance the motor can carry the player with a generous margin.
-                float speedThreshold = speedChanger.GetRunSpeed(speed) * Time.deltaTime;                                         // Without question any distance travelled less than the running speed is legal.
+                float distanceThreshold = speedChanger.GetRunSpeed(speed) * Time.deltaTime;         // Without question any distance travelled less than the running speed is legal.
+                float motorVelocity = controller.velocity.magnitude / Time.fixedDeltaTime;
+                float maxPossibleDistanceByMotorVelocity = motorVelocity * Time.deltaTime * 2.0f;   // Theoretically the max distance the motor can carry the player with a generous margin.
 
                 // NOTE: Maybe the min distance should also include the height different between crouching / standing.
-                if (distanceMoved > speedThreshold && distanceMoved > maxPossibleDistanceByMotorVelocity)
+                if (distanceMoved > distanceThreshold && distanceMoved > maxPossibleDistanceByMotorVelocity)
                 {
                     smoothFollowerReset = true;
                 }
 
                 if (smoothFollowerReset)
                 {
+                    // Debug.Log("smooth follower reset");
                     smoothFollowerPrevWorldPos = transform.position;
                     smoothFollowerReset = false;
                 }

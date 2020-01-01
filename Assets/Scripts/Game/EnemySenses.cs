@@ -494,6 +494,12 @@ namespace DaggerfallWorkshop.Game
                     }
                 }
             }
+
+            // If target is player and in sight then raise enemy alert on player
+            // This can only be lowered again by killing an enemy or escaping for some amount of time
+            // Any enemies actively targeting player will continue to raise alert state
+            if (Target == GameManager.Instance.PlayerEntityBehaviour && TargetInSight)
+                GameManager.Instance.PlayerEntity.SetEnemyAlert(true);
         }
 
         #region Public Methods
@@ -729,7 +735,7 @@ namespace DaggerfallWorkshop.Game
                         targetSenses = targetBehaviour.GetComponent<EnemySenses>();
 
                     // For now, quest AI can't be targeted
-                    if (targetSenses && targetSenses.QuestBehaviour)
+                    if (targetSenses && targetSenses.QuestBehaviour && !targetSenses.QuestBehaviour.IsAttackableByAI)
                         continue;
 
                     Vector3 toTarget = targetBehaviour.transform.position - transform.position;

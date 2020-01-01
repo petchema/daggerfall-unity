@@ -21,6 +21,7 @@ using System.Linq;
 using System.Reflection;
 using DaggerfallWorkshop.Utility;
 using FullSerializer;
+using DaggerfallWorkshop.Game.Utility.ModSupport.ModSettings;
 
 namespace DaggerfallWorkshop.Game.Utility.ModSupport
 {
@@ -50,6 +51,13 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         /// <summary>
         /// The name of the mod file on disk without extension.
         /// </summary>
+        /// <remarks>
+        /// While GUID can be used behind the scenes, a short, unique and readable name for the mod is needed
+        /// when it surface to users or other mod developers (for example for presets and dependencies).
+        /// Filename is the best candidate because it can't contain invalid path chars.
+        /// A good name should be lowercase and without spaces (i.e "example-mod").
+        /// A new "Name" property may be created to allow filename to be changed.
+        /// </remarks>
         [SerializeField]
         public string FileName { get; private set; }
 
@@ -144,6 +152,11 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         public bool HasSettings { get; private set; }
 
         /// <summary>
+        /// If not null, this callback is invoked when settings are changed or when raised with <see cref="LoadSettings()"/>.
+        /// </summary>
+        public Action<ModSettings.ModSettings, ModSettingsChange> LoadSettingsCallback { internal get; set; }
+
+        /// <summary>
         /// Cached list of all asset names (not the relative paths).
         /// </summary>
         public string[] AssetNames { get { return assetNames ?? (assetNames = GetAllAssetNames()); } }
@@ -229,7 +242,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
             types = modInfo.Files.Where(x => x.EndsWith(".cs"))
                 .Select(x => AssetDatabase.LoadAssetAtPath<MonoScript>(x))
                 .Where(x => x != null).Select(x => x.GetClass()).Where(x => x != null).ToArray();
-            FileName = Path.GetFileName(manifestPath.Remove(manifestPath.IndexOf(ModManager.MODINFOEXTENSION)));
+            FileName = Path.GetFileName(manifestPath.Remove(manifestPath.IndexOf(ModManager.MODINFOEXTENSION))).ToLower();
             DirPath = ModManager.Instance.ModDirectory;
             HasSettings = ModSettings.ModSettingsData.HasSettings(this);
         }
@@ -472,10 +485,23 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
 
         /// <summary>
         /// Imports settings for this mod and provides a sanitized read-only access.
+        /// Use <see cref="LoadSettings()"/> if you want to support live changes.
         /// </summary>
         public ModSettings.ModSettings GetSettings()
         {
             return new ModSettings.ModSettings(this);
+        }
+
+        /// <summary>
+        /// Loads mod settings using <see cref="LoadSettingsCallback"/> with an event where all settings are considered changed.
+        /// Use <see cref="GetSettings"/> if you don't want to support live changes.
+        /// </summary>
+        public void LoadSettings()
+        {
+            if (LoadSettingsCallback == null)
+                throw new InvalidOperationException("LoadSettingsCallback is not set.");
+
+            LoadSettingsCallback(GetSettings(), new ModSettingsChange());
         }
 
         /// <summary>
@@ -501,6 +527,15 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         #endregion
 
         #region Internal Methods
+
+        /// <summary>
+        /// Checks if this mod is expected to run on current version of Daggerfall Unity.
+        /// </summary>
+        /// <returns>True if game version is satisfied, false if is not, null if unknown.</returns>
+        internal bool? IsGameVersionSatisfied()
+        {
+            return ModManager.IsVersionLowerOrEqual(ModInfo.DFUnity_Version, VersionInfo.DaggerfallUnityVersion);
+        }
 
         /// <summary>
         /// Gets a localized string from the text table associated with this mod.
@@ -726,9 +761,16 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
                 if (modInfoAsset == null)
                     return false;
 
-                string modInfo = modInfoAsset.ToString();
-                this.ModInfo = (ModInfo)JsonUtility.FromJson(modInfo, typeof(ModInfo));
-                return ModInfo != null;
+
+                ModInfo modInfo = null;
+                if (ModManager._serializer.TryDeserialize(fsJsonParser.Parse(modInfoAsset.text), ref modInfo).Succeeded)
+                {
+                    this.ModInfo = modInfo;
+                    return true;
+                }
+
+                Debug.LogErrorFormat("Failed to deserialize manifest file for mod {0}", Title);
+                return false;
             }
             catch (Exception ex)
             {
@@ -824,7 +866,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         }
 
         /// <summary>
-        /// Returns a list of any valid mod setup functions
+        /// Returns a list of any valid mod setup functions.
         /// </summary>
         /// <param name="state"></param>
         /// <returns></returns>

@@ -64,7 +64,7 @@ namespace DaggerfallWorkshop.Game
         DFLocation.DungeonBlock playerDungeonBlockData = new DFLocation.DungeonBlock();
         public short blockWaterLevel = 10000;
 
-        DFLocation.BuildingTypes buildingType;
+        DFLocation.BuildingTypes buildingType = DFLocation.BuildingTypes.None;
         ushort factionID = 0;
         PlayerGPS.DiscoveredBuilding buildingDiscoveryData;
 
@@ -281,7 +281,7 @@ namespace DaggerfallWorkshop.Game
         }
 
         void Update()
-        {
+        {            
             // Track which dungeon block player is inside of
             if (dungeon && isPlayerInsideDungeon)
             {
@@ -324,6 +324,14 @@ namespace DaggerfallWorkshop.Game
                 holidayTextPrimed = false;
                 ShowHolidayText();
             }
+
+            // Player in sunlight or darkness
+            isPlayerInSunlight = DaggerfallUnity.Instance.WorldTime.Now.IsDay && !IsPlayerInside && !GameManager.Instance.PlayerEntity.InPrison;
+
+            // Do not process underwater logic if not playing game
+            // This prevents player catching breath during load
+            if (!GameManager.Instance.IsPlayingGame())
+                return;
 
             // Underwater swimming logic should only be processed in dungeons at this time
             if (isPlayerInsideDungeon)
@@ -370,9 +378,6 @@ namespace DaggerfallWorkshop.Game
                 isPlayerSubmerged = false;
                 levitateMotor.IsSwimming = false;
             }
-
-            // Player in sunlight or darkness
-            isPlayerInSunlight = DaggerfallUnity.Instance.WorldTime.Now.IsDay && !IsPlayerInside && !GameManager.Instance.PlayerEntity.InPrison;
         }
 
         #region Public Methods
@@ -497,7 +502,7 @@ namespace DaggerfallWorkshop.Game
                 world.TeleportToCoordinates(pos.X, pos.Y, StreamingWorld.RepositionMethods.None);
                 dfUnity.ContentReader.GetLocation(summary.RegionIndex, summary.MapIndex, out location);
                 StartBuildingInterior(location, exteriorDoors[0], start);
-                world.suppressWorld = true;
+                world.suppressWorld = false;
             }
             else
             {
@@ -673,6 +678,7 @@ namespace DaggerfallWorkshop.Game
                 DaggerfallUI.AddHUDText(HardStrings.thisHouseHasNothingOfValue);
                 Debug.LogException(e);
                 Destroy(newInterior);
+                RaiseOnFailedTransition(TransitionType.ToBuildingInterior);
                 return;
             }
 
@@ -706,6 +712,7 @@ namespace DaggerfallWorkshop.Game
                 {
                     // Could not find an door or enter marker, probably not a valid interior
                     Destroy(newInterior);
+                    RaiseOnFailedTransition(TransitionType.ToBuildingInterior);
                     return;
                 }
             }
@@ -816,6 +823,8 @@ namespace DaggerfallWorkshop.Game
 
             // Player is now outside building
             isPlayerInside = false;
+            buildingType = DFLocation.BuildingTypes.None;
+            factionID = 0;
 
             // Update serializable state from scene cache for interior->exterior transition
             SaveLoadManager.RestoreCachedScene(world.SceneName);
@@ -864,6 +873,7 @@ namespace DaggerfallWorkshop.Game
             {
                 // Could not find a start marker
                 Destroy(newDungeon);
+                RaiseOnFailedTransition(TransitionType.ToDungeonInterior);
                 return;
             }
 
@@ -930,6 +940,7 @@ namespace DaggerfallWorkshop.Game
                 // Could not find marker
                 DaggerfallUnity.LogMessage("No start or enter marker found for this dungeon. Aborting load.");
                 Destroy(newDungeon);
+                RaiseOnFailedTransition(TransitionType.ToDungeonInterior);
                 return;
             }
 
@@ -1030,8 +1041,14 @@ namespace DaggerfallWorkshop.Game
         {
             if (cleanup)
             {
-                if (interior) Destroy(interior.gameObject);
+                if (interior)
+                {
+                    Destroy(interior.gameObject);
+                    buildingType = DFLocation.BuildingTypes.None;
+                    factionID = 0;
+                }
             }
+
             DisableAllParents(false);
             if (DungeonParent != null) DungeonParent.SetActive(true);
 
@@ -1120,6 +1137,14 @@ namespace DaggerfallWorkshop.Game
             RaiseOnTransitionDungeonExteriorEvent();
         }
 
+        public void TransitionDungeonExteriorImmediate()
+        {
+            if (!ReferenceComponents() || !dungeon || !isPlayerInsideDungeon)
+                return;
+
+            RaiseOnPreTransitionEvent(PlayerEnterExit.TransitionType.ToDungeonExterior);
+        }
+
         #endregion
 
         #region Private Methods
@@ -1148,7 +1173,7 @@ namespace DaggerfallWorkshop.Game
             // Snap player to ground
             RaycastHit hit;
             Ray ray = new Ray(transform.position, Vector3.down);
-            if (Physics.Raycast(ray, out hit, controller.height * 2f))
+            if (Physics.Raycast(ray, out hit, PlayerHeightChanger.controllerStandingHeight * 2f))
             {
                 // Clear falling damage so player doesn't take damage if they transitioned into a dungeon while jumping
                 GameManager.Instance.AcrobatMotor.ClearFallingDamage();
@@ -1342,6 +1367,10 @@ namespace DaggerfallWorkshop.Game
 
         // OnPreTransition - Called PRIOR to any transition, other events called AFTER transition.
         public delegate void OnPreTransitionEventHandler(TransitionEventArgs args);
+        /// <summary>
+        /// Unlike other events in this class, this one is raised before the transition has been performed.
+        /// It's always followed by <see cref="OnFailedTransition"/> or one of the other events for success.
+        /// </summary>
         public static event OnPreTransitionEventHandler OnPreTransition;
         protected virtual void RaiseOnPreTransitionEvent(TransitionType transitionType)
         {
@@ -1394,6 +1423,18 @@ namespace DaggerfallWorkshop.Game
             TransitionEventArgs args = new TransitionEventArgs(TransitionType.ToDungeonExterior);
             if (OnTransitionDungeonExterior != null)
                 OnTransitionDungeonExterior(args);
+        }
+
+        /// <summary>
+        /// This event is raised when a transition has started being performed and <see cref="OnPreTransition"/>
+        /// was fired but it couldn't be finished correctly due to an unexpected issue (i.e when 
+        /// <see cref="HardStrings.thisHouseHasNothingOfValue"/> is also shown).
+        /// </summary>
+        public static event Action<TransitionEventArgs> OnFailedTransition;
+        protected virtual void RaiseOnFailedTransition(TransitionType transitionType)
+        {
+            if (OnTransitionInterior != null)
+                OnTransitionInterior(new TransitionEventArgs(transitionType));
         }
 
         // OnMovePlayerToDungeonStart

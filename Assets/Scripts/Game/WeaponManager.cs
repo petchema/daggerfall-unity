@@ -21,6 +21,7 @@ using DaggerfallWorkshop.Game.Formulas;
 using DaggerfallWorkshop.Game.MagicAndEffects;
 using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
 using DaggerfallWorkshop.Game.Utility;
+using DaggerfallWorkshop.Utility;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -41,7 +42,7 @@ namespace DaggerfallWorkshop.Game
 
         public FPSWeapon ScreenWeapon;              // Weapon displayed in FPS view
         public bool Sheathed;                       // Weapon is sheathed
-        public float SphereCastRadius = 0.3f;       // Radius of SphereCast used to target attacks
+        public float SphereCastRadius = 0.25f;      // Radius of SphereCast used to target attacks
         [Range(0, 1)]
         public float AttackThreshold = 0.05f;       // Minimum mouse gesture travel distance for an attack. % of screen
         public float ChanceToBeParried = 0.1f;      // Example: Chance for player hit to be parried
@@ -204,10 +205,7 @@ namespace DaggerfallWorkshop.Game
             {
                 // If an attack with a bow just finished, set cooldown
                 if (ScreenWeapon.WeaponType == WeaponTypes.Bow && isAttacking)
-                {
-                    float cooldown = 10 * (100 - playerEntity.Stats.LiveSpeed) + 800;
-                    cooldownTime = Time.time + (cooldown / 980); // Approximates classic frame update
-                }
+                    cooldownTime = Time.time + FormulaHelper.GetBowCooldownTime(playerEntity);
 
                 isAttacking = false;
                 isDamageFinished = false;
@@ -444,6 +442,13 @@ namespace DaggerfallWorkshop.Game
                 {
                     return false;
                 }
+
+                // Make hitting walls do a thud or clinging sound (not in classic)
+                if (GameObjectHelper.IsStaticGeometry(hit.transform.gameObject))
+                {
+                    DaggerfallUI.Instance.PlayOneShot(strikingWeapon == null ? SoundClips.Hit2 : SoundClips.Parry6);
+                    return false;
+                }
             }
 
             // Set up for use below
@@ -458,7 +463,7 @@ namespace DaggerfallWorkshop.Game
             MobilePersonNPC mobileNpc = hitTransform.GetComponent<MobilePersonNPC>();
             if (mobileNpc)
             {
-                if (!mobileNpc.Billboard.IsUsingGuardTexture)
+                if (!mobileNpc.IsGuard)
                 {
                     EnemyBlood blood = hitTransform.GetComponent<EnemyBlood>();
                     if (blood)
@@ -721,6 +726,7 @@ namespace DaggerfallWorkshop.Game
             // Setup target
             target.WeaponType = DaggerfallUnity.Instance.ItemHelper.ConvertItemToAPIWeaponType(weapon);
             target.MetalType = DaggerfallUnity.Instance.ItemHelper.ConvertItemMaterialToAPIMetalType(weapon);
+            target.WeaponHands = ItemEquipTable.GetItemHands(weapon);
             target.DrawWeaponSound = weapon.GetEquipSound();
             target.SwingWeaponSound = weapon.GetSwingSound();
         }
@@ -833,7 +839,7 @@ namespace DaggerfallWorkshop.Game
             // Origin point of ray is set back slightly to fix issue where strikes against enemy capsules touching player capsule do not connect
             RaycastHit hit;
             Ray ray = new Ray(mainCamera.transform.position + -mainCamera.transform.forward * 0.1f, mainCamera.transform.forward);
-            if (Physics.SphereCast(ray, SphereCastRadius, out hit, weapon.Reach - SphereCastRadius))
+            if (Physics.SphereCast(ray, SphereCastRadius, out hit, weapon.Reach))
             {
                 hitEnemy = WeaponDamage(hit, mainCamera.transform.forward);
             }

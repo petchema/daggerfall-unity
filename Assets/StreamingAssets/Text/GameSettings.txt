@@ -77,6 +77,8 @@ enhancedItemLists,                                  Enhanced Item Lists
 enhancedItemListsInfo,                              Inventory 16x item grid
 enableModernConversationStyleInTalkWindow,          TalkWindow Modern Style
 enableModernConversationStyleInTalkWindowInfo,      Modern Conversation Style In TalkWindow
+iconsPositioningScheme,                             Buff Icons
+iconsPositioningSchemeInfo,                         Size and position of onscreen (de)buff icons
 helmAndShieldMaterialDisplay,                       Helm and Shield Material Display
 helmAndShieldMaterialDisplayInfo,                   Show material for helms and shields in info popups and tooltips
 geographicBackgrounds,                              Geographic backgrounds
@@ -145,8 +147,6 @@ interiorLightShadows,                               Interior Light Shadows
 interiorLightShadowsInfo,                           Interior lights cast shadows
 exteriorLightShadows,                               Exterior Light Shadows
 exteriorLightShadowsInfo,                           Exterior sunlight casts shadows
-useLegacyDeferred,                                  Use Legacy Deferred
-useLegacyDeferredInfo,                              Legacy rendering path
 retroRenderingMode,                                 Retro Rendering Mode
 retroRenderingModeInfo,                             3D world rendered at low resolution while UI remains at set resolution
 

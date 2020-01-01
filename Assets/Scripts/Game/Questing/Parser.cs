@@ -50,10 +50,12 @@ namespace DaggerfallWorkshop.Game.Questing
         /// Attempts to parse a text source file.
         /// </summary>
         /// <param name="source">Array of text lines from quest source.</param>
-        /// <param name="questorNPC">Questor NPC in world offering quest.</param>
-        public Quest Parse(string[] source)
+        /// <param name="factionId">Faction id of quest giver for guilds.</param>
+        /// <param name="partialParse">If true the QRC and QBN sections will not be parsed.</param>
+        public Quest Parse(string[] source, int factionId, bool partialParse = false)
         {
             Quest quest = new Quest();
+            quest.FactionId = factionId;
             string questName = string.Empty;
             string displayName = string.Empty;
             bool inQRC = false;
@@ -138,9 +140,12 @@ namespace DaggerfallWorkshop.Game.Questing
                 throw new Exception("Parse() error: Quest has no QBN section.");
             }
 
-            // Parse QRC and QBN
-            ParseQRC(quest, qrcLines);
-            ParseQBN(quest, qbnLines);
+            // Parse QRC and QBN, unless partial parse requested
+            if (!partialParse)
+            {
+                ParseQRC(quest, qrcLines);
+                ParseQBN(quest, qbnLines);
+            }
 
             // End timer
             long totalTime = stopwatch.ElapsedMilliseconds - startTime;

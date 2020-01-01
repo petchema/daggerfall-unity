@@ -201,10 +201,6 @@ namespace DaggerfallWorkshop.Game.Utility
                 // Set mouse look sensitivity
                 if (mouseLook)
                     mouseLook.sensitivityScale = DaggerfallUnity.Settings.MouseLookSensitivity;
-
-                // Set rendering path
-                if (DaggerfallUnity.Settings.UseLegacyDeferred)
-                    camera.renderingPath = RenderingPath.DeferredLighting;
             }
 
             // Set shadow resolution
@@ -215,6 +211,14 @@ namespace DaggerfallWorkshop.Game.Utility
                 QualitySettings.vSyncCount = 1;
             else
                 QualitySettings.vSyncCount = 0;
+
+            // Target frame rate settings
+            // Does nothing if VSync enabled
+            // Default is 0 but anything below 30 is ignored and treated as disabled
+            if (DaggerfallUnity.Settings.TargetFrameRate >= 30 && !DaggerfallUnity.Settings.VSync)
+            {
+                Application.targetFrameRate = DaggerfallUnity.Settings.TargetFrameRate;
+            }
 
             // Filter settings
             DaggerfallUnity.Instance.MaterialReader.MainFilterMode = (FilterMode)DaggerfallUnity.Settings.MainFilterMode;
