@@ -840,7 +840,9 @@ namespace DaggerfallWorkshop.Game
             // Fire ray along player facing using weapon range
             RaycastHit hit;
             Ray ray = new Ray(mainCamera.transform.position, mainCamera.transform.forward);
-            if (Physics.SphereCast(ray, SphereCastRadius, out hit, weapon.Reach, playerLayerMask))
+            if (Physics.SphereCast(ray, SphereCastRadius, out hit, weapon.Reach, playerLayerMask) ||
+                // Fall back to simple ray for narrow cages https://forums.dfworkshop.net/viewtopic.php?f=5&t=2195#p39524
+                Physics.Raycast(ray, out hit, weapon.Reach, playerLayerMask))
             {
                 hitEnemy = WeaponDamage(hit, mainCamera.transform.forward);
             }
