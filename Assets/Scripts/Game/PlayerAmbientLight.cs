@@ -109,7 +109,7 @@ namespace DaggerfallWorkshop.Game
             }
         }
 
-        Color CalcDaytimeAmbientLight()
+        public Color CalcDaytimeAmbientLight()
         {
             float scale = sunlightManager.DaylightScale * sunlightManager.ScaleFactor;
             Color startColor = ExteriorNightAmbientLight * DaggerfallUnity.Settings.NightAmbientLightScale;

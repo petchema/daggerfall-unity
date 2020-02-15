@@ -59,7 +59,7 @@ namespace DaggerfallWorkshop
 
         DaggerfallUnity dfUnity;
         WeatherManager weatherManager;
-        SunlightManager sunlightManager;
+        PlayerAmbientLight playerAmbientLight;
         public SkyFile skyFile;
         public ImgFile imgFile;
         Camera mainCamera;
@@ -98,7 +98,7 @@ namespace DaggerfallWorkshop
         {
             dfUnity = DaggerfallUnity.Instance;
             weatherManager = FindObjectOfType<WeatherManager>();
-            sunlightManager = FindObjectOfType<SunlightManager>();
+            playerAmbientLight = FindObjectOfType<PlayerAmbientLight>();
 
             // Try to find local player GPS if not set
             if (LocalPlayerGPS == null)
@@ -342,7 +342,7 @@ namespace DaggerfallWorkshop
                 WeatherManager.FogSettings currentFogSettings = GameManager.Instance.WeatherManager.currentOutdoorFogSettings;
                 WeatherManager.FogSettings rainyFogSettings = GameManager.Instance.WeatherManager.RainyFogSettings;
                 if (currentFogSettings.fogMode == FogMode.Exponential && currentFogSettings.density > rainyFogSettings.density)
-                    RenderSettings.fogColor = sunlightManager ? Color.gray * sunlightManager.DaylightScale : Color.gray;
+                    RenderSettings.fogColor = playerAmbientLight ? Color.gray * playerAmbientLight.CalcDaytimeAmbientLight() : Color.gray;
                 else
                     RenderSettings.fogColor = cameraClearColor;
             }
