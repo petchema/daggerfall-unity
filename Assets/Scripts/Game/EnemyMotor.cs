@@ -582,14 +582,20 @@ namespace DaggerfallWorkshop.Game
         /// </summary>
         void StrafeDecision()
         {
-            doStrafe = Random.Range(0, 4) == 0;
-            strafeTimer = Random.Range(1f, 2f);
+            if (entityBehaviour.Entity.IsMagicallyConcealed && Vector3.Distance(transform.position, destination) < stopDistance * 2)
+            {
+                // More likely to strafe while concealed
+                doStrafe = Random.Range(0, 2) == 0;
+                strafeTimer = Random.Range(1f, 3f);
+            }
+            else
+            {
+                doStrafe = Random.Range(0, 4) == 0;
+                strafeTimer = Random.Range(1f, 2f);
+            }
             if (doStrafe)
             {
-                if (Random.Range(0, 2) == 0)
-                    strafeLeft = true;
-                else
-                    strafeLeft = false;
+                strafeLeft = (Random.Range(0, 2) == 0);
 
                 Vector3 north = destination;
                 north.z++; // Adding 1 to z so this Vector3 will be north of the destination Vector3.
@@ -600,7 +606,7 @@ namespace DaggerfallWorkshop.Game
                     strafeAngle = 360 + strafeAngle;
 
                 // Convert to radians
-                strafeAngle *= Mathf.PI / 180;
+                strafeAngle *= Mathf.Deg2Rad;
             }
         }
 
@@ -798,7 +804,7 @@ namespace DaggerfallWorkshop.Game
         void AttemptMove(Vector3 direction, float moveSpeed, bool backAway = false, bool strafe = false, float strafeDist = 0)
         {
             // Set whether pursuing or retreating, for bypassing changeStateTimer delay when continuing these actions
-            if (!backAway && !strafe)
+            if (!backAway && (!strafe || entityBehaviour.Entity.IsMagicallyConcealed))
             {
                 pursuing = true;
                 retreating = false;
