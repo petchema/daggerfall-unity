@@ -1056,6 +1056,9 @@ namespace DaggerfallWorkshop.Utility
                 case "WHE":
                     action.ActionRotation = new Vector3(0, -360f, 0);      // Wheels (e.g. Direnni Tower)
                     break;
+                case "TRP":
+                    action.ActionRotation = new Vector3(-70f, 0, 0);
+                    break;
             }
 
             //Add audio
