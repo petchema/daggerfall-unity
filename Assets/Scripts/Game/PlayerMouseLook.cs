@@ -85,6 +85,11 @@ namespace DaggerfallWorkshop.Game
             set { pitchMin = Mathf.Clamp(value, PitchMin, PitchMax); Pitch = Pitch; }
         }
 
+        public bool MouseLookActive
+        {
+            get { return enableMouseLook && !cursorActive; } // && !forceHideCursor but doesn't matter
+        }
+
         void Start()
         {
             Init();

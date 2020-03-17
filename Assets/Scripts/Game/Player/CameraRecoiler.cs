@@ -131,6 +131,9 @@ namespace DaggerfallWorkshop.Game
             // Timer start should be increased for greater percentages of health lost
             // in stages of each 20% lost
             int piScalar = 5 + Mathf.FloorToInt(percentHealthLost * 5);
+            // if in cursor mode, make sure result is a multiple of 2 * Mathf.PI
+            if (!GameManager.Instance.PlayerMouseLook.MouseLookActive)
+                piScalar = ((piScalar + 1) / 2) * 2;
             //Debug.Log("timerStart is PI * " + piScalar);
             return piScalar * Mathf.PI;
         }
@@ -156,7 +159,13 @@ namespace DaggerfallWorkshop.Game
             float healthLostFactor = Mathf.Clamp((healthLost * 0.015f), 0.015f, 1f);
 
             // sway severity is a percentage of the timer remaining, and percentage of health lost factor
-            return maxRotationScalar * (timer / timerStart) * healthLostFactor;
+            float damping;
+            if (GameManager.Instance.PlayerMouseLook.MouseLookActive)
+                damping = timer / timerStart;
+            else
+                // if in cursor mode, only change damping every 2 * Mathf.PI
+                damping = Mathf.Ceil(timer / (2 * Mathf.PI)) * 2 * Mathf.PI / timerStart;
+            return maxRotationScalar * damping * healthLostFactor;
         }
 
         protected virtual Vector3 GetRotationVector(int healthLost, float rotationScalar)

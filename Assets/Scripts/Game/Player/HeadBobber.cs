@@ -92,7 +92,9 @@ namespace DaggerfallWorkshop.Game
             Vector3 newCameraRotation = new Vector3();
             getNewPos(ref newCameraPosition, ref newCameraRotation);
             mainCamera.transform.localPosition += newCameraPosition - mainCamera.transform.localPosition;
-            mainCamera.transform.Rotate(newCameraRotation);
+            // Do not rotate camera in cursor mode
+            if (GameManager.Instance.PlayerMouseLook.MouseLookActive)
+                mainCamera.transform.Rotate(newCameraRotation);
         }
 
         protected void GetBobbingStyle()
