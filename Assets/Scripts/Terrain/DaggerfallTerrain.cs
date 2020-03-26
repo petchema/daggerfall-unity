@@ -17,6 +17,7 @@ using DaggerfallWorkshop.Utility;
 using Unity.Collections;
 using Unity.Jobs;
 using System.Collections.Generic;
+using DaggerfallWorkshop.Game;
 
 namespace DaggerfallWorkshop
 {
@@ -68,7 +69,8 @@ namespace DaggerfallWorkshop
         DaggerfallUnity dfUnity;
         int heightmapDim;
         int currentWorldClimate = -1;
-        DaggerfallDateTime.Seasons season = DaggerfallDateTime.Seasons.Summer;
+        DaggerfallDateTime.Seasons currentSeason = DaggerfallDateTime.Seasons.Summer;
+        bool currentIsRaining;
         bool ready;
 
         private float heightMapPixelError = 5; // just a default value in case ini value reading fails (so value will be overwritten by ini file value)
@@ -136,8 +138,13 @@ namespace DaggerfallWorkshop
         /// </summary>
         public void UpdateClimateMaterial(bool init = false)
         {
+            bool isRaining = GameManager.Instance.WeatherManager.IsRaining;
+
             // Update atlas texture if world climate changed
-            if (currentWorldClimate != MapData.worldClimate || dfUnity.WorldTime.Now.SeasonValue != season || init)
+            if (currentWorldClimate != MapData.worldClimate || 
+                currentSeason != dfUnity.WorldTime.Now.SeasonValue || 
+                currentIsRaining != isRaining ||
+                init)
             {
                 // Get current climate and ground archive
                 DFLocation.ClimateSettings climate = MapsFile.GetWorldClimateSettings(MapData.worldClimate);
@@ -147,12 +154,15 @@ namespace DaggerfallWorkshop
                 {
                     // Offset to snow textures
                     groundArchive++;
+                } else if (isRaining)
+                {
+                    // Offset to wet textures
+                    groundArchive += 2;
                 }
 
                 if ((SystemInfo.supports2DArrayTextures) && DaggerfallUnity.Settings.EnableTextureArrays)
                 {
                     Material tileMaterial = dfUnity.MaterialReader.GetTerrainTextureArrayMaterial(groundArchive);
-                    currentWorldClimate = MapData.worldClimate;
 
                     // Assign textures (propagate material settings from tileMaterial to terrainMaterial)
                     terrainMaterial.SetTexture(TileTexArrUniforms.TileTexArr, tileMaterial.GetTexture(TileTexArrUniforms.TileTexArr));
@@ -169,13 +179,14 @@ namespace DaggerfallWorkshop
                     // Get tileset material to "steal" atlas texture for our shader
                     // TODO: Improve material system to handle custom shaders
                     Material tileSetMaterial = dfUnity.MaterialReader.GetTerrainTilesetMaterial(groundArchive);
-                    currentWorldClimate = MapData.worldClimate;
 
                     // Assign textures
                     terrainMaterial.SetTexture(TileUniforms.TileAtlasTex, tileSetMaterial.GetTexture(TileUniforms.TileAtlasTex));
                     terrainMaterial.SetTexture(TileUniforms.TilemapTex, tileMapTexture);
                     terrainMaterial.SetInt(TileUniforms.TilemapDim, tilemapDim);
                 }
+                currentWorldClimate = MapData.worldClimate;
+                currentIsRaining = isRaining;
             }
         }
 
