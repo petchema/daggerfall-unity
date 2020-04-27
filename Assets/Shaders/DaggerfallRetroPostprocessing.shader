@@ -45,8 +45,8 @@
 			{
 				fixed4 col = tex2D(_MainTex, i.uv);
                 // Decrease color depth to 4 bits per component
-				// col.rgb = round(col.rgb * 16.0) / 16.0;
-                col.rgb = pow(round(pow(col.rgb, 1/gamma) * 16.0) / 16.0, gamma);
+				// col.rgb = floor(col.rgb * 16.0) / 15.0;
+                col.rgb = pow(floor(pow(col.rgb, 1/gamma) * 16.0) / 15.0, gamma);
 				return col;
 			}
 			ENDCG
