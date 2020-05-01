@@ -17,7 +17,7 @@
 			
 			#include "UnityCG.cginc"
             
-            #define gamma 2.0
+            #define gamma 1.7
 
 			struct appdata
 			{
@@ -75,7 +75,7 @@
 				fixed4 col = tex2D(_MainTex, i.uv);
                 float3 hsl = rgb2hsl(col.rgb);
                 // Quantize color components
-                hsl = pow(trunc(pow(hsl, 1/gamma) * 16.0) / 15.0, gamma);
+                hsl = pow(round(pow(hsl, 1/gamma) * float3(16.0, 16.0, 16.0)) / float3(16.0, 16.0, 16.0), gamma);
                 col.rgb = hsl2rgb(hsl);
 				return col;
 			}
