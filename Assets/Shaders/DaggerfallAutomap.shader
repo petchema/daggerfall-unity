@@ -24,7 +24,7 @@ Shader "Daggerfall/Automap"
 		_EmissionColor("Emission Color", Color) = (0,0,0)
 		_PlayerPosition("player position", Vector) = (0,0,0,1)
 	}	
-
+    
 	SubShader // shader for target 4.0
 	{
 	    Tags { "Queue"="Geometry" /*"IgnoreProjector"="True"*/ "RenderType"="Opaque" }
@@ -47,6 +47,8 @@ Shader "Daggerfall/Automap"
 			#pragma multi_compile __ AUTOMAP_RENDER_MODE_TRANSPARENT
 			
 			#define PI 3.1416f
+    
+            #define grayscale_luminance 0.25
 
 			half4 _Color;
 			sampler2D _MainTex;
@@ -96,7 +98,7 @@ Shader "Daggerfall/Automap"
 
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
-					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
+					float grayValue = mul(color.rgb, float3(0.45, 0.88, 0.16) * grayscale_luminance);
 					outColor.rgb = half3(grayValue, grayValue, grayValue);
 				#endif
 					
@@ -162,6 +164,8 @@ Shader "Daggerfall/Automap"
 			#pragma multi_compile __ AUTOMAP_RENDER_MODE_WIREFRAME AUTOMAP_RENDER_MODE_TRANSPARENT
 
 			#define PI 3.1416f
+                
+            #define grayscale_luminance 0.25
 
 			half4 _Color;
 			sampler2D _MainTex;
@@ -261,7 +265,7 @@ Shader "Daggerfall/Automap"
 						else
 						{
 							#if defined(RENDER_IN_GRAYSCALE)
-								outColor = float4(0.25, 0.25, 0.25, 0.6);
+								outColor = float4(0.5 * grayscale_luminance, 0.5 * grayscale_luminance, 0.5 * grayscale_luminance, 0.6);
 							#else
 								outColor = float4(0.9, 0.9, 0.7, 0.6);
 							#endif
@@ -284,7 +288,7 @@ Shader "Daggerfall/Automap"
 
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
-					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
+					float grayValue = dot(color.rgb, float3(0.45, 0.88, 0.16) * grayscale_luminance);
 					outColor.rgb = half3(grayValue, grayValue, grayValue);
 				#endif
 
@@ -324,6 +328,8 @@ Shader "Daggerfall/Automap"
 
 			#pragma multi_compile __ RENDER_IN_GRAYSCALE
 			#pragma multi_compile __ AUTOMAP_RENDER_MODE_TRANSPARENT
+                
+            #define grayscale_luminance 0.25
 
 			half4 _Color;
 			sampler2D _MainTex;
@@ -365,7 +371,7 @@ Shader "Daggerfall/Automap"
 
 			#if defined(RENDER_IN_GRAYSCALE)
 				half3 color = outColor;
-				float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
+				float grayValue = dot(color.rgb, float3(0.45, 0.88, 0.16) * grayscale_luminance);
 				outColor.rgb = half3(grayValue, grayValue, grayValue);
 			#endif
 
@@ -397,6 +403,8 @@ Shader "Daggerfall/Automap"
 
 			#pragma multi_compile __ RENDER_IN_GRAYSCALE
 			#pragma multi_compile __ AUTOMAP_RENDER_MODE_TRANSPARENT
+                
+            #define grayscale_luminance 0.25
 
 			half4 _Color;
 			sampler2D _MainTex;
@@ -447,7 +455,7 @@ Shader "Daggerfall/Automap"
 
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
-					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
+					float grayValue = dot(color.rgb, float3(0.45, 0.88, 0.16) * grayscale_luminance);
 					outColor.rgb = half3(grayValue, grayValue, grayValue);
 				#endif
 
