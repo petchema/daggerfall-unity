@@ -59,6 +59,9 @@ namespace DaggerfallWorkshop.Utility
             else
                 gameObject.SetActive(false);
 
+            // Just in case
+            GameManager.Instance.MainCamera.depthTextureMode |= DepthTextureMode.Depth;
+
             enablePostprocessing = DaggerfallUnity.Settings.PostProcessingInRetroMode > 0;
         }
 

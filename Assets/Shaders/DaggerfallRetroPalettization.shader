@@ -7,8 +7,7 @@
 	SubShader
 	{
 		// No culling or depth
-       Lighting Off 
-		Cull Off ZWrite Off ZTest Always
+       Lighting Off Cull Off ZWrite Off ZTest Always
        Fog { Mode Off } 
 
 		Pass
@@ -41,6 +40,7 @@
 			}
 			
 			sampler2D _MainTex;
+            UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 
 // Beginning of generated code
 // See https://github.com/petchema/ocaml-palettisation-shader-generator
@@ -1116,12 +1116,16 @@ fixed4 nearestColor(fixed4 color)
 
 // End of generated code
 
+
 	        fixed4 frag (v2f i) : SV_Target
 	        {
+                float z = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv);
+                float dist = Linear01Depth(z);
+                
                 fixed4 target = tex2D(_MainTex, i.uv);
                 
                 // ART_PAL.COL
-                return nearestColor(target);
+                return dist > 0.9 ? target : nearestColor(target);
             }
 			ENDCG
 		}
