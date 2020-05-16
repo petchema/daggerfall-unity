@@ -409,10 +409,10 @@ namespace DaggerfallWorkshop.Utility
             if (enablePostprocessing)
             {
                 skyRetroTexture = new RenderTexture(retroTexture);
-                mainCamera.clearFlags = CameraClearFlags.SolidColor;
+                mainCamera.clearFlags = CameraClearFlags.Skybox;
                 mainCamera.backgroundColor = Color.clear;
                 CameraClearManager clearManager = gameObject.GetComponent<CameraClearManager>();
-                clearManager.cameraClearExterior = CameraClearFlags.SolidColor;
+                clearManager.cameraClearExterior = CameraClearFlags.Skybox;
                 clearManager.cameraClearExteriorColor = Color.clear;
             }
         }
@@ -423,7 +423,9 @@ namespace DaggerfallWorkshop.Utility
             // Sky may not be enabled at startup (e.g starting in dungeon) so need to check
             // Does nothing when retro world setting disabled as this behaviour is also disabled
             if (sky && sky.SkyCamera && sky.SkyCamera.targetTexture != skyRetroTexture)
+            {
                 sky.SkyCamera.targetTexture = skyRetroTexture;
+            }
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
