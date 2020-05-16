@@ -425,6 +425,7 @@ namespace DaggerfallWorkshop.Utility
             if (sky && sky.SkyCamera && sky.SkyCamera.targetTexture != skyRetroTexture)
             {
                 sky.SkyCamera.targetTexture = skyRetroTexture;
+                GameManager.Instance.MainCamera.clearFlags = CameraClearFlags.Skybox;
             }
         }
 
