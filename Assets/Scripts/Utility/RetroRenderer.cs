@@ -376,7 +376,6 @@ namespace DaggerfallWorkshop.Utility
             if (enablePostprocessing)
             {
                 skyRetroTexture = new RenderTexture(retroTexture);
-                skyRetroTexture.depth = 0;
                 mainCamera.clearFlags = CameraClearFlags.Skybox;
                 mainCamera.backgroundColor = Color.clear;
                 CameraClearManager clearManager = gameObject.GetComponent<CameraClearManager>();
@@ -387,15 +386,9 @@ namespace DaggerfallWorkshop.Utility
 
         private void Update()
         {
-            // Conditionally handle classic sky camera
-            // Sky may not be enabled at startup (e.g starting in dungeon) so need to check
-            // Does nothing when retro world setting disabled as this behaviour is also disabled
-            if (sky && sky.SkyCamera)
+            if (sky && sky.SkyCamera && sky.SkyCamera.targetTexture != skyRetroTexture)
             {
-                if (sky.SkyCamera.targetTexture != skyRetroTexture)
-                    sky.SkyCamera.targetTexture = skyRetroTexture;
-                if (sky.SkyCamera.clearFlags != CameraClearFlags.SolidColor)
-                sky.SkyCamera.clearFlags = CameraClearFlags.SolidColor;
+                sky.SkyCamera.targetTexture = skyRetroTexture;
             }
             if (GameManager.Instance.MainCamera.clearFlags != CameraClearFlags.Skybox)
                 GameManager.Instance.MainCamera.clearFlags = CameraClearFlags.Skybox;
