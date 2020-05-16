@@ -20,8 +20,8 @@ public class CameraClearManager : MonoBehaviour
     public Camera mainCamera;
     public PlayerEnterExit playerEnterExit;
     public CameraClearFlags cameraClearExterior = CameraClearFlags.Depth;
-    public CameraClearFlags cameraClearInterior = CameraClearFlags.Color;
     public Color cameraClearInteriorColor = Color.black;
+    public CameraClearFlags cameraClearInterior = CameraClearFlags.Color;
     public Color cameraClearExteriorColor = Color.clear;
 
     bool lastInside = false;
