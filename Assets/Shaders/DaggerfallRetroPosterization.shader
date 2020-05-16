@@ -8,10 +8,9 @@
 	{
 		// No culling or depth
 		Lighting Off 
-        Cull Off
-        ZWrite Off
-        ZTest Always
+        Cull Off ZWrite Off ZTest Always
         Fog { Mode Off }
+        Blend SrcAlpha OneMinusSrcAlpha
 
 		Pass
 		{

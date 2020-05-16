@@ -21,7 +21,8 @@ public class CameraClearManager : MonoBehaviour
     public PlayerEnterExit playerEnterExit;
     public CameraClearFlags cameraClearExterior = CameraClearFlags.Depth;
     public CameraClearFlags cameraClearInterior = CameraClearFlags.Color;
-    public Color cameraClearColor = Color.black;
+    public Color cameraClearInteriorColor = Color.black;
+    public Color cameraClearExteriorColor = Color.clear;
 
     bool lastInside = false;
 
@@ -42,13 +43,14 @@ public class CameraClearManager : MonoBehaviour
             {
                 // Now inside
                 mainCamera.clearFlags = cameraClearInterior;
-                mainCamera.backgroundColor = cameraClearColor;
+                mainCamera.backgroundColor = cameraClearInteriorColor;
                 lastInside = isInside;
             }
             else if (!isInside && lastInside)
             {
                 // Now outside
                 mainCamera.clearFlags = cameraClearExterior;
+                mainCamera.backgroundColor = cameraClearExteriorColor;
                 lastInside = isInside;
             }   
         }

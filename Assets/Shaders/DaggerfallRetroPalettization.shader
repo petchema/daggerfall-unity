@@ -10,14 +10,15 @@
 	SubShader
 	{
 		// No culling or depth
-       Lighting Off 
-		Cull Off ZWrite Off ZTest Always
-       Fog { Mode Off } 
+        Lighting Off 
+	    Cull Off ZWrite Off ZTest Always
+        Fog { Mode Off } 
+        Blend SrcAlpha OneMinusSrcAlpha
 
 		Pass
 		{
 			CGPROGRAM
-           #pragma target 3.0
+            #pragma target 3.0
 			#pragma vertex vert
 			#pragma fragment frag
 			
@@ -50,13 +51,14 @@
             
 	        fixed4 frag (v2f i) : SV_Target
 	        {
-                // Explore color space!
-                //float3 target = float3(i.uv, frac(_Time.x));
+                // Explore color space! 
+                //float4 target = float4(i.uv, frac(_Time.x), 1.0);
                 
-                float3 target = tex2D(_MainTex, i.uv);
+                float4 target = tex2D(_MainTex, i.uv);
                 float3 quantized = floor(target * _LutSize) * _LutTexelSize;
                 
                 fixed4 col = tex3D(_Lut, quantized);
+                col.a = target.a;
                 return col;
             }
 			ENDCG
