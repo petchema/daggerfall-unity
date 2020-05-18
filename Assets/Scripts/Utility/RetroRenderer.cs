@@ -25,6 +25,7 @@ namespace DaggerfallWorkshop.Utility
     /// </summary>
     public class RetroRenderer : MonoBehaviour
     {
+        public RenderTexture RetroSkyTarget;
         public RenderTexture RetroTexture320x200;
         public RenderTexture RetroTexture640x400;
 
@@ -33,6 +34,7 @@ namespace DaggerfallWorkshop.Utility
 
         public static bool enablePostprocessing = false;
         private Material postprocessMaterial = null;
+        private Material depthClipBlitMaterial = null;
 
         public RenderTexture RetroTexture
         {
@@ -46,6 +48,10 @@ namespace DaggerfallWorkshop.Utility
 
         private void Start()
         {
+            // Create depth clip blit material
+            Shader depthClipBlitShader = Shader.Find("Daggerfall/DepthClipBlitShader");
+            depthClipBlitMaterial = new Material(depthClipBlitShader);
+
             // 0 = retro rendering off
             // 1 = retro 320x200 rendering on
             // 2 = retro 640x400 rendering on
@@ -67,44 +73,50 @@ namespace DaggerfallWorkshop.Utility
             // Conditionally handle classic sky camera
             // Sky may not be enabled at startup (e.g starting in dungeon) so need to check
             // Does nothing when retro world setting disabled as this behaviour is also disabled
-            if (sky && sky.SkyCamera && sky.SkyCamera.targetTexture != retroTexture)
-                sky.SkyCamera.targetTexture = retroTexture;
+            if (sky && sky.SkyCamera && RetroSkyTarget && sky.SkyCamera.targetTexture != RetroSkyTarget)
+                sky.SkyCamera.targetTexture = RetroSkyTarget;
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (!retroTexture)
+            if (!retroTexture || !RetroSkyTarget)
                 return;
 
-            if (enablePostprocessing)
-            {
-                if (!postprocessMaterial)
-                {
-                    Shader shader = null;
-                    switch(DaggerfallUnity.Settings.PostProcessingInRetroMode)
-                    {
-                        case 1:
-                            shader = Shader.Find(MaterialReader._DaggerfallRetroPosterizationShaderName);
-                            break;
-                        case 2:
-                            shader = Shader.Find(MaterialReader._DaggerfallRetroPalettizationShaderName);
-                            break;
-                    }
-                    if (shader)
-                        postprocessMaterial = new Material(shader);
-                    else
-                    {
-                        Debug.Log("Couldn't find retro shader " + DaggerfallUnity.Settings.PostProcessingInRetroMode);
-                        enablePostprocessing = false;
-                    }
-                }
-                if (enablePostprocessing && postprocessMaterial)
-                {
-                    Graphics.Blit(retroTexture, null as RenderTexture, postprocessMaterial);
-                    return;
-                }
-            }
-            Graphics.Blit(retroTexture, null as RenderTexture);
+            // First draw sky render to viewport
+            Graphics.Blit(RetroSkyTarget, null as RenderTexture);
+
+            // TODO: Update posprocessing blit to clip based on depth
+            //if (enablePostprocessing)
+            //{
+            //    if (!postprocessMaterial)
+            //    {
+            //        Shader shader = null;
+            //        switch(DaggerfallUnity.Settings.PostProcessingInRetroMode)
+            //        {
+            //            case 1:
+            //                shader = Shader.Find(MaterialReader._DaggerfallRetroPosterizationShaderName);
+            //                break;
+            //            case 2:
+            //                shader = Shader.Find(MaterialReader._DaggerfallRetroPalettizationShaderName);
+            //                break;
+            //        }
+            //        if (shader)
+            //            postprocessMaterial = new Material(shader);
+            //        else
+            //        {
+            //            Debug.Log("Couldn't find retro shader " + DaggerfallUnity.Settings.PostProcessingInRetroMode);
+            //            enablePostprocessing = false;
+            //        }
+            //    }
+            //    if (enablePostprocessing && postprocessMaterial)
+            //    {
+            //        Graphics.Blit(retroTexture, null as RenderTexture, postprocessMaterial);
+            //        return;
+            //    }
+            //}
+
+            // Second draw world to viewport and clip by source depthbuffer == 0
+            Graphics.Blit(retroTexture, null as RenderTexture, depthClipBlitMaterial);
         }
     }
 }
