@@ -8,14 +8,16 @@
 	SubShader
 	{
 		// No culling or depth
-       Lighting Off 
-		Cull Off ZWrite Off ZTest Always
-       Fog { Mode Off } 
+        Lighting Off
+		Cull Off
+        ZWrite On
+        ZTest Always
+        Fog { Mode Off }
 
 		Pass
 		{
 			CGPROGRAM
-           #pragma target 3.0
+            #pragma target 3.0
 			#pragma vertex vert
 			#pragma fragment frag
 			
@@ -24,34 +26,38 @@
 			struct appdata
 			{
 				float4 vertex : POSITION;
-				float2 uv : TEXCOORD0;
+				float2 texcoord : TEXCOORD0;
 			};
 
 			struct v2f
 			{
-				float2 uv : TEXCOORD0;
-				float4 vertex : SV_POSITION;
+                float4 vertex : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
 			};
 
 			v2f vert (appdata v)
 			{
 				v2f o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
-				o.uv = v.uv;
+				o.texcoord = v.texcoord;
 				return o;
 			}
 			
 			sampler2D _MainTex;
             sampler3D _Lut;
             
-	        fixed4 frag (v2f i) : SV_Target
+	        fixed4 frag (v2f i, out float outDepth : SV_DEPTH) : SV_Target
 	        {
                 // Explore color space!
-                //float3 target = float3(i.uv, frac(_Time.x));
+                //float4 color = float4(i.texcoord, frac(_Time.x), 1.0);
                 
-                float3 target = tex2D(_MainTex, i.uv);
+                float4 color = tex2D(_MainTex, i.texcoord);
+                float depth = SAMPLE_DEPTH_TEXTURE(_MainTex, i.texcoord);
+                outDepth = depth;
+                if (depth == 0)
+                    discard;
                 
-                fixed4 col = tex3D(_Lut, target);
+                fixed4 col = fixed4(tex3D(_Lut, color.rgb).rgb, color.a);
                 return col;
             }
 			ENDCG
