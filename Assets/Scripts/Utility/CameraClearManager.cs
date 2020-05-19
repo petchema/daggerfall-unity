@@ -37,8 +37,7 @@ public class CameraClearManager : MonoBehaviour
         retroModeEnabled = DaggerfallUnity.Settings.RetroRenderingMode > 0;
         if (retroModeEnabled)
         {
-            mainCamera.clearFlags = CameraClearFlags.SolidColor;
-            mainCamera.backgroundColor = Color.clear;
+            mainCamera.clearFlags = CameraClearFlags.Depth;
         }
     }
 

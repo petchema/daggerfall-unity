@@ -55,7 +55,7 @@
                 float depth = SAMPLE_DEPTH_TEXTURE(_MainTex, i.texcoord);
                 outDepth = depth;
                 if (depth == 0)
-                    discard;
+                    return color;
                 
                 fixed4 col = fixed4(tex3D(_Lut, color.rgb).rgb, color.a);
                 return col;

@@ -25,7 +25,6 @@ namespace DaggerfallWorkshop.Utility
     /// </summary>
     public class RetroRenderer : MonoBehaviour
     {
-        public RenderTexture RetroSkyTarget;
         public RenderTexture RetroTexture320x200;
         public RenderTexture RetroTexture640x400;
 
@@ -385,17 +384,14 @@ namespace DaggerfallWorkshop.Utility
             // Conditionally handle classic sky camera
             // Sky may not be enabled at startup (e.g starting in dungeon) so need to check
             // Does nothing when retro world setting disabled as this behaviour is also disabled
-            if (sky && sky.SkyCamera && RetroSkyTarget && sky.SkyCamera.targetTexture != RetroSkyTarget)
-                sky.SkyCamera.targetTexture = RetroSkyTarget;
+            if (sky && sky.SkyCamera && retroTexture && sky.SkyCamera.targetTexture != retroTexture)
+                sky.SkyCamera.targetTexture = retroTexture;
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (!retroTexture || !RetroSkyTarget)
+            if (!retroTexture)
                 return;
-
-            // First draw sky render to viewport
-            Graphics.Blit(RetroSkyTarget, null as RenderTexture);
 
             if (enablePostprocessing)
             {
@@ -430,7 +426,7 @@ namespace DaggerfallWorkshop.Utility
             }
 
             // Second draw world to viewport and clip by source depthbuffer == 0
-            Graphics.Blit(retroTexture, null as RenderTexture, depthClipBlitMaterial);
+            Graphics.Blit(retroTexture, null as RenderTexture);
         }
     }
 }

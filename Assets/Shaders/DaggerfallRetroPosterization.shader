@@ -52,7 +52,7 @@
                 float depth = SAMPLE_DEPTH_TEXTURE(_MainTex, i.texcoord);
                 outDepth = depth;
                 if (depth == 0)
-                    discard;
+                    return color;
 
                 // Decrease color depth to 4 bits per component
                 color.rgb = pow(round(pow(color.rgb, 1/gamma) * 16.0) / 16.0, gamma);
