@@ -90,6 +90,8 @@ Shader "Daggerfall/TilemapTextureArray" {
 			// Offset to fragment position inside tile
 			float2 unwrappedUV = IN.uv_MainTex * _TilemapDim;
 			float2 uv = mul(rotations[index % 4], frac(unwrappedUV)) + translations[index % 4];
+            // Manual clamping to edge
+            uv = clamp(_TileTexArr_TexelSize.zw * 0.5, 1.0 - _TileTexArr_TexelSize.zw * 0.5, uv);
 
 			// Sample based on gradient and set output
 			float3 uv3 = float3(uv, index / 4); // compute correct texture array index from index
