@@ -23,7 +23,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         public static readonly string EffectKey = EnchantmentTypes.ExtraWeight.ToString();
 
         const int enchantCost = -100;
-        const float weightMultiplier = 4;
+        const decimal weightMultiplier = 4;
 
         public override void SetProperties()
         {

@@ -835,7 +835,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             }
         }
 
-        protected virtual float GetCarriedWeight()
+        protected virtual decimal GetCarriedWeight()
         {
             return playerEntity.CarriedWeight;
         }
@@ -844,7 +844,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             // Never changes on inventory window.
             localTargetIconPanel.BackgroundTexture = DaggerfallUnity.ItemHelper.GetContainerImage(InventoryContainerImages.Backpack).texture;
-            float weight = GetCarriedWeight();
+            decimal weight = GetCarriedWeight();
             localTargetIconLabel.Text = String.Format(weight % 1 == 0 ? "{0:F0} / {1}" : "{0:F2} / {1}", weight, PlayerEntity.MaxEncumbrance);
         }
 
@@ -855,7 +855,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             if (remoteTargetType == RemoteTargetTypes.Wagon)
             {
                 containerImage = DaggerfallUnity.ItemHelper.GetContainerImage(InventoryContainerImages.Wagon);
-                float weight = PlayerEntity.WagonWeight;
+                decimal weight = PlayerEntity.WagonWeight;
                 remoteTargetIconLabel.Text = String.Format(weight % 1 == 0 ? "{0:F0} / {1}" : "{0:F2} / {1}", weight, ItemHelper.WagonKgLimit);
             }
             else if (dropIconTexture > -1)
@@ -1415,10 +1415,10 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             return canCarry;
         }
 
-        private int ComputeCanHoldAmount(int unitsAvailable, float unitWeightInKg, float capacityLeftInKg)
+        private int ComputeCanHoldAmount(int unitsAvailable, decimal unitWeightInKg, decimal capacityLeftInKg)
         {
             int canHold = unitsAvailable;
-            if (unitWeightInKg > 0f)
+            if (unitWeightInKg > 0M)
                 canHold = Math.Min(canHold, (int)(capacityLeftInKg / unitWeightInKg));
             return canHold;
         }
@@ -2116,7 +2116,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         private void UpdateItemInfoPanelGold()
         {
             int gold = GameManager.Instance.PlayerEntity.GoldPieces;
-            float weight = gold * DaggerfallBankManager.goldUnitWeightInKg;
+            decimal weight = gold * DaggerfallBankManager.goldUnitWeightInKg;
             TextFile.Token[] tokens = {
                 TextFile.CreateTextToken(string.Format(goldAmount, gold)),
                 TextFile.NewLineToken,

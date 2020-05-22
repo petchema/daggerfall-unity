@@ -35,7 +35,7 @@ namespace DaggerfallWorkshop.Game.Items
         public string shortName;
         public int nativeMaterialValue;
         public DyeColors dyeColor;
-        public float weightInKg;
+        public decimal weightInKg;
         public int drawOrder;
         public int value;
         public ushort unknown;
@@ -641,10 +641,10 @@ namespace DaggerfallWorkshop.Game.Items
         }
 
         // Horses, carts and arrows are not counted against encumbrance.
-        public float EffectiveUnitWeightInKg()
+        public decimal EffectiveUnitWeightInKg()
         {
             if (ItemGroup == ItemGroups.Transportation || TemplateIndex == (int)Weapons.Arrow)
-                return 0f;
+                return 0M;
             return weightInKg;
         }
 
@@ -1529,7 +1529,7 @@ namespace DaggerfallWorkshop.Game.Items
             worldTextureRecord = worldRecord;
             nativeMaterialValue = itemRecord.ParsedData.material;
             dyeColor = (DyeColors)itemRecord.ParsedData.color;
-            weightInKg = (float)itemRecord.ParsedData.weight * 0.25f;
+            weightInKg = itemRecord.ParsedData.weight * 0.25M;
             drawOrder = itemTemplate.drawOrderOrEffect;
             value = (int)itemRecord.ParsedData.value;
             unknown = itemRecord.ParsedData.unknown;

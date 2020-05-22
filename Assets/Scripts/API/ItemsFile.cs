@@ -47,7 +47,7 @@ namespace DaggerfallConnect.FallExe
     {
         public int index;                           // Index of this item in list
         public string name;                         // Display name
-        public float baseWeight;                    // Base weight in kilograms before material, etc.
+        public decimal baseWeight;                  // Base weight in kilograms before material, etc.
         public int hitPoints;                       // Hit points
         public int capacityOrTarget;                // Capacity of container or target of effect
         public int basePrice;                       // Base price before material, mercantile, etc. modify value
@@ -325,7 +325,7 @@ namespace DaggerfallConnect.FallExe
                 DFItem item = items[index];
                 desc.index = index;
                 desc.name = Encoding.UTF8.GetString(item.name).TrimEnd('\0');
-                desc.baseWeight = (float)item.baseWeightUnits * 0.25f;
+                desc.baseWeight = item.baseWeightUnits * 0.25M;
                 desc.hitPoints = item.hitPoints;
                 desc.capacityOrTarget = item.capacityOrTarget;
                 desc.basePrice = item.basePrice;

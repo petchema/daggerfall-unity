@@ -131,7 +131,7 @@ namespace DaggerfallWorkshop.Game.Items
 
             public override string Weight()
             {   // %kg
-                float weight = parent.weightInKg * parent.stackCount;
+                decimal weight = parent.weightInKg * parent.stackCount;
                 return String.Format(weight % 1 == 0 ? "{0:F0}" : "{0:F2}", weight);
             }
 

@@ -614,7 +614,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             }
         }
 
-        protected override float GetCarriedWeight()
+        protected override decimal GetCarriedWeight()
         {
             return PlayerEntity.CarriedWeight + basketItems.GetWeight();
         }
@@ -624,7 +624,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             if (UsingWagon)
             {
                 localTargetIconPanel.BackgroundTexture = DaggerfallUnity.ItemHelper.GetContainerImage(InventoryContainerImages.Wagon).texture;
-                float weight = PlayerEntity.WagonWeight;
+                decimal weight = PlayerEntity.WagonWeight;
                 localTargetIconLabel.Text = String.Format(weight % 1 == 0 ? "{0:F0} / {1}" : "{0:F2} / {1}", weight, ItemHelper.WagonKgLimit);
             }
             else
@@ -948,7 +948,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 {
                     case WindowModes.Sell:
                     case WindowModes.SellMagic:
-                        float goldWeight = tradePrice * DaggerfallBankManager.goldUnitWeightInKg;
+                        decimal goldWeight = tradePrice * DaggerfallBankManager.goldUnitWeightInKg;
                         if (PlayerEntity.CarriedWeight + goldWeight <= PlayerEntity.MaxEncumbrance)
                         {
                             PlayerEntity.GoldPieces += tradePrice;

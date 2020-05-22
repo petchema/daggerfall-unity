@@ -91,9 +91,9 @@ namespace DaggerfallWorkshop.Game.Items
         /// Gets the combined weight of all the items in this collection. (ignoring arrows like classic)
         /// </summary>
         /// <returns>Weight in kg</returns>
-        public float GetWeight()
+        public decimal GetWeight()
         {
-            float weight = 0;
+            decimal weight = 0;
             foreach (DaggerfallUnityItem item in items.Values)
             {
                 weight += item.stackCount * item.EffectiveUnitWeightInKg();

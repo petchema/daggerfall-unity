@@ -23,7 +23,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects
         public static readonly string EffectKey = EnchantmentTypes.FeatherWeight.ToString();
 
         const int enchantCost = 100;
-        const float weightValue = 0.25f;
+        const decimal weightValue = 0.25M;
 
         public override void SetProperties()
         {
