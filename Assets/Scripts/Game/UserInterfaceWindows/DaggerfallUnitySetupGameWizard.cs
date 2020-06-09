@@ -86,7 +86,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         const string titleScreenFilename = "StartupBackground2";
         const float panelSwipeTime = 1;
         const SongFiles titleSongFile = SongFiles.song_5strong;
-
+        const float alphaCutoff = 0.5f;
         string findArena2Tip;
         string pathValidated;
         string testText;
@@ -158,11 +158,114 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
             // Override cursor
             Texture2D tex;
-            if (TextureReplacement.TryImportTexture("Cursor", true, out tex))
+            if (TextureReplacement.TryImportTexture("Cursor", false, out tex))
             {
+                if (tex.width > 32 || tex.height > 32)
+                {
+                    float scale = Mathf.Min(32f / tex.width, 32f / tex.height);
+                    Texture2D tex32 = CursorScaleDown(tex, Mathf.RoundToInt(tex.width * scale), Mathf.RoundToInt(tex.height * scale));
+                    tex = tex32;
+                }
+                tex.Apply(false, false);
                 Cursor.SetCursor(tex, Vector2.zero, CursorMode.Auto);
                 Debug.Log("Cursor texture overridden by mods.");
             }
+        }
+
+        private Texture2D CursorScaleDown(Texture2D tex, int targetWidth, int targetHeight)
+        {
+            Color[] tempColor = SquishHorizontally(tex, targetWidth);
+            Color[] colors = SquishVertically(tempColor, tex.height, targetWidth, targetHeight);
+
+            // Alpha cutoff
+            for (int i = 0; i < targetWidth * targetHeight; i++)
+            {
+                Color color = colors[i];
+                if (color.a < alphaCutoff)
+                {
+                    colors[i] = Color.clear;
+                }
+                else
+                {
+                    color = new Color(color.r / color.a, color.g / color.a, color.b / color.a, 1f);
+                    colors[i] = color;
+                }
+            }
+
+            Texture2D target = new Texture2D(targetWidth, targetHeight, TextureFormat.ARGB32, false);
+            target.SetPixels(colors);
+            return target;
+        }
+
+        private Color[] SquishHorizontally(Texture2D tex, int targetWidth)
+        {
+            var tempColor = new Color[targetWidth * tex.height];
+
+            float norm = 1f / tex.width;
+            for (int y = 0; y < tex.height; y++)
+            {
+                int yOffset = y * targetWidth;
+                int x = 0;
+                int targetX = 0;
+                int sourceEnd = targetWidth;
+                int targetEnd = tex.width;
+                Color acc = Color.black;
+                while (x < tex.width)
+                {
+                    int shift = Math.Min(sourceEnd, targetEnd);
+                    acc += tex.GetPixel(x, y) * shift;
+
+                    if ((sourceEnd -= shift) == 0)
+                    {
+                        x++;
+                        sourceEnd = targetWidth;
+                    }
+                    if ((targetEnd -= shift) == 0)
+                    {
+                        tempColor[yOffset + targetX] = acc * norm;
+                        acc = Color.black;
+                        targetX++;
+                        targetEnd = tex.width;
+                    }
+                }
+            }
+
+            return tempColor;
+        }
+
+        private static Color[] SquishVertically(Color[] tempColor, int texHeight, int targetWidth, int targetHeight)
+        {
+            var colors = new Color[targetWidth * targetHeight];
+
+            float norm = 1f / texHeight;
+            for (int x = 0; x < targetWidth; x++)
+            {
+                int y = 0; int yOffset = y * targetWidth;
+                int targetY = 0; int targetYOffset = targetY * targetWidth;
+                int sourceEnd = targetHeight;
+                int targetEnd = texHeight;
+                Color acc = Color.black;
+                while (y < texHeight)
+                {
+                    int shift = Math.Min(sourceEnd, targetEnd);
+                    acc += tempColor[yOffset + x] * shift;
+
+                    if ((sourceEnd -= shift) == 0)
+                    {
+                        y++; yOffset += targetWidth;
+                        sourceEnd = targetHeight;
+                    }
+                    if ((targetEnd -= shift) == 0)
+                    {
+                        colors[targetYOffset + x] = acc * norm;
+                        acc = Color.black;
+                        /* targetY++; */ targetYOffset += targetWidth;
+                        targetEnd = texHeight;
+                    }
+                }
+            }
+
+            return colors;
         }
 
         public override void Update()
