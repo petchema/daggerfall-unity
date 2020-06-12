@@ -179,6 +179,8 @@ namespace DaggerfallWorkshop
             }
         }
 
+        // private static int PendingJobs = 0;
+
         /// <summary>
         /// Update map pixel data based on current coordinates. (first of a two stage process)
         /// 
@@ -216,7 +218,7 @@ namespace DaggerfallWorkshop
             {
                 // Schedule job to calc average & max heights.
                 JobHandle calcAvgMaxHeightJobHandle = TerrainHelper.ScheduleCalcAvgMaxHeightJob(ref MapData, generateHeightmapSamplesJobHandle);
-                JobHandle.ScheduleBatchedJobs();
+                // JobHandle.ScheduleBatchedJobs();
 
                 // Set location tiles.
                 TerrainHelper.SetLocationTiles(ref MapData);
@@ -233,7 +235,9 @@ namespace DaggerfallWorkshop
 
             // Update tile map for shader.
             JobHandle updateTileMapJobHandle = TerrainHelper.ScheduleUpdateTileMapDataJob(ref MapData, assignTilesJobHandle);
-            JobHandle.ScheduleBatchedJobs();
+
+            //PendingJobs++;
+            //Debug.Log("PendingJobs = " + PendingJobs);
             return updateTileMapJobHandle;
         }
 
@@ -269,6 +273,7 @@ namespace DaggerfallWorkshop
             MapData.maxHeight = MapData.avgMaxHeight[TerrainHelper.maxHeightIdx];
 
             DisposeNativeMemory();
+            //PendingJobs--;
         }
 
         /// <summary>

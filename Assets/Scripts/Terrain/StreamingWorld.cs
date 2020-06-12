@@ -1212,9 +1212,19 @@ namespace DaggerfallWorkshop
             terrainDesc.terrainObject.name = TerrainHelper.GetTerrainName(dfTerrain.MapPixelX, dfTerrain.MapPixelY);
         }
 
+        // private static int ConcurrentUpdateTerrainData = 2;
+
         // Update terrain data using coroutine to decouple from main thread & FPS.
         private IEnumerator UpdateTerrainDataCoroutine(TerrainDesc terrainDesc)
         {
+            //Debug.Log("> ConcurrentUpdateTerrainData = " + ConcurrentUpdateTerrainData);
+            //if (ConcurrentUpdateTerrainData == 0)
+            //{
+            //    Debug.Log("Yield");
+            //    yield return new WaitUntil(() => ConcurrentUpdateTerrainData > 0);
+            //}
+            //ConcurrentUpdateTerrainData--;
+
             // Instantiate Daggerfall terrain
             DaggerfallTerrain dfTerrain = terrainDesc.terrainObject.GetComponent<DaggerfallTerrain>();
             if (dfTerrain)
@@ -1226,9 +1236,12 @@ namespace DaggerfallWorkshop
             }
 
             JobHandle updateTerrainDataJobHandle = dfTerrain.BeginMapPixelDataUpdate(terrainTexturing);
+            // JobHandle.ScheduleBatchedJobs();
             yield return new WaitUntil(() => updateTerrainDataJobHandle.IsCompleted);
 
             CompleteUpdateTerrainDataJobs(terrainDesc, dfTerrain, updateTerrainDataJobHandle);
+            //ConcurrentUpdateTerrainData++;
+            //Debug.Log("< ConcurrentUpdateTerrainData = " + ConcurrentUpdateTerrainData);
         }
 
         // Update terrain nature
