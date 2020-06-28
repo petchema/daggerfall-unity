@@ -1,12 +1,11 @@
-﻿Shader "Daggerfall/GhostShader" {
+Shader "Daggerfall/GhostShader" {
 	Properties {
         _Color("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
         _BumpMap ("Bumpmap", 2D) = "bump" {}
         _EmissionMap("Emission Map", 2D) = "white" {}
-        _EmissionColor("Emission Color", Color) = (0,0,0)
+        _EmissionColor("Emission Color", Color) = (1,1,1)
         _Cutoff ("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
-        _Transparency ("Transparency", Range(0.0, 1.0)) = 0.5
 		_Glossiness ("Smoothness", Range(0.0, 1.0)) = 0.0
 		_Metallic ("Metallic", Range(0.0, 1.0)) = 0.0
 	}
@@ -34,7 +33,6 @@
 		};
         
         half _Cutoff;
-        half _Transparency;
 		half _Glossiness;
 		half _Metallic;
 
@@ -50,7 +48,8 @@
 			// Metallic and smoothness come from slider variables
 			o.Metallic = _Metallic;
 			o.Smoothness = _Glossiness;
-			o.Alpha = lerp(c.a * _Transparency, 1.0, saturate(dot(2.0 * half3(0.2126, 0.7152, 0.0722), emission)));
+            // Transparency comes from albedo alpha - allows parts some parts of image to be transparent (e.g. body) and other parts opaque (e.g. eyes)
+			o.Alpha = c.a;
 		}
 		ENDCG
 	}
