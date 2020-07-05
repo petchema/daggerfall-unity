@@ -2713,9 +2713,6 @@ namespace DaggerfallWorkshop.Game
                                 FactionFile.FactionData factionData;
                                 GetStaticNPCFactionData(buildingNpcs[p].FactionID, buildingSummary.BuildingType, out factionData);
 
-                                if (factionData.id == (int) FactionFile.FactionIDs.Children)
-                                    continue;
-
                                 FactionFile.SocialGroups socialGroup = (FactionFile.SocialGroups)factionData.sgroup;
                                 if (socialGroup == FactionFile.SocialGroups.Merchants ||
                                     socialGroup == FactionFile.SocialGroups.Commoners ||
