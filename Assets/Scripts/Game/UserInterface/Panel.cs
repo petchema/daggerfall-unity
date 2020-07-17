@@ -299,18 +299,18 @@ namespace DaggerfallWorkshop.Game.UserInterface
             leftBorderRect.x = drawRect.x;
             leftBorderRect.y = Mathf.Round(drawRect.y + virtualSizes.TopLeft.y * LocalScale.y);
             leftBorderRect.xMax = Mathf.Round(drawRect.x + virtualSizes.Left.x * LocalScale.x);
-            leftBorderRect.yMax = Mathf.Round(drawRect.height - virtualSizes.BottomLeft.y * LocalScale.y);
+            leftBorderRect.yMax = Mathf.Round(drawRect.yMax - virtualSizes.BottomLeft.y * LocalScale.y);
 
             // Right
             rightBorderRect.x = Mathf.Round(drawRect.xMax - virtualSizes.Right.x * LocalScale.x);
             rightBorderRect.y = Mathf.Round(drawRect.y + virtualSizes.TopRight.y * LocalScale.y);
             rightBorderRect.xMax = drawRect.xMax;
-            rightBorderRect.yMax = Mathf.Round(drawRect.height - virtualSizes.BottomRight.y * LocalScale.y);
+            rightBorderRect.yMax = Mathf.Round(drawRect.yMax - virtualSizes.BottomRight.y * LocalScale.y);
 
             // Bottom
             bottomBorderRect.x = Mathf.Round(drawRect.x + virtualSizes.BottomLeft.x * LocalScale.x);
             bottomBorderRect.y = Mathf.Round(drawRect.yMax - virtualSizes.Bottom.y * LocalScale.y);
-            bottomBorderRect.xMax = Mathf.Round(drawRect.width - virtualSizes.BottomRight.x * LocalScale.x);
+            bottomBorderRect.xMax = Mathf.Round(drawRect.xMax - virtualSizes.BottomRight.x * LocalScale.x);
             bottomBorderRect.yMax = drawRect.yMax;
 
             // Fill
