@@ -292,7 +292,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
             // Top
             topBorderRect.x = Mathf.Round(drawRect.x + virtualSizes.TopLeft.x * LocalScale.x);
             topBorderRect.y = drawRect.y;
-            topBorderRect.xMax = Mathf.Round(drawRect.xMax - virtualSizes.TopRight.x * LocalScale.x;
+            topBorderRect.xMax = Mathf.Round(drawRect.xMax - virtualSizes.TopRight.x * LocalScale.x);
             topBorderRect.yMax = Mathf.Round(drawRect.y + virtualSizes.Top.y * LocalScale.y);
 
             // Left
