@@ -378,7 +378,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             if (!LoadInProgress)
             {
                 if (GameManager.Instance.SaveLoadManager.IsSavingPrevented)
-                    DaggerfallUI.MessageBox(TextManager.Instance.GetText("DaggerfallUI", "cannotSaveNow"));
+                    DaggerfallUI.MessageBox(TextManager.Instance.GetLocalizedText("cannotSaveNow"));
                 else
                     Save(GameManager.Instance.PlayerEntity.Name, quickSaveName, instantReload);
             }
@@ -407,7 +407,7 @@ namespace DaggerfallWorkshop.Game.Serialization
             StartCoroutine(LoadGame(path));
 
             // Notify
-            DaggerfallUI.Instance.PopupMessage(HardStrings.gameLoaded);
+            DaggerfallUI.Instance.PopupMessage(TextManager.Instance.GetLocalizedText("gameLoaded"));
         }
 
         public void Load(string characterName, string saveName)
@@ -1167,7 +1167,7 @@ namespace DaggerfallWorkshop.Game.Serialization
                 EnumerateSaves();
 
             // Notify
-            DaggerfallUI.Instance.PopupMessage(HardStrings.gameSaved);
+            DaggerfallUI.Instance.PopupMessage(TextManager.Instance.GetLocalizedText("gameSaved"));
 
             // Reload this save instantly if requested
             if (instantReload)

@@ -57,7 +57,6 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
 
         #region Fields
 
-        const string textDatabase = "DaggerfallUI";
         const int sleepEventMinimumHours = 6;
 
         protected const string baseTextureName = "REST00I0.IMG";              // Rest type
@@ -460,7 +459,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 if (remainingHoursRented == 0)
                 {
-                    DaggerfallMessageBox mb = DaggerfallUI.MessageBox(HardStrings.expiredRentedRoom);
+                    DaggerfallMessageBox mb = DaggerfallUI.MessageBox(TextManager.Instance.GetLocalizedText("expiredRentedRoom"));
                     mb.OnClose += RestFinishedPopup_OnClose;
                     currentRestMode = RestModes.Selection;
                     playerEntity.RemoveExpiredRentedRooms();
@@ -573,7 +572,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     return true;
                 }
                 CloseWindow();
-                DaggerfallUI.MessageBox(HardStrings.haveNotRentedRoom);
+                DaggerfallUI.MessageBox(TextManager.Instance.GetLocalizedText("haveNotRentedRoom"));
                 return false;
             }
             return true;
@@ -594,7 +593,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             if (CanRest(alreadyWarned))
             {
                 DaggerfallInputMessageBox mb = new DaggerfallInputMessageBox(uiManager, this);
-                mb.SetTextBoxLabel(HardStrings.restHowManyHours);
+                mb.SetTextBoxLabel(TextManager.Instance.GetLocalizedText("restHowManyHours"));
                 mb.TextPanelDistanceX = 9;
                 mb.TextPanelDistanceY = 8;
                 mb.TextBox.Text = "0";
@@ -626,7 +625,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             if (DaggerfallUnity.Settings.IllegalRestWarning && GameManager.Instance.PlayerGPS.IsPlayerInTown(true, true))
             {
                 DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
-                DaggerfallMessageBox mb = DaggerfallUI.MessageBox(TextManager.Instance.GetText(textDatabase, "illegalRestWarning"));
+                DaggerfallMessageBox mb = DaggerfallUI.MessageBox(TextManager.Instance.GetLocalizedText("illegalRestWarning"));
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.Yes);
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.No);
                 mb.OnButtonClick += ConfirmIllegalRestForAWhile_OnButtonClick;
@@ -651,7 +650,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             if (DaggerfallUnity.Settings.IllegalRestWarning && GameManager.Instance.PlayerGPS.IsPlayerInTown(true, true))
             {
-                DaggerfallMessageBox mb = DaggerfallUI.MessageBox(TextManager.Instance.GetText(textDatabase, "illegalRestWarning"));
+                DaggerfallMessageBox mb = DaggerfallUI.MessageBox(TextManager.Instance.GetLocalizedText("illegalRestWarning"));
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.Yes);
                 mb.AddButton(DaggerfallMessageBox.MessageBoxButtons.No);
                 mb.OnButtonClick += ConfirmIllegalRestUntilHealed_OnButtonClick;
@@ -675,7 +674,7 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         {
             DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
             DaggerfallInputMessageBox mb = new DaggerfallInputMessageBox(uiManager, this);
-            mb.SetTextBoxLabel(HardStrings.loiterHowManyHours);
+            mb.SetTextBoxLabel(TextManager.Instance.GetLocalizedText("loiterHowManyHours"));
             mb.TextPanelDistanceX = 5;
             mb.TextPanelDistanceY = 8;
             mb.TextBox.Text = "0";
@@ -759,8 +758,8 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             else if (time > DaggerfallUnity.Settings.LoiterLimitInHours)
             {
                 DaggerfallUI.MessageBox(new string[] { 
-                    TextManager.Instance.GetText(textDatabase, "cannotLoiterMoreThanXHours1"), 
-                    string.Format(TextManager.Instance.GetText(textDatabase, "cannotLoiterMoreThanXHours2"), DaggerfallUnity.Settings.LoiterLimitInHours) });
+                    TextManager.Instance.GetLocalizedText("cannotLoiterMoreThanXHours1"), 
+                    string.Format(TextManager.Instance.GetLocalizedText("cannotLoiterMoreThanXHours2"), DaggerfallUnity.Settings.LoiterLimitInHours) });
                 return;
             }
 
