@@ -1230,8 +1230,8 @@ namespace DaggerfallWorkshop.Game
             if (!buildingDirectory.GetBuildingSummary(building.buildingKey, out buildingSummary))
                 return null;
 
-            // Do nothing if not a shop
-            if (!RMBLayout.IsShop(buildingSummary.BuildingType))
+            // Do nothing if not a shop, FG, MG or Knight Order
+            if (!RMBLayout.IsShop(buildingSummary.BuildingType) && buildingSummary.BuildingType != DFLocation.BuildingTypes.GuildHall)
                 return null;
 
             // Set quality level text ID from quality value 01-20
