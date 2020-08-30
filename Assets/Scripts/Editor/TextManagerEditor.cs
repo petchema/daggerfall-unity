@@ -44,37 +44,30 @@ namespace DaggerfallWorkshop
 
         void DisplayGUI()
         {
-            DrawDefaultInspector();
+            var tableCopyOverwriteTargetStringTables = Prop("tableCopyOverwriteTargetStringTables");
+            var tableCopyTargetInternalStrings = Prop("tableCopyTargetInternalStrings");
+            var tableCopyTargetRSCStrings = Prop("tableCopyTargetRSCStrings");
 
-            //EditorGUILayout.LabelField("Internal String Tables");
-            //GUILayoutHelper.Indent(() =>
-            //{
-            //    EditorGUILayout.SelectableLabel(TextManager.defaultInternalStringsCollectionName, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-            //    EditorGUILayout.SelectableLabel(TextManager.defaultInternalRSCCollectionName, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-            //});
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Copy String Tables", EditorStyles.boldLabel);
+            GUILayoutHelper.Indent(() =>
+            {
+                tableCopyTargetInternalStrings.stringValue = EditorGUILayout.TextField("Internal Strings > ", tableCopyTargetInternalStrings.stringValue);
+                tableCopyTargetRSCStrings.stringValue = EditorGUILayout.TextField("RSC Strings > ", tableCopyTargetRSCStrings.stringValue);
+            });
 
-            //EditorGUILayout.Space();
-            //GUILayoutHelper.Horizontal(() =>
-            //{
+            tableCopyOverwriteTargetStringTables.boolValue = EditorGUILayout.Toggle(new GUIContent("Overwrite Target String Tables?", "When enabled will copy over existing strings in target string tables."), tableCopyOverwriteTargetStringTables.boolValue);
+            if (tableCopyOverwriteTargetStringTables.boolValue)
+                EditorGUILayout.HelpBox("Warning: Existing keys in the target string tables will be replaced by source.", MessageType.Warning);
+            else
+                EditorGUILayout.HelpBox("Copy will create all missing keys in target string tables from source. Existing keys will not be overwritten.", MessageType.Info);
 
-            //});
-            //EditorGUILayout.SelectableLabel(multiName, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-            //EditorGUILayout.LabelField(new GUIContent("String Importer", NG: Existing collections will be cleared."), EditorStyles.boldLabel);
-
-            //EditorGUILayout.Space();
-            //EditorGUILayout.LabelField(new GUIContent("String Importer", "Import classic text data into named String Table Collections.\nNOTE: You must create collections manually.\nWARNING: Existing collections will be cleared."), EditorStyles.boldLabel);
-            //GUILayoutHelper.Horizontal(() =>
-            //{
-            //    var rscCollectionName = Prop("textRSCCollection");
-            //    if (GUILayout.Button("Import All"))
-            //    {
-            //        DaggerfallStringTableImporter.ImportTextRSCToStringTables(rscCollectionName.stringValue);
-            //    }
-            //    if (GUILayout.Button("Clear All"))
-            //    {
-            //        DaggerfallStringTableImporter.ClearStringTables(rscCollectionName.stringValue);
-            //    }
-            //});
+            EditorGUILayout.Space();
+            if (GUILayout.Button("Copy All"))
+            {
+                DaggerfallStringTableImporter.CopyInternalStringTable(tableCopyTargetInternalStrings.stringValue, tableCopyOverwriteTargetStringTables.boolValue);
+                DaggerfallStringTableImporter.CopyTextRSCToStringTable(tableCopyTargetRSCStrings.stringValue, tableCopyOverwriteTargetStringTables.boolValue);
+            }
         }
     }
 }
