@@ -206,14 +206,20 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                     controlsPanel.Components.Add(buttonGroup[j]);
                     buttonGroup[j].Name = actions[i];
                     buttonGroup[j].OnMouseClick += KeybindButton_OnMouseClick;
+                    buttonGroup[j].OnRightMouseClick += KeybindButton_OnMouseRightClick;
                     if (i == endPoint - 1)
                     {
                         allKeys.Add(buttonGroup);
                     }
                 }
 
-                buttonGroup[j].Label.Text = ControlsConfigManager.Instance.GetUnsavedBinding(key);
+                var code = ControlsConfigManager.Instance.GetUnsavedBindingKeyCode(key);
+                buttonGroup[j].Label.Text = ControlsConfigManager.Instance.GetButtonText(code);
                 buttonGroup[j].Label.TextColor = DaggerfallUI.DaggerfallDefaultTextColor;
+
+                buttonGroup[j].ToolTip = defaultToolTip;
+                buttonGroup[j].SuppressToolTip = buttonGroup[j].Label.Text != ControlsConfigManager.ElongatedButtonText;
+                buttonGroup[j].ToolTipText = ControlsConfigManager.Instance.GetButtonText(code, true);
             }
         }
 
@@ -364,6 +370,16 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             InputManager.Instance.StartCoroutine(WaitForKeyPress(thisKeybindButton, CheckDuplicates, SetWaitingForInput));
         }
 
+        private void KeybindButton_OnMouseRightClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (waitingForInput || ((Button)sender).Label.Text == KeyCode.None.ToString())
+                return;
+
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+
+            ControlsConfigManager.Instance.PromptRemoveKeybindMessage((Button)sender, CheckDuplicates);
+        }
+
         public static IEnumerator WaitForKeyPress(Button button, System.Action checkDuplicates, System.Action<bool> setWaitingForInput)
         {
             string currentLabel = button.Label.Text;
@@ -384,11 +400,13 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             {
                 if(InputManager.Instance.ReservedKeys.FirstOrDefault(x => x == code) == KeyCode.None)
                 {
-                    button.Label.Text = InputManager.Instance.GetKeyString(code);
+                    button.Label.Text = ControlsConfigManager.Instance.GetButtonText(code);
+                    button.SuppressToolTip = button.Label.Text != ControlsConfigManager.ElongatedButtonText;
+                    button.ToolTipText = ControlsConfigManager.Instance.GetButtonText(code, true);
 
                     var action = (InputManager.Actions)Enum.Parse(typeof(InputManager.Actions), button.Name);
 
-                    ControlsConfigManager.Instance.SetUnsavedBinding(action, button.Label.Text);
+                    ControlsConfigManager.Instance.SetUnsavedBinding(action, InputManager.Instance.GetKeyString(code));
                     checkDuplicates();
                 }
                 else

@@ -30,14 +30,10 @@ namespace DaggerfallWorkshop.Game
 
         //there are only 16 recognized axes
         const int numAxes = 16;
-        const int startingAxisKeyCode = 5000;
+        public const int startingAxisKeyCode = 5000;
 
         //if the force is greater than this threshold, round it up to 1
         float joystickMovementThreshold = 0.95F;
-
-        //this arbitrary float value seems to be the minimum force that can be given without unnecessarily
-        //triggering FrictionMotor's UnstickHandling() method, which can create jagged movement at lower force
-        const float controllerMinimumAxisFloat = 0.68f;
 
         public Texture2D controllerCursorImage;
 
@@ -61,13 +57,18 @@ namespace DaggerfallWorkshop.Game
         IList keyCodeList;
         KeyCode[] reservedKeys = new KeyCode[] { };
 
+        // KeyCode linkage between primary and secondary keybinds
         Dictionary<int, int> primarySecondaryKeybindDict = new Dictionary<int, int>();
+        // All primary keybinds
         Dictionary<KeyCode, Actions> actionKeyDict = new Dictionary<KeyCode, Actions>();
+        // All secondary keybinds
         Dictionary<KeyCode, Actions> secondaryActionKeyDict = new Dictionary<KeyCode, Actions>();
+        // Attempts to fill the gaps for primary keybinds set to None if a secondary keybind exists. Used for GetKey and Action enumeration
+        Dictionary<KeyCode, Actions> existingKeyDict = new Dictionary<KeyCode, Actions>();
         Dictionary<String, AxisActions> axisActionKeyDict = new Dictionary<String, AxisActions>();
         Dictionary<KeyCode, string> unknownActions = new Dictionary<KeyCode, string>();
         Dictionary<KeyCode, string> secondaryUnknownActions = new Dictionary<KeyCode, string>();
-        //making keys 'int' instead of AxisActions because enum keys cause GC overhead in Unity
+        // Making keys 'int' instead of AxisActions because enum keys cause GC overhead in Unity
         Dictionary<int, bool> axisActionInvertDict = new Dictionary<int, bool>();
         Dictionary<KeyCode, JoystickUIActions> joystickUIDict = new Dictionary<KeyCode, JoystickUIActions>();
 
@@ -484,7 +485,7 @@ namespace DaggerfallWorkshop.Game
                 var h = Input.GetAxis(cameraAxisBindingCache[0]);
                 var v = Input.GetAxis(cameraAxisBindingCache[1]);
 
-                if(Mathf.Sqrt(h*h + v*v) > JoystickDeadzone)
+                if (Mathf.Sqrt(h*h + v*v) > JoystickDeadzone)
                 {
                     mouseX = h;
                     mouseY = v;
@@ -496,7 +497,7 @@ namespace DaggerfallWorkshop.Game
                     mouseY *= -1;
             }
 
-            if(ToggleAutorun)
+            if (ToggleAutorun)
             {
                 ApplyVerticalForce(1);
             }
@@ -634,9 +635,26 @@ namespace DaggerfallWorkshop.Game
         }
 
         /// <summary>
-        /// Finds first keycode bound to a specific action.
+        /// Finds first non-None KeyCode bound to a specific action
         /// </summary>
-        public KeyCode GetBinding(Actions action, bool primary = true)
+        public KeyCode GetBinding(Actions action)
+        {
+            if (existingKeyDict.ContainsValue(action))
+            {
+                foreach (var k in existingKeyDict.Keys)
+                {
+                    if (existingKeyDict[k] == action)
+                        return k;
+                }
+            }
+
+            return KeyCode.None;
+        }
+
+        /// <summary>
+        /// Finds KeyCode bound to a specific action, under either primary or secondary bindings
+        /// </summary>
+        public KeyCode GetBinding(Actions action, bool primary)
         {
             var dict = primary ? actionKeyDict : secondaryActionKeyDict;
             if (dict.ContainsValue(action))
@@ -885,7 +903,7 @@ namespace DaggerfallWorkshop.Game
 
             string json = SaveLoadManager.Serialize(keyBindsData.GetType(), keyBindsData);
             File.WriteAllText(path, json);
-            UpdateAxisBindingCache();
+            UpdateBindingCache();
             RaiseSavedKeyBindsEvent();
         }
 
@@ -919,9 +937,7 @@ namespace DaggerfallWorkshop.Game
             SetBinding(KeyCode.Space, Actions.Jump);
             SetBinding(KeyCode.C, Actions.Crouch);
             SetBinding(KeyCode.LeftControl, Actions.Slide);
-            SetBinding(KeyCode.RightControl, Actions.Slide);
             SetBinding(KeyCode.LeftShift, Actions.Run);
-            SetBinding(KeyCode.RightShift, Actions.Run);
             SetBinding(KeyCode.Mouse2, Actions.AutoRun);
 
             SetBinding(KeyCode.R, Actions.Rest);
@@ -951,7 +967,6 @@ namespace DaggerfallWorkshop.Game
             SetBinding(KeyCode.Delete, Actions.LookDown);
             SetBinding(KeyCode.Home, Actions.CenterView);
             SetBinding(KeyCode.LeftAlt, Actions.Sneak);
-            SetBinding(KeyCode.RightAlt, Actions.Sneak);
 
             SetBinding(KeyCode.L, Actions.LogBook);
             SetBinding(KeyCode.N, Actions.NoteBook);
@@ -969,7 +984,7 @@ namespace DaggerfallWorkshop.Game
 
             SetJoystickUIBinding(KeyCode.JoystickButton0, JoystickUIActions.LeftClick);
             SetJoystickUIBinding(KeyCode.JoystickButton1, JoystickUIActions.RightClick);
-            UpdateAxisBindingCache();
+            UpdateBindingCache();
 
             foreach (AxisActions axisAction in Enum.GetValues(typeof(AxisActions)))
                 SetAxisActionInversion(axisAction, false);
@@ -977,32 +992,32 @@ namespace DaggerfallWorkshop.Game
 
         public bool GetMouseButtonDown(int button)
         {
-            return Input.GetMouseButtonDown(button) || (EnableController && GetKeyDown(joystickUICache[button]));
+            return Input.GetMouseButtonDown(button) || (EnableController && GetSingleKeyDown(joystickUICache[button]));
         }
 
         public bool GetMouseButtonUp(int button)
         {
-            return Input.GetMouseButtonUp(button) || (EnableController && GetKeyUp(joystickUICache[button]));
+            return Input.GetMouseButtonUp(button) || (EnableController && GetSingleKeyUp(joystickUICache[button]));
         }
 
         public bool GetMouseButton(int button)
         {
-            return Input.GetMouseButton(button) || (EnableController && GetKey(joystickUICache[button]));
+            return Input.GetMouseButton(button) || (EnableController && GetSingleKey(joystickUICache[button]));
         }
 
-        public bool GetKey(KeyCode key)
+        public bool GetKey(KeyCode key, bool useSecondary = true)
         {
-            return GetSingleKey(key) || GetSingleKey(GetSecondaryBinding(key));
+            return GetSingleKey(key) || (useSecondary && GetSingleKey(GetSecondaryBinding(key)));
         }
 
-        public bool GetKeyDown(KeyCode key)
+        public bool GetKeyDown(KeyCode key, bool useSecondary = true)
         {
-            return GetSingleKeyDown(key) || GetSingleKeyDown(GetSecondaryBinding(key));
+            return GetSingleKeyDown(key) || (useSecondary && GetSingleKeyDown(GetSecondaryBinding(key)));
         }
 
-        public bool GetKeyUp(KeyCode key)
+        public bool GetKeyUp(KeyCode key, bool useSecondary = true)
         {
-            return GetSingleKeyUp(key) || GetSingleKeyUp(GetSecondaryBinding(key));
+            return GetSingleKeyUp(key) || (useSecondary && GetSingleKeyUp(GetSecondaryBinding(key)));
         }
 
         public bool AnyKeyDown
@@ -1069,7 +1084,7 @@ namespace DaggerfallWorkshop.Game
             }
         }
 
-        private void UpdateAxisBindingCache()
+        private void UpdateBindingCache()
         {
             joystickUICache[0] = GetJoystickUIBinding(JoystickUIActions.LeftClick);
             joystickUICache[1] = GetJoystickUIBinding(JoystickUIActions.RightClick);
@@ -1080,14 +1095,25 @@ namespace DaggerfallWorkshop.Game
             movementAxisBindingCache[0] = GetAxisBinding(AxisActions.MovementHorizontal);
             movementAxisBindingCache[1] = GetAxisBinding(AxisActions.MovementVertical);
 
-            foreach(Actions a in Enum.GetValues(typeof(Actions)))
+            existingKeyDict.Clear();
+            foreach (var kv in actionKeyDict)
+            {
+                var key = kv.Key;
+                if (key == KeyCode.None)
+                    key = GetBinding(kv.Value, false);
+
+                existingKeyDict[key] = kv.Value;
+            }
+
+            primarySecondaryKeybindDict.Clear();
+            foreach (Actions a in Enum.GetValues(typeof(Actions)))
                 MapSecondaryBindings(a);
         }
 
         KeyCode GetSecondaryBinding(KeyCode a)
         {
             int ret;
-            if(primarySecondaryKeybindDict.TryGetValue((int)a, out ret))
+            if (primarySecondaryKeybindDict.TryGetValue((int)a, out ret))
                 return (KeyCode)ret;
 
             return KeyCode.None;
@@ -1104,9 +1130,21 @@ namespace DaggerfallWorkshop.Game
             KeyCode primKey = actionKeyDict.FirstOrDefault(x => x.Value == a).Key;
             KeyCode secKey = secondaryActionKeyDict.FirstOrDefault(x => x.Value == a).Key;
 
-            if(primKey != KeyCode.None && secKey != KeyCode.None)
+            if (primKey != KeyCode.None && secKey != KeyCode.None)
             {
                 SetSecondaryBinding(primKey, secKey);
+            }
+            else
+            {
+                int detached = 0;
+                int existingKey = primKey != KeyCode.None ? (int)primKey : (int)secKey;
+
+                if (primarySecondaryKeybindDict.TryGetValue(existingKey, out detached))
+                {
+                    primarySecondaryKeybindDict[existingKey] = (int)KeyCode.None;
+                }
+
+                primarySecondaryKeybindDict.Remove(detached);
             }
         }
 
@@ -1162,9 +1200,7 @@ namespace DaggerfallWorkshop.Game
             TestSetBinding(KeyCode.Space, Actions.Jump);
             TestSetBinding(KeyCode.C, Actions.Crouch);
             TestSetBinding(KeyCode.LeftControl, Actions.Slide);
-            TestSetBinding(KeyCode.RightControl, Actions.Slide);
             TestSetBinding(KeyCode.LeftShift, Actions.Run);
-            TestSetBinding(KeyCode.RightShift, Actions.Run);
             TestSetBinding(KeyCode.Mouse2, Actions.AutoRun);
 
             TestSetBinding(KeyCode.R, Actions.Rest);
@@ -1194,7 +1230,6 @@ namespace DaggerfallWorkshop.Game
             TestSetBinding(KeyCode.Delete, Actions.LookDown);
             TestSetBinding(KeyCode.Home, Actions.CenterView);
             TestSetBinding(KeyCode.LeftAlt, Actions.Sneak);
-            TestSetBinding(KeyCode.RightAlt, Actions.Sneak);
 
             TestSetBinding(KeyCode.L, Actions.LogBook);
             TestSetBinding(KeyCode.N, Actions.NoteBook);
@@ -1212,10 +1247,10 @@ namespace DaggerfallWorkshop.Game
 
             TestSetJoystickUIBinding(KeyCode.JoystickButton0, JoystickUIActions.LeftClick);
             TestSetJoystickUIBinding(KeyCode.JoystickButton1, JoystickUIActions.RightClick);
-            UpdateAxisBindingCache();
+            UpdateBindingCache();
 
             foreach (AxisActions axisAction in Enum.GetValues(typeof(AxisActions)))
-                if(!axisActionInvertDict.ContainsKey((int)axisAction))
+                if (!axisActionInvertDict.ContainsKey((int)axisAction))
                     SetAxisActionInversion(axisAction, false);
         }
 
@@ -1464,7 +1499,7 @@ namespace DaggerfallWorkshop.Game
         // Enumerate all keyboard actions in progress
         void FindKeyboardActions()
         {
-            var enumerator = actionKeyDict.GetEnumerator();
+            var enumerator = existingKeyDict.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 var element = enumerator.Current;
@@ -1530,9 +1565,9 @@ namespace DaggerfallWorkshop.Game
                 if (jd <= JoystickDeadzone)
                     return;
 
-                float dist = Mathf.Clamp(jd, controllerMinimumAxisFloat, 1.0F);
+                float dist = jd / JoystickMovementThreshold;
 
-                if (MaximizeJoystickMovement || dist > JoystickMovementThreshold)
+                if (MaximizeJoystickMovement || dist > 1.0F)
                     dist = 1.0F;
 
                 if (horiz > 0)
@@ -1569,7 +1604,7 @@ namespace DaggerfallWorkshop.Game
 
         string GetKeyBindsSavePath()
         {
-            return Path.Combine(Application.persistentDataPath, keyBindsFilename);
+            return Path.Combine(DaggerfallUnity.Settings.PersistentDataPath, keyBindsFilename);
         }
 
         bool HasKeyBindsSave()
@@ -1586,7 +1621,7 @@ namespace DaggerfallWorkshop.Game
             var dict = primary ? actionKeyDict : secondaryActionKeyDict;
             var unknown = primary ? unknownActions : secondaryUnknownActions;
 
-            foreach(var item in saved)
+            foreach (var item in saved)
             {
                 KeyCode key = ParseKeyCodeString(item.Key);
                 var actionVal = ActionNameToEnum(item.Value);
@@ -1610,7 +1645,7 @@ namespace DaggerfallWorkshop.Game
 
             LoadActionKeybinds(true, keyBindsData);
 
-            if(keyBindsData.secondaryActionKeyBinds != null)
+            if (keyBindsData.secondaryActionKeyBinds != null)
                 LoadActionKeybinds(false, keyBindsData);
 
             if (keyBindsData.axisActionKeyBinds != null)
@@ -1620,7 +1655,7 @@ namespace DaggerfallWorkshop.Game
                     if (!axisActionKeyDict.ContainsKey((String)item.Key))
                         axisActionKeyDict.Add((String)item.Key, item.Value);
                 }
-                UpdateAxisBindingCache();
+                UpdateBindingCache();
             }
             else
             {
@@ -1636,7 +1671,7 @@ namespace DaggerfallWorkshop.Game
                     if (!joystickUIDict.ContainsKey(key))
                         joystickUIDict.Add(key, val);
                 }
-                UpdateAxisBindingCache();
+                UpdateBindingCache();
             }
 
             if (keyBindsData.axisActionInversions != null)
