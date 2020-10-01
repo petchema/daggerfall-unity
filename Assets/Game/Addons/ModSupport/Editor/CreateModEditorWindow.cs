@@ -62,6 +62,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         readonly GUIStyle titleStyle = new GUIStyle();
         readonly GUIStyle fieldStyle = new GUIStyle();
         GUIContent documentationGUIContent;
+        GUIContent targetInfoGUIContent;
         bool isSupportedEditorVersion;
 
         void OnEnable()
@@ -80,6 +81,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
 
             documentationGUIContent = new GUIContent(EditorGUIUtility.IconContent("_Help"));
             documentationGUIContent.text = " Mod System Documentation";
+            targetInfoGUIContent = new GUIContent($"{VersionInfo.DaggerfallUnityProductName} {VersionInfo.DaggerfallUnityStatus} {VersionInfo.DaggerfallUnityVersion} (Unity {VersionInfo.BaselineUnityVersion})");
             isSupportedEditorVersion = IsSupportedEditorVersion();
         }
 
@@ -203,6 +205,14 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
             GUILayoutHelper.Vertical(() =>
             {
                 EditorGUILayout.Space();
+
+                GUILayoutHelper.Horizontal(() =>
+                {
+                    EditorGUILayout.LabelField(new GUIContent("Current Target: "), titleStyle);
+                    GUILayout.Space(-1000);
+                    EditorGUILayout.LabelField(targetInfoGUIContent, fieldStyle);
+                });
+
                 GUILayoutHelper.Horizontal(() =>
                 {
                     EditorGUILayout.LabelField(new GUIContent("Current File: "), titleStyle);
@@ -764,7 +774,7 @@ namespace DaggerfallWorkshop.Game.Utility.ModSupport
         private static bool IsSupportedEditorVersion()
         {
 #if UNITY_EDITOR_WIN || UNITY_EDITOR_OSX
-            return Application.unityVersion.Equals("2019.4.2f1", StringComparison.Ordinal);
+            return Application.unityVersion.Equals(VersionInfo.BaselineUnityVersion, StringComparison.Ordinal);
 #elif UNITY_EDITOR_LINUX
             return true;
 #else
