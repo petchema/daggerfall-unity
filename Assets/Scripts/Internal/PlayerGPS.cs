@@ -315,6 +315,9 @@ namespace DaggerfallWorkshop
                 UpdateNearbyObjects();
                 nearbyObjectsUpdateTimer = 0;
             }
+        }
+
+        void FixedUpdate() {
 
             // Snap back to physical world boundary to prevent player running off edge of world
             // Setting to approx. 10000 inches (254 metres) in from edge so end of world not so visible
