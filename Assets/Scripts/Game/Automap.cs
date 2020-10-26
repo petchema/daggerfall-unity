@@ -1843,9 +1843,29 @@ namespace DaggerfallWorkshop.Game
                 return;
             }
 
+            DFLocation location = currentLocation.Value;
+            int originX, originY, sizeX, sizeY;
+            {
+                int blockXMin = 1000;
+                int blockXMax = -1000;
+                int blockZMin = 1000;
+                int blockZMax = -1000;
+                foreach (DFLocation.DungeonBlock block in location.Dungeon.Blocks)
+                {
+                    if (block.X < blockXMin) blockXMin = block.X;
+                    if (block.X > blockXMax) blockXMax = block.X;
+                    if (block.Z < blockZMin) blockZMin = block.Z;
+                    if (block.Z > blockZMax) blockZMax = block.Z;
+                }
+                originX = -blockXMin;
+                originY = -blockZMin;
+                sizeX = Math.Max(9, blockXMax - blockXMin + 1);
+                sizeY = Math.Max(9, blockZMax - blockZMin + 1);
+            }
+
             int microMapBlockSizeInPixels = 2;
-            int width = 9 * microMapBlockSizeInPixels;
-            int height = 9 * microMapBlockSizeInPixels;
+            int width = sizeX * microMapBlockSizeInPixels;
+            int height = sizeY * microMapBlockSizeInPixels;
             textureMicroMap = new Texture2D(width, height, TextureFormat.ARGB32, false);
             textureMicroMap.filterMode = FilterMode.Point;
 
@@ -1854,9 +1874,6 @@ namespace DaggerfallWorkshop.Game
                 colors[i] = new Color(0.0f, 0.0f, 0.0f, 0.0f);
             textureMicroMap.SetPixels(0, 0, width, height, colors);
 
-            const int originX = 5;
-            const int originY = 5;
-            DFLocation location = currentLocation.Value;
             foreach (DFLocation.DungeonBlock block in location.Dungeon.Blocks)
             {
                 int xBlockPos = originX + block.X;
