@@ -10,6 +10,7 @@
 //
 
 using UnityEngine;
+using DaggerfallConnect.Utility;
 using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
@@ -24,29 +25,53 @@ namespace DaggerfallWorkshop.Game.UserInterface
     public class HUDLarge : Panel
     {
         const string mainFilename = "MAIN00I0.IMG";
+        const string interactionModesFilename = "MAIN01I0.IMG";
         const string compass0Filename = "CMPA00I0.BSS";     // Standard compass
         const string compass1Filename = "CMPA01I0.BSS";     // Blue compass (unused)
         const string compass2Filename = "CMPA02I0.BSS";     // Red compass (unused)
         const int compassFrameCount = 32;
 
         protected Rect mainPanelRect = new Rect(0, 0, 320, 46);
-        protected Rect headPanelRect = new Rect(5, 8, 37, 30);
+        protected Rect stealModeSubrect = new Rect(0, 0, 47, 23);
+        protected Rect talkModeSubrect = new Rect(0, 23, 47, 23);
+        protected Rect grabModeSubrect = new Rect(0, 46, 47, 23);
+        protected Rect infoModeSubrect = new Rect(0, 69, 47, 23);
+        protected Rect headPanelRect = new Rect(7, 8, 33, 30);
         protected Rect compassPanelRect = new Rect(275, 2, 43, 42);
         protected Rect healthPanelRect = new Rect(49, 7, 4, 32);
         protected Rect fatiguePanelRect = new Rect(57, 7, 4, 32);
         protected Rect magickaPanelRect = new Rect(65, 7, 4, 32);
+        protected Rect interactionModePanelRect = new Rect(131, 0, 47, 23);
+        protected Rect optionsPanelRect = new Rect(71, 0, 12, 46);
+        protected Rect spellbookPanelRect = new Rect(84, 0, 47, 23);
+        protected Rect inventoryPanelRect = new Rect(178, 0, 47, 23);
+        protected Rect sheathPanelRect = new Rect(225, 0, 47, 23);
+        protected Rect useMagicItemPanelRect = new Rect(84, 23, 47, 23);
+        protected Rect transportModePanelRect = new Rect(131, 23, 47, 23);
 
-        Texture2D mainTexture;
-        Texture2D[] compassTextures = new Texture2D[compassFrameCount];
+        protected DFSize nativeInteractionModesTextureSize = new DFSize(47, 92);
 
-        Panel headPanel = new Panel();
-        Panel compassPanel = new Panel();
-        HUDVitals vitals = new HUDVitals();
+        protected Texture2D mainTexture;
+        protected Texture2D[] compassTextures = new Texture2D[compassFrameCount];
+        protected Texture2D stealModeTexture, talkModeTexture, grabModeTexture, infoModeTexture;
 
-        Camera compassCamera;
-        float eulerAngle;
+        protected Panel headPanel = new Panel();
+        protected Panel compassPanel = new Panel();
+        protected HUDVitals vitals = new HUDVitals();
+        protected Panel interactionModePanel = new Panel();
+        protected Panel optionsPanel = new Panel();
+        protected Panel spellbookPanel = new Panel();
+        protected Panel inventoryPanel = new Panel();
+        protected Panel sheathPanel = new Panel();
+        protected Panel useMagicItemPanel = new Panel();
+        protected Panel transportModePanel = new Panel();
 
-        PlayerEntity playerEntity;
+        protected Camera compassCamera;
+        protected float eulerAngle;
+
+        protected PlayerEntity playerEntity;
+
+        Vector2 lastCustomScale;
 
         /// <summary>
         /// Gets or sets a compass camera to automatically determine compass heading.
@@ -84,6 +109,11 @@ namespace DaggerfallWorkshop.Game.UserInterface
         /// </summary>
         public Vector2 CustomScale { get; set; }
 
+        /// <summary>
+        /// True when active mouse cursor is over large HUD.
+        /// </summary>
+        public bool ActiveMouseOverLargeHUD { get; private set; }
+
         public HUDLarge()
             : base()
         {
@@ -107,6 +137,13 @@ namespace DaggerfallWorkshop.Game.UserInterface
             {
                 compassTextures[i] = ImageReader.GetTexture(compass0Filename, 0, i, true);
             }
+
+            // Split interaction mode icons
+            Texture2D interactionModesTexture = ImageReader.GetTexture(interactionModesFilename);
+            stealModeTexture = ImageReader.GetSubTexture(interactionModesTexture, stealModeSubrect, nativeInteractionModesTextureSize);
+            talkModeTexture = ImageReader.GetSubTexture(interactionModesTexture, talkModeSubrect, nativeInteractionModesTextureSize);
+            grabModeTexture = ImageReader.GetSubTexture(interactionModesTexture, grabModeSubrect, nativeInteractionModesTextureSize);
+            infoModeTexture = ImageReader.GetSubTexture(interactionModesTexture, infoModeSubrect, nativeInteractionModesTextureSize);
         }
 
         void Setup()
@@ -121,6 +158,8 @@ namespace DaggerfallWorkshop.Game.UserInterface
 
             // Head
             headPanel.BackgroundTextureLayout = BackgroundLayout.ScaleToFit;
+            headPanel.OnMouseClick += HeadPanel_OnMouseClick;
+            headPanel.OnRightMouseClick += HeadPanel_OnMouseClick;
             Components.Add(headPanel);
 
             // Vitals
@@ -132,6 +171,41 @@ namespace DaggerfallWorkshop.Game.UserInterface
             vitals.SetAllHorizontalAlignment(HorizontalAlignment.None);
             vitals.SetAllVerticalAlignment(VerticalAlignment.None);
             Components.Add(vitals);
+
+            // Interaction mode
+            interactionModePanel.OnMouseClick += InteractionModePanel_OnMouseClick;
+            interactionModePanel.OnRightMouseClick += InteractionModePanel_OnRightMouseClick;
+            Components.Add(interactionModePanel);
+
+            // Options
+            optionsPanel.OnMouseClick += OptionsPanel_OnMouseClick;
+            optionsPanel.OnRightMouseClick += OptionsPanel_OnMouseClick;
+            Components.Add(optionsPanel);
+
+            // Spellbook
+            spellbookPanel.OnMouseClick += SpellbookPanel_OnMouseClick;
+            spellbookPanel.OnRightMouseClick += SpellbookPanel_OnMouseClick;
+            Components.Add(spellbookPanel);
+
+            // Inventory
+            inventoryPanel.OnMouseClick += InventoryPanel_OnMouseClick;
+            inventoryPanel.OnRightMouseClick += InventoryPanel_OnMouseClick;
+            Components.Add(inventoryPanel);
+
+            // Sheath
+            sheathPanel.OnMouseClick += SheathPanel_OnMouseClick;
+            sheathPanel.OnRightMouseClick += SheathPanel_OnMouseClick;
+            Components.Add(sheathPanel);
+
+            // Use magic item
+            useMagicItemPanel.OnMouseClick += UseMagicItemPanel_OnMouseClick;
+            useMagicItemPanel.OnRightMouseClick += UseMagicItemPanel_OnMouseClick;
+            Components.Add(useMagicItemPanel);
+
+            // Transport
+            transportModePanel.OnMouseClick += TransportModePanel_OnMouseClick;
+            transportModePanel.OnRightMouseClick += TransportModePanel_OnMouseClick;
+            Components.Add(transportModePanel);
         }
 
         void Refresh()
@@ -144,6 +218,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
             if (!Enabled)
             {
                 ScreenHeight = 0;
+                ActiveMouseOverLargeHUD = false;
                 return;
             }
 
@@ -152,18 +227,37 @@ namespace DaggerfallWorkshop.Game.UserInterface
 
             // Manually update position and scale of controls to match overall large HUD scale
             // Large HUD exists in screen space not in native 320x200 UI space so scale needs to be amended
-            Position = mainPanelRect.position * CustomScale;
-            Size = mainPanelRect.size * CustomScale;
-            compassPanel.Position = compassPanelRect.position * CustomScale;
-            compassPanel.Size = compassPanelRect.size * CustomScale;
-            headPanel.Position = headPanelRect.position * CustomScale;
-            headPanel.Size = headPanelRect.size * CustomScale;
-            vitals.CustomHealthBarPosition = healthPanelRect.position * CustomScale;
-            vitals.CustomHealthBarSize = healthPanelRect.size * CustomScale;
-            vitals.CustomFatigueBarPosition = fatiguePanelRect.position * CustomScale;
-            vitals.CustomFatigueBarSize = fatiguePanelRect.size * CustomScale;
-            vitals.CustomMagickaBarPosition = magickaPanelRect.position * CustomScale;
-            vitals.CustomMagickaBarSize = magickaPanelRect.size * CustomScale;
+            if (lastCustomScale != CustomScale)
+            {
+                Position = mainPanelRect.position * CustomScale;
+                Size = mainPanelRect.size * CustomScale;
+                compassPanel.Position = compassPanelRect.position * CustomScale;
+                compassPanel.Size = compassPanelRect.size * CustomScale;
+                headPanel.Position = headPanelRect.position * CustomScale;
+                headPanel.Size = headPanelRect.size * CustomScale;
+                vitals.CustomHealthBarPosition = healthPanelRect.position * CustomScale;
+                vitals.CustomHealthBarSize = healthPanelRect.size * CustomScale;
+                vitals.CustomFatigueBarPosition = fatiguePanelRect.position * CustomScale;
+                vitals.CustomFatigueBarSize = fatiguePanelRect.size * CustomScale;
+                vitals.CustomMagickaBarPosition = magickaPanelRect.position * CustomScale;
+                vitals.CustomMagickaBarSize = magickaPanelRect.size * CustomScale;
+                interactionModePanel.Position = interactionModePanelRect.position * CustomScale;
+                interactionModePanel.Size = interactionModePanelRect.size * CustomScale;
+                optionsPanel.Position = optionsPanelRect.position * CustomScale;
+                optionsPanel.Size = optionsPanelRect.size * CustomScale;
+                spellbookPanel.Position = spellbookPanelRect.position * CustomScale;
+                spellbookPanel.Size = spellbookPanelRect.size * CustomScale;
+                inventoryPanel.Position = inventoryPanelRect.position * CustomScale;
+                inventoryPanel.Size = inventoryPanelRect.size * CustomScale;
+                sheathPanel.Position = sheathPanelRect.position * CustomScale;
+                sheathPanel.Size = sheathPanelRect.size * CustomScale;
+                useMagicItemPanel.Position = useMagicItemPanelRect.position * CustomScale;
+                useMagicItemPanel.Size = useMagicItemPanelRect.size * CustomScale;
+                transportModePanel.Position = transportModePanelRect.position * CustomScale;
+                transportModePanel.Size = transportModePanelRect.size * CustomScale;
+
+                lastCustomScale = CustomScale;
+            }
 
             // Update head image data when null
             if (HeadTexture == null)
@@ -181,6 +275,9 @@ namespace DaggerfallWorkshop.Game.UserInterface
 
             // Update compass pointer
             compassPanel.BackgroundTexture = compassTextures[(int)(compassFrameCount * percent)];
+
+            // Update interaction mode
+            UpdateInteractionModeTexture();
 
             base.Update();
         }
@@ -211,6 +308,40 @@ namespace DaggerfallWorkshop.Game.UserInterface
             HeadTexture = head.texture;
         }
 
+        void UpdateInteractionModeTexture()
+        {
+            switch (GameManager.Instance.PlayerActivate.CurrentMode)
+            {
+                case PlayerActivateModes.Steal:
+                    interactionModePanel.BackgroundTexture = stealModeTexture;
+                    break;
+                case PlayerActivateModes.Talk:
+                    interactionModePanel.BackgroundTexture = talkModeTexture;
+                    break;
+                case PlayerActivateModes.Grab:
+                    interactionModePanel.BackgroundTexture = grabModeTexture;
+                    break;
+                case PlayerActivateModes.Info:
+                    interactionModePanel.BackgroundTexture = infoModeTexture;
+                    break;
+            }
+        }
+
+        protected override void MouseEnter()
+        {
+            // Cannot be over large HUD when cursor not active or large HUD not enabled
+            ActiveMouseOverLargeHUD = GameManager.Instance.PlayerMouseLook.cursorActive && DaggerfallUnity.Settings.LargeHUD;
+
+            base.MouseEnter();
+        }
+
+        protected override void MouseLeave(BaseScreenComponent sender)
+        {
+            ActiveMouseOverLargeHUD = false;
+
+            base.MouseLeave(sender);
+        }
+
         #region Event Handlers
 
         private void SaveLoadManager_OnLoad(Serialization.SaveData_v1 saveData)
@@ -221,6 +352,117 @@ namespace DaggerfallWorkshop.Game.UserInterface
         private void StartGameBehaviour_OnNewGame()
         {
             Refresh();
+        }
+
+        private void InteractionModePanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (GameManager.IsGamePaused)
+                return;
+
+            // Cycle interaction mode forwards on left click
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+            switch (GameManager.Instance.PlayerActivate.CurrentMode)
+            {
+                case PlayerActivateModes.Steal:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Talk);
+                    break;
+                case PlayerActivateModes.Talk:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Grab);
+                    break;
+                case PlayerActivateModes.Grab:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Info);
+                    break;
+                case PlayerActivateModes.Info:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Steal);
+                    break;
+            }
+        }
+
+        private void InteractionModePanel_OnRightMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (GameManager.IsGamePaused)
+                return;
+
+            // Cycle interaction mode backwards on right click
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+            switch (GameManager.Instance.PlayerActivate.CurrentMode)
+            {
+                case PlayerActivateModes.Steal:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Info);
+                    break;
+                case PlayerActivateModes.Talk:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Steal);
+                    break;
+                case PlayerActivateModes.Grab:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Talk);
+                    break;
+                case PlayerActivateModes.Info:
+                    GameManager.Instance.PlayerActivate.ChangeInteractionMode(PlayerActivateModes.Grab);
+                    break;
+            }
+        }
+
+        private void HeadPanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (!GameManager.IsGamePaused)
+            {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+                DaggerfallUI.Instance.UserInterfaceManager.PostMessage(DaggerfallUIMessages.dfuiOpenCharacterSheetWindow);
+            }
+        }
+
+        private void OptionsPanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (!GameManager.IsGamePaused)
+            {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+                DaggerfallUI.Instance.UserInterfaceManager.PostMessage(DaggerfallUIMessages.dfuiOpenPauseOptionsDialog);
+            }
+        }
+
+        private void SpellbookPanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (!GameManager.IsGamePaused)
+            {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+                DaggerfallUI.Instance.UserInterfaceManager.PostMessage(DaggerfallUIMessages.dfuiOpenSpellBookWindow);
+            }
+        }
+
+        private void InventoryPanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (!GameManager.IsGamePaused)
+            {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+                DaggerfallUI.Instance.UserInterfaceManager.PostMessage(DaggerfallUIMessages.dfuiOpenInventoryWindow);
+            }
+        }
+
+        private void SheathPanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (!GameManager.IsGamePaused)
+            {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+                GameManager.Instance.WeaponManager.ToggleSheath();
+            }
+        }
+
+        private void UseMagicItemPanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (!GameManager.IsGamePaused)
+            {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+                DaggerfallUI.Instance.UserInterfaceManager.PostMessage(DaggerfallUIMessages.dfuiOpenUseMagicItemWindow);
+            }
+        }
+
+        private void TransportModePanel_OnMouseClick(BaseScreenComponent sender, Vector2 position)
+        {
+            if (!GameManager.IsGamePaused)
+            {
+                DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+                DaggerfallUI.Instance.UserInterfaceManager.PostMessage(DaggerfallUIMessages.dfuiOpenTransportWindow);
+            }
         }
 
         #endregion
