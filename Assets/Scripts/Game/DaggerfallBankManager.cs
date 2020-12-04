@@ -218,6 +218,8 @@ namespace DaggerfallWorkshop.Game.Banking
                 return;
 
             BankAccounts[regionIndex].hasDefaulted = defaulted;
+            BankAccounts[regionIndex].loanDueDate = 0;
+            BankAccounts[regionIndex].loanTotal = 0;
         }
 
         public static void SetupAccounts()
