@@ -195,9 +195,9 @@ namespace DaggerfallWorkshop.Game
                 // Then slightly further back for short overhangs like eaves and bump more backwards and a little upwards
                 // Height of raycast test is extended to help ensure there is clear space above not just an angled ceiling
                 if (!Physics.Raycast(frontTestPosition, Vector3.up, controller.height / 2 + 0.3f))
-                    controller.transform.position += -wallDirection * 0.1f;
+                    controller.Move(-wallDirection * 0.1f);
                 else if (!Physics.Raycast(backTestPosition, Vector3.up, controller.height / 2 + 0.5f))
-                    controller.transform.position += -wallDirection * 0.4f + Vector3.up * 0.3f;
+                    controller.Move(-wallDirection * 0.4f + Vector3.up * 0.3f);
             }
 
             // Handle recently restoring from save game where climbing active
