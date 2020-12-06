@@ -29,7 +29,7 @@ namespace DaggerfallWorkshop
 
         public static void ForcedUnloadUnusedAssets()
         {
-            Resources.UnloadUnusedAssets();
+            // Resources.UnloadUnusedAssets();
             uuaTimer = Time.realtimeSinceStartup + uuaThrottleDelay;
         }
     }
