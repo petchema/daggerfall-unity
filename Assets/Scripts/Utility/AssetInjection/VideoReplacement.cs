@@ -26,10 +26,11 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
         static readonly string moviePath = Path.Combine(Application.streamingAssetsPath, "Movies");
 
 // https://docs.unity3d.com/Manual/VideoSources-FileCompatibility.html
+// Video extensions to try, by decreasing order of priority
 #if !UNITY_STANDALONE_LINUX
-        static readonly string videoExtension = ".mp4";
+        static readonly string[] videoExtensions = {".mp4", ".webm", ".mkv", ".mov"};
 #else
-        static readonly string videoExtension = ".webm";
+        static readonly string[] videoExtensions = {".webm", ".mkv", ".mov"};
 #endif
 
         /// <summary>
@@ -55,20 +56,23 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
                 if (index > 0)
                     name = name.Substring(0, index);
 
-                // Seek from loose files
-                string path = Path.Combine(moviePath, name + videoExtension);
-                if (File.Exists(path))
+                foreach (string videoExtension in videoExtensions)
                 {
-                    videoPlayerDrawer = new VideoPlayerDrawer(path);
-                    return true;
-                }
+                    // Seek from loose files
+                    string path = Path.Combine(moviePath, name + videoExtension);
+                    if (File.Exists(path))
+                    {
+                        videoPlayerDrawer = new VideoPlayerDrawer(path);
+                        return true;
+                    }
 
-                // Seek from mods
-                VideoClip videoClip;
-                if (ModManager.Instance != null && ModManager.Instance.TryGetAsset(name, false, out videoClip))
-                {
-                    videoPlayerDrawer = new VideoPlayerDrawer(videoClip);
-                    return true;
+                    // Seek from mods
+                    VideoClip videoClip;
+                    if (ModManager.Instance != null && ModManager.Instance.TryGetAsset(name + videoExtension, false, out videoClip))
+                    {
+                        videoPlayerDrawer = new VideoPlayerDrawer(videoClip);
+                        return true;
+                    }
                 }
             }
 
