@@ -65,14 +65,14 @@ namespace DaggerfallWorkshop.Utility.AssetInjection
                         videoPlayerDrawer = new VideoPlayerDrawer(path);
                         return true;
                     }
+                }
 
-                    // Seek from mods
-                    VideoClip videoClip;
-                    if (ModManager.Instance != null && ModManager.Instance.TryGetAsset(name + videoExtension, false, out videoClip))
-                    {
-                        videoPlayerDrawer = new VideoPlayerDrawer(videoClip);
-                        return true;
-                    }
+                // Seek from mods
+                VideoClip videoClip;
+                if (ModManager.Instance != null && ModManager.Instance.TryGetAsset(name, false, out videoClip))
+                {
+                    videoPlayerDrawer = new VideoPlayerDrawer(videoClip);
+                    return true;
                 }
             }
 
