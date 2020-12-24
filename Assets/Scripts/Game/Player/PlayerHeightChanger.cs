@@ -483,7 +483,7 @@ namespace DaggerfallWorkshop.Game
                 else if (mounting)
                     eyeChange = eyeHeight;
             }
-            controller.Move(new Vector3(0, heightChange / 2 + eyeChange));
+            controller.transform.position += new Vector3(0, heightChange / 2 + eyeChange);
 
             return controller.height / 2 + eyeChange;
         }
