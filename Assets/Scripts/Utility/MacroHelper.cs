@@ -425,21 +425,23 @@ namespace DaggerfallWorkshop.Utility
                     {
                         StringBuilder builder = new StringBuilder();
                         int currentPos = 0;
-                        int macroPos;
-                        while((macroPos = tokenText.IndexOf('%', currentPos)) >= 0)
+                        int macroBeginPos;
+                        while((macroBeginPos = tokenText.IndexOf('%', currentPos)) >= 0)
                         {
-                            int endPos = macroPos + 1;
-                            while(endPos < tokenText.Length && (Array.IndexOf(PUNCTUATION, tokenText[endPos]) < 0))
-                                endPos++;
-                            string macroName = tokenText.Substring(macroPos, endPos - macroPos);
-                            if (!macroCache.TryGetValue(macroName, out string macroValue))
+                            int macroEndPos = macroBeginPos + 1;
+                            while(macroEndPos < tokenText.Length && (Array.IndexOf(PUNCTUATION, tokenText[macroEndPos]) < 0))
+                                macroEndPos++;
+                            string macroName = tokenText.Substring(macroBeginPos, macroEndPos - macroBeginPos);
+
+                            if (!macroCache.TryGetValue(macroName, out string macroReplacement))
                             {
-                                macroValue = GetValue(macroName, mcp);
-                                macroCache[macroName] = macroValue;
+                                macroReplacement = GetValue(macroName, mcp);
+                                macroCache[macroName] = macroReplacement;
                             }
-                            builder.Append(tokenText, currentPos, macroPos - currentPos);
-                            builder.Append(macroValue);
-                            currentPos = endPos;
+
+                            builder.Append(tokenText, currentPos, macroBeginPos - currentPos);
+                            builder.Append(macroReplacement);
+                            currentPos = macroEndPos;
                         }
                         builder.Append(tokenText, currentPos, tokenText.Length - currentPos);
                         tokens[tokenIdx].text = builder.ToString();
