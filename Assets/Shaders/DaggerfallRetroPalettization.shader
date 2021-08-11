@@ -62,7 +62,7 @@
                 // Explore color space!
                 //fixed4 color = fixed4(i.texcoord, frac(_Time.x), 1.0);
                 
-                return fixed4(tex3D(_Lut, color.rgb).rgb, color.a);
+                return fixed4(GammaToLinearSpace(tex3D(_Lut, LinearToGammaSpace(color.rgb)).rgb), color.a);
             }
 			ENDCG
 		}
