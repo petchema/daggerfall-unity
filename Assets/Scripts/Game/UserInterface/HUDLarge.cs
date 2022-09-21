@@ -38,7 +38,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
         protected Rect talkModeSubrect = new Rect(0, 23, 47, 23);
         protected Rect grabModeSubrect = new Rect(0, 46, 47, 23);
         protected Rect infoModeSubrect = new Rect(0, 69, 47, 23);
-        protected Rect headPanelRect = new Rect(7, 8, 33, 30);
+        protected Rect headPanelRect = new Rect(5, 4, 37, 37);
         protected Rect compassPanelRect = new Rect(275, 2, 43, 42);
         protected Rect healthPanelRect = new Rect(49, 7, 4, 32);
         protected Rect fatiguePanelRect = new Rect(57, 7, 4, 32);
@@ -172,7 +172,7 @@ namespace DaggerfallWorkshop.Game.UserInterface
             Components.Add(compassPanel);
 
             // Head
-            headPanel.BackgroundTextureLayout = BackgroundLayout.StretchToFill;
+            headPanel.BackgroundTextureLayout = BackgroundLayout.ScaleToFit;
             headPanel.OnMouseClick += HeadPanel_OnMouseClick;
             headPanel.OnRightMouseClick += HeadPanel_OnMouseClick;
             Components.Add(headPanel);
@@ -319,24 +319,37 @@ namespace DaggerfallWorkshop.Game.UserInterface
 
             // Check for racial override head
             RacialOverrideEffect racialOverride = GameManager.Instance.PlayerEffectManager.GetRacialOverrideEffect();
-            if (racialOverride != null && racialOverride.GetCustomHeadImageData(playerEntity, out head))
+            if (racialOverride == null || !racialOverride.GetCustomHeadImageData(playerEntity, out head))
             {
-                HeadTexture = head.texture;
-                return;
-            }
-
-            // Otherwise just get standard head based on gender and race
-            switch (playerEntity.Gender)
-            {
-                default:
-                case Genders.Male:
-                    head = ImageReader.GetImageData(playerEntity.RaceTemplate.PaperDollHeadsMale, playerEntity.FaceIndex, 0, true);
-                    break;
-                case Genders.Female:
-                    head = ImageReader.GetImageData(playerEntity.RaceTemplate.PaperDollHeadsFemale, playerEntity.FaceIndex, 0, true);
-                    break;
+                // Otherwise just get standard head based on gender and race
+                switch (playerEntity.Gender)
+                {
+                    default:
+                    case Genders.Male:
+                        head = ImageReader.GetImageData(playerEntity.RaceTemplate.PaperDollHeadsMale, playerEntity.FaceIndex, 0, true);
+                        break;
+                    case Genders.Female:
+                        head = ImageReader.GetImageData(playerEntity.RaceTemplate.PaperDollHeadsFemale, playerEntity.FaceIndex, 0, true);
+                        break;
+                }
             }
             HeadTexture = head.texture;
+            // Pad the shortest heads to limit scale up
+            const int minFaceHeight = 37;
+            int padding = minFaceHeight - HeadTexture.height;
+            if (padding > 0)
+            {
+                Color32[] pixels = HeadTexture.GetPixels32();
+                Color32[] paddedPixels = new Color32[HeadTexture.width * minFaceHeight];
+                int outOffset = (padding - padding / 2) * HeadTexture.width;
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    paddedPixels[outOffset++] = pixels[i];
+                }
+                HeadTexture.Resize(HeadTexture.width, minFaceHeight);
+                HeadTexture.SetPixels32(paddedPixels);
+                HeadTexture.Apply();
+            }
         }
 
         void UpdateInteractionModeTexture()
