@@ -25,7 +25,7 @@ Shader "Daggerfall/Automap"
 		_PlayerPosition("player position", Vector) = (0,0,0,1)
 		_WaterLevel("Height of water in the dungeon block", Float) = -10000.0
 		_WaterColor("Color and transparency of color", Color) = (0.0,0.3,0.5,0.4)
-		_VisitedColor("Already visited color", Color) = (0.479,0.166,0.355,0.5)
+		_VisitedColor("Already visited color", Color) = (0.702,0.765,0.09,1.0)
 	}	
 
 	SubShader // shader for target 4.0
@@ -106,10 +106,10 @@ Shader "Daggerfall/Automap"
 				outColor.rgb *= 1.0f - max(0.0f, min(0.6f, dist/20.0f));
 
 				#if defined(RENDER_IN_GRAYSCALE)
-					half3 color = outColor;
+					half4 color = outColor;
 					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
 					outColor.rgb = _VisitedColor.rgb * grayValue;
-					outColor.a *= _VisitedColor.a;
+					outColor.a = _VisitedColor.a * color.a;
 				#endif
 					
 				//float3 surfaceNormal = IN.normal;
@@ -302,10 +302,10 @@ Shader "Daggerfall/Automap"
 				outColor.rgb *= 1.0f - max(0.0f, min(0.6f, dist / 20.0f));
 
 				#if defined(RENDER_IN_GRAYSCALE)
-					half3 color = outColor;
+					half4 color = outColor;
 					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
 					outColor.rgb = _VisitedColor.rgb * grayValue;
-					outColor.a *= _VisitedColor.a;
+					outColor.a = _VisitedColor.a * color.a;
 				#endif
 
 				//float3 surfaceNormal = IN.normal;
@@ -391,10 +391,10 @@ Shader "Daggerfall/Automap"
 			outColor.rgb *= 1.0f - max(0.0f, min(0.6f, dist / 20.0f));
 
 			#if defined(RENDER_IN_GRAYSCALE)
-				half3 color = outColor;
+				half4 color = outColor;
 				float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
 				outColor.rgb = _VisitedColor.rgb * grayValue;
-				outColor.a *= _VisitedColor.a;
+				outColor.a = _VisitedColor.a * color.a;
 			#endif
 
 			return outColor;
@@ -481,10 +481,10 @@ Shader "Daggerfall/Automap"
 				outColor.rgb *= 1.0f - max(0.0f, min(0.6f, dist / 20.0f));
 
 				#if defined(RENDER_IN_GRAYSCALE)
-					half3 color = outColor;
+					half4 color = outColor;
 					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
 					outColor.rgb = _VisitedColor.rgb * grayValue;
-					outColor.a *= _VisitedColor.a;
+					outColor.a = _VisitedColor.a * color.a;
 				#endif
 
 				return outColor;
