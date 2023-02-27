@@ -25,6 +25,7 @@ Shader "Daggerfall/Automap"
 		_PlayerPosition("player position", Vector) = (0,0,0,1)
 		_WaterLevel("Height of water in the dungeon block", Float) = -10000.0
 		_WaterColor("Color and transparency of color", Color) = (0.0,0.3,0.5,0.4)
+		_VisitedColor("Already visited color", Color) = (0.479,0.166,0.355,0.5)
 	}	
 
 	SubShader // shader for target 4.0
@@ -59,6 +60,7 @@ Shader "Daggerfall/Automap"
 			uniform float _SclicingPositionY;
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
+			uniform half4 _VisitedColor;
 		
 			struct v2f
 			{
@@ -106,7 +108,8 @@ Shader "Daggerfall/Automap"
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
 					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
-					outColor.rgb = half3(grayValue, grayValue, grayValue);
+					outColor.rgb = _VisitedColor.rgb * grayValue;
+					outColor.a *= _VisitedColor.a;
 				#endif
 					
 				//float3 surfaceNormal = IN.normal;
@@ -181,6 +184,7 @@ Shader "Daggerfall/Automap"
 			uniform float _SclicingPositionY;
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
+			uniform half4 _VisitedColor;
 
 			struct v2g
 			{
@@ -276,7 +280,7 @@ Shader "Daggerfall/Automap"
 						else
 						{
 							#if defined(RENDER_IN_GRAYSCALE)
-								outColor = float4(0.25, 0.25, 0.25, 0.6);
+								outColor = float4(_VisitedColor.rgb, _VisitedColor.a * 0.6);
 							#else
 								outColor = float4(0.9, 0.9, 0.7, 0.6);
 							#endif
@@ -300,7 +304,8 @@ Shader "Daggerfall/Automap"
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
 					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
-					outColor.rgb = half3(grayValue, grayValue, grayValue);
+					outColor.rgb = _VisitedColor.rgb * grayValue;
+					outColor.a *= _VisitedColor.a;
 				#endif
 
 				//float3 surfaceNormal = IN.normal;
@@ -349,6 +354,7 @@ Shader "Daggerfall/Automap"
 			uniform float _SclicingPositionY;
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
+			uniform half4 _VisitedColor;
 
 			struct v2f
 			{
@@ -387,7 +393,8 @@ Shader "Daggerfall/Automap"
 			#if defined(RENDER_IN_GRAYSCALE)
 				half3 color = outColor;
 				float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
-				outColor.rgb = half3(grayValue, grayValue, grayValue);
+				outColor.rgb = _VisitedColor.rgb * grayValue;
+				outColor.a *= _VisitedColor.a;
 			#endif
 
 			return outColor;
@@ -428,6 +435,7 @@ Shader "Daggerfall/Automap"
 			uniform float _SclicingPositionY;
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
+			uniform half4 _VisitedColor;
 
 			struct v2f
 			{
@@ -475,11 +483,11 @@ Shader "Daggerfall/Automap"
 				#if defined(RENDER_IN_GRAYSCALE)
 					half3 color = outColor;
 					float grayValue = dot(color.rgb, float3(0.3, 0.59, 0.11));
-					outColor.rgb = half3(grayValue, grayValue, grayValue);
+					outColor.rgb = _VisitedColor.rgb * grayValue;
+					outColor.a *= _VisitedColor.a;
 				#endif
 
 				return outColor;
-
 			}
 
 			ENDCG
