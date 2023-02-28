@@ -61,6 +61,7 @@ Shader "Daggerfall/Automap"
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
 			uniform half4 _VisitedColor;
+			uniform float _UnscaledTime;
 		
 			struct v2f
 			{
@@ -89,6 +90,9 @@ Shader "Daggerfall/Automap"
 				}
 
 				float4 outColor;
+				#if defined(RENDER_IN_GRAYSCALE)
+				IN.uv *= float2(pow(IN.uv.x, 0.03*sin(_UnscaledTime*2*PI*0.25)), pow(IN.uv.x, 0.03*cos(_UnscaledTime*2*PI*0.25)));
+				#endif
                 half4 albedo = tex2D(_MainTex, IN.uv) *_Color;
 				//half4 albedo = tex2Dlod(_MainTex, float4(0.0f, 0.0f, 0.0f, 7.0f));
 				//half4 albedo = tex2Dlod(_MainTex, float4(IN.uv.x, IN.uv.y, 0.0f, 7.0f));
@@ -185,6 +189,7 @@ Shader "Daggerfall/Automap"
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
 			uniform half4 _VisitedColor;
+			uniform float _UnscaledTime;
 
 			struct v2g
 			{
@@ -255,6 +260,9 @@ Shader "Daggerfall/Automap"
 			half4 frag(g2f IN) : COLOR
 			{
 				float4 outColor;
+				#if defined(RENDER_IN_GRAYSCALE)
+				IN.uv *= float2(pow(IN.uv.x, 0.03*sin(_UnscaledTime*2*PI*0.25)), pow(IN.uv.x, 0.03*cos(_UnscaledTime*2*PI*0.25)));
+				#endif
 				half4 albedo = tex2D(_MainTex, IN.uv) * _Color;
                 //half4 albedo = tex2Dlod(_MainTex, float4(IN.uv.x, IN.uv.y, 0.0f, 7.0f));
 				//half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
@@ -355,6 +363,7 @@ Shader "Daggerfall/Automap"
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
 			uniform half4 _VisitedColor;
+			uniform float _UnscaledTime;
 
 			struct v2f
 			{
@@ -374,6 +383,9 @@ Shader "Daggerfall/Automap"
 			half4 frag(v2f IN) : COLOR
 			{
 				float4 outColor;
+				#if defined(RENDER_IN_GRAYSCALE)
+				IN.uv *= float2(pow(IN.uv.x, 0.03*sin(_UnscaledTime*2*PI*0.25)), pow(IN.uv.x, 0.03*cos(_UnscaledTime*2*PI*0.25)));
+				#endif
 			half4 albedo = tex2D(_MainTex, IN.uv) * _Color;
 			//half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
 			outColor.rgb = albedo.rgb; // - emission; // Emission cancels out other lights
@@ -436,6 +448,7 @@ Shader "Daggerfall/Automap"
 			uniform float _WaterLevel;
 			uniform half4 _WaterColor;
 			uniform half4 _VisitedColor;
+			uniform float _UnscaledTime;
 
 			struct v2f
 			{
@@ -455,6 +468,9 @@ Shader "Daggerfall/Automap"
 			half4 frag(v2f IN) : COLOR
 			{
 				float4 outColor;
+				#if defined(RENDER_IN_GRAYSCALE)
+				IN.uv *= float2(pow(IN.uv.x, 0.03*sin(_UnscaledTime*2*PI*0.25)), pow(IN.uv.x, 0.03*cos(_UnscaledTime*2*PI*0.25)));
+				#endif
 				half4 albedo = tex2D(_MainTex, IN.uv) * _Color;
 				//half3 emission = tex2D(_EmissionMap, IN.uv).rgb * _EmissionColor;
 				outColor.rgb = albedo.rgb; // - emission; // Emission cancels out other lights

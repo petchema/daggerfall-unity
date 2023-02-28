@@ -1005,6 +1005,7 @@ namespace DaggerfallWorkshop.Game
             if (isOpenAutomap) // only do this stuff if automap is indeed open
             {
                 UpdateSlicingPositionY();
+                Shader.SetGlobalFloat("_UnscaledTime", Time.unscaledTime);
 
                 // update position of rotation pivot axis
                 gameobjectBeaconRotationPivotAxis.transform.position = rotationPivotAxisPosition;
