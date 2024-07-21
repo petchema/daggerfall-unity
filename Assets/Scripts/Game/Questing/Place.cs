@@ -38,6 +38,7 @@ namespace DaggerfallWorkshop.Game.Questing
         const int itemMarkerFlatIndex = 18;
 
         Scopes scope;               // Fixed/remote/local
+        bool hint;                  // Is siteName just a hint? (dungeon types)
         string name;                // Source name for data table
         int p1;                     // Parameter 1
         int p2;                     // Parameter 2
@@ -67,6 +68,14 @@ namespace DaggerfallWorkshop.Game.Questing
         public Scopes Scope
         {
             get { return scope; }
+        }
+
+        /// <summary>
+        /// Is siteName just a hint?
+        /// </summary>
+        public bool Hint
+        {
+            get { return hint; }
         }
 
         /// <summary>
@@ -143,7 +152,7 @@ namespace DaggerfallWorkshop.Game.Questing
             base.SetResource(line);
 
             // Match string for Place variants
-            string matchStr = @"(Place|place) (?<symbol>[a-zA-Z0-9_.-]+) (?<siteType>local|remote|permanent) (?<siteName>\w+)|" +
+            string matchStr = @"(Place|place) (?<symbol>[a-zA-Z0-9_.-]+) (?<siteType>local|remote|permanent) (?<hint>prefer) (?<siteName>\w+)|" +
                               @"(Place|place) (?<symbol>[a-zA-Z0-9_.-]+) (?<siteType>randompermanent) (?<siteList>[a-zA-Z0-9_.,]+)";
 
             // Try to match source line with pattern
@@ -180,6 +189,12 @@ namespace DaggerfallWorkshop.Game.Questing
                 else
                 {
                     throw new Exception(string.Format("Place found no site type match found for source: '{0}'. Must be local|remote|permanent.", line));
+                }
+
+                string siteNameHint = match.Groups["hint"].Value;
+                if (string.Compare(siteNameHint, "prefer", true) == 0)
+                {
+                    hint = true;
                 }
 
                 // Get place name for parameter lookup
@@ -900,6 +915,12 @@ namespace DaggerfallWorkshop.Game.Questing
             }
 
             //Debug.LogFormat("Found a total of {0} possible dungeons of type {1} in {2}", foundIndices.Length, dungeonTypeIndex, regionData.Name);
+
+            if (hint && dungeonTypeIndex >= 0 && foundIndices.Length < DaggerfallUnity.Settings.DungeonTypeHintMinPool)
+            {
+                Debug.LogFormat("Too few random dungeons of type {0} in {1} ({2})", dungeonTypeIndex, regionData.Name, foundIndices.Length);
+                return false;
+            }
 
             // Select a random dungeon location index from available list
             int index = UnityEngine.Random.Range(0, foundIndices.Length);
