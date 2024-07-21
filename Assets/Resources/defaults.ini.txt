@@ -171,6 +171,7 @@ TerrainHeightmapPixelError=5
 SmallerDungeons=False
 CustomBooksImport=True
 AssetCacheThreshold = 25
+DungeonTypeHintMinPool=5
 
 [Enhancements]
 LypyL_GameConsole=True

@@ -901,6 +901,12 @@ namespace DaggerfallWorkshop.Game.Questing
 
             //Debug.LogFormat("Found a total of {0} possible dungeons of type {1} in {2}", foundIndices.Length, dungeonTypeIndex, regionData.Name);
 
+            if (dungeonTypeIndex >= 0 && foundIndices.Length < DaggerfallUnity.Settings.DungeonTypeHintMinPool)
+            {
+                Debug.LogFormat("Too few random dungeons of type {0} in {1} ({2})", dungeonTypeIndex, regionData.Name, foundIndices.Length);
+                return false;
+            }
+
             // Select a random dungeon location index from available list
             int index = UnityEngine.Random.Range(0, foundIndices.Length);
 
