@@ -295,9 +295,7 @@ namespace DaggerfallWorkshop.Game.Questing
             ParentQuest.LastResourceReferenced = this;
 
             // Send the person's genre to grammar processor
-            if (ParentQuest.LastResourceReferenced == null)
-                GrammarManager.grammarProcessor.SetNPCGender(Genders.Male);
-            else GrammarManager.grammarProcessor.SetNPCGender(ParentQuest.LastResourceReferenced.Gender);
+            GrammarManager.grammarProcessor.SetNPCGenderGetter(() => ParentQuest.LastResourceReferenced?.Gender ?? Genders.Male);
 
             Place dialogPlace = GetDialogPlace();
             if (dialogPlace != null)

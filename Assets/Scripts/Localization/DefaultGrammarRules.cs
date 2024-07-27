@@ -6,30 +6,29 @@
 // Original Author: Daneel53
 // 
 
+using System;
 using DaggerfallWorkshop.Game.Entity;
 
 namespace DaggerfallWorkshop.Localization.LanguageRules
 {
 	public class DefaultGrammarRules : GrammarRules
 	{
-		public override string ProcessGrammar(string text)
+        public override string ProcessGrammar(string text)
 		{
 			// Process the grammar tokens
 			return text;
 		}
 
-		public override void SetHeroGender(Genders Gender)
+		public override void SetHeroGenderGetter(Func<Genders> HeroGenderGetter)
 		{
-			// Locally store the genre of the hero so that it can be used
+			// Locally store the way to get the genre of the hero so that it can be used
             // by the grammar tokens
-
 		}
 
-		public override void SetNPCGender(Genders Gender)
+		public override void SetNPCGenderGetter(Func<Genders> NPCGenderGetter)
 		{
-			// Locally store the genre of a NPC so that it can be used
+			// Locally store the way to get the genre of a NPC so that it can be used
             // by the grammar tokens
-
 		}
 	}
 }

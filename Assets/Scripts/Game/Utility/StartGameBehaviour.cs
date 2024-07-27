@@ -25,6 +25,7 @@ using DaggerfallWorkshop.Game.UserInterfaceWindows;
 using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Game.MagicAndEffects;
 using DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects;
+using DaggerfallWorkshop.Localization;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
@@ -166,6 +167,9 @@ namespace DaggerfallWorkshop.Game.Utility
                 default:
                     break;
             }
+
+            // Probably not the greatest place to set this, but you get the idea
+            GrammarManager.grammarProcessor.SetHeroGenderGetter(() => GameManager.Instance.PlayerEntity.Gender);
 
             // Reset save index
             SaveIndex = -1;

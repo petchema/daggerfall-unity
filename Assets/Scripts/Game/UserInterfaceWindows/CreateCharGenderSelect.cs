@@ -60,14 +60,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
         void MaleButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
             SelectedGender = Genders.Male;
-            GrammarManager.grammarProcessor.SetHeroGender(SelectedGender);
             CloseWindow();
         }
 
         void FemaleButton_OnMouseClick(BaseScreenComponent sender, Vector2 position)
         {
             SelectedGender = Genders.Female;
-            GrammarManager.grammarProcessor.SetHeroGender(SelectedGender);
             CloseWindow();
         }
 
