@@ -1536,6 +1536,7 @@ namespace DaggerfallWorkshop.Utility
             string name = string.Format("DaggerfallEnemy [{0}]", type.ToString());
             Vector3 position = new Vector3(obj.XPos, -obj.YPos, obj.ZPos) * MeshReader.GlobalScale;
             GameObject go = GameObjectHelper.InstantiatePrefab(DaggerfallUnity.Instance.Option_EnemyPrefab.gameObject, name, parent, position);
+            go.transform.localRotation = Quaternion.AngleAxis(UnityEngine.Random.Range(0f, 360f), Vector3.up);
             SetupDemoEnemy setupEnemy = go.GetComponent<SetupDemoEnemy>();
             if (setupEnemy != null)
             {

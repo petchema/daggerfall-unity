@@ -1085,6 +1085,7 @@ namespace DaggerfallWorkshop.Utility
             // Create enemy GameObject
             Vector3 dungeonBlockPosition = new Vector3(marker.dungeonX * RDBLayout.RDBSide, 0, marker.dungeonZ * RDBLayout.RDBSide);
             GameObject go = CreateEnemy("Quest Foe", foe.FoeType, dungeonBlockPosition + marker.flatPosition, mobileGender, parent);
+            go.transform.localRotation = Quaternion.AngleAxis(UnityEngine.Random.Range(0f, 360f), Vector3.up);
 
             // Assign loadID and custom spawn
             DaggerfallEnemy enemy = go.GetComponent<DaggerfallEnemy>();
