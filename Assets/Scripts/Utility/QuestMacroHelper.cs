@@ -87,7 +87,8 @@ namespace DaggerfallWorkshop.Utility
         /// <param name="parentQuest">Parent quest of message.</param>
         /// <param name="tokens">Array of message tokens to expand macros inside of.</param>
         /// <param name="resolveDialogLinks">will reveal dialog linked resources in talk window (this must be false for all calls to this function except if caller is talk manager when expanding answers or for quest popups).</param>
-        public void ExpandQuestMessage(Quest parentQuest, ref TextFile.Token[] tokens, bool revealDialogLinks = false)
+        /// <param name="redactExpensiveMacros">True to expand text macros like %foo and __foo_ as ellipsis.</param>
+        public void ExpandQuestMessage(Quest parentQuest, ref TextFile.Token[] tokens, bool revealDialogLinks = false, bool redactExpensiveMacros = false)
         {
             // Iterate message tokens
             for (int token = 0; token < tokens.Length; token++)
@@ -99,7 +100,11 @@ namespace DaggerfallWorkshop.Utility
                 for (int word = 0; word < words.Length; word++)
                 {
                     Macro macro = GetMacro(words[word]);
-                    if (macro.type == MacroTypes.ContextMacro)
+                    if (redactExpensiveMacros && (macro.type == MacroTypes.ContextMacro || macro.type == MacroTypes.NameMacro2))
+                    {
+                        words[word] = "...";
+                    }
+                    else if (macro.type == MacroTypes.ContextMacro)
                     {
                         words[word] = words[word].Replace(macro.token, MacroHelper.GetValue(macro.token, parentQuest, parentQuest.ExternalMCP));
                     }

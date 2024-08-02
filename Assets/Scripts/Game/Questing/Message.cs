@@ -156,9 +156,9 @@ namespace DaggerfallWorkshop.Game.Questing
         /// It is safe to leave variant as -1 if you don't care about the variant you receive.
         /// </summary>
         /// <param name="randomVariant">True for a random variant, otherwise use first and only variant.</param>
-        /// <param name="expandMacros">True to expand text macros like %foo and __foo_.</param>
+        /// <param name="redactExpensiveMacros">True to expand text macros like %foo and __foo_ as ellipsis.</param>
         /// <returns>Array of text tokens.</returns>
-        public TextFile.Token[] GetTextTokens(int variant = -1, bool expandMacros = true)
+        public TextFile.Token[] GetTextTokens(int variant = -1, bool redactExpensiveMacros = false)
         {
             // Randomise variant
             int index;
@@ -171,17 +171,14 @@ namespace DaggerfallWorkshop.Game.Questing
             TextFile.Token[] tokens = variants[index].tokens.ToArray();
 
             // Expand macros
-            if (expandMacros)
-            {
-                QuestMacroHelper macroHelper = new QuestMacroHelper();
+            QuestMacroHelper macroHelper = new QuestMacroHelper();
 
-                ParentQuest.CurrentLogMessageId = this.id;
+            ParentQuest.CurrentLogMessageId = this.id;
 
-                // note Nystul: reveal dialog linked resources here on purpose (quest popups should reveal them: see this issue: https://forums.dfworkshop.net/viewtopic.php?f=24&t=1678&p=22069#p22069)
-                macroHelper.ExpandQuestMessage(ParentQuest, ref tokens, true);
+            // note Nystul: reveal dialog linked resources here on purpose (quest popups should reveal them: see this issue: https://forums.dfworkshop.net/viewtopic.php?f=24&t=1678&p=22069#p22069)
+            macroHelper.ExpandQuestMessage(ParentQuest, ref tokens, true, redactExpensiveMacros:redactExpensiveMacros);
 
-                ParentQuest.CurrentLogMessageId = -1;
-            }
+            ParentQuest.CurrentLogMessageId = -1;
 
             return tokens;
         }

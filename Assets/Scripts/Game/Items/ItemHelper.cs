@@ -342,7 +342,7 @@ namespace DaggerfallWorkshop.Game.Items
                     if (questItem.UsedMessageID >= 0)
                     {
                         Message msg = quest.GetMessage(questItem.UsedMessageID);
-                        TextFile.Token[] tokens = msg.GetTextTokens(expandMacros:false);
+                        TextFile.Token[] tokens = msg.GetTextTokens(redactExpensiveMacros:true);
                         string signoff = "";
                         int lines = 0;
                         for (int i = tokens.Length-1; i >= 0; i--)
