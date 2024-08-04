@@ -400,7 +400,13 @@ namespace DaggerfallWorkshop.Game
         public float GetRunSpeed()
         {
             Entity.PlayerEntity player = GameManager.Instance.PlayerEntity;
-            float baseRunSpeed = playerMotor.IsRiding ? baseSpeed : (player.Stats.LiveSpeed + dfWalkBase) / classicToUnitySpeedUnitRatio;
+            float baseRunSpeed;
+            if (playerMotor.IsRiding)
+                baseRunSpeed = baseSpeed;
+            else if (playerMotor.IsCrouching && !levitateMotor.IsSwimming)
+                baseRunSpeed = (player.Stats.LiveSpeed + dfCrouchBase) / classicToUnitySpeedUnitRatio;
+            else
+                baseRunSpeed = (player.Stats.LiveSpeed + dfWalkBase) / classicToUnitySpeedUnitRatio;
             return baseRunSpeed * (1.35f + (player.Skills.GetLiveSkillValue(DFCareer.Skills.Running) / 200f));
         }
 
