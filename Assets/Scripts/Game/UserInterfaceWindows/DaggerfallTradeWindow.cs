@@ -1093,6 +1093,12 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
                 DaggerfallUI.MessageBox(TextManager.Instance.GetLocalizedText("letterOfCredit"));
         }
 
+        protected virtual void TooExpensiveTrade_OnButtonClick(DaggerfallMessageBox sender, DaggerfallMessageBox.MessageBoxButtons messageBoxButton)
+        {
+            DaggerfallUI.Instance.PlayOneShot(SoundClips.ButtonClick);
+            CloseWindow();
+        }
+
         #endregion
 
         #region Misc Events & Helpers
@@ -1102,30 +1108,31 @@ namespace DaggerfallWorkshop.Game.UserInterfaceWindows
             int msgOffset = 0;
             int tradePrice = GetTradePrice();
 
+            if (cost >> 1 <= tradePrice)
+            {
+                if (cost - (cost >> 2) <= tradePrice)
+                    msgOffset = 2;
+                else
+                    msgOffset = 1;
+            }
+            if (WindowMode == WindowModes.Sell || WindowMode == WindowModes.SellMagic)
+                msgOffset += 3;
+
+            DaggerfallMessageBox messageBox = new DaggerfallMessageBox(uiManager, this);
+            TextFile.Token[] tokens = DaggerfallUnity.Instance.TextProvider.GetRandomTokens(TradeMessageBaseId + msgOffset);
+            messageBox.SetTextTokens(tokens, this);
             if (WindowMode != WindowModes.Sell && WindowMode != WindowModes.SellMagic && PlayerEntity.GetGoldAmount() < tradePrice)
             {
-                DaggerfallUI.MessageBox(NotEnoughGoldId);
+                messageBox.AddButton(DaggerfallMessageBox.MessageBoxButtons.Ok);
+                messageBox.OnButtonClick += TooExpensiveTrade_OnButtonClick;
             }
             else
             {
-                if (cost >> 1 <= tradePrice)
-                {
-                    if (cost - (cost >> 2) <= tradePrice)
-                        msgOffset = 2;
-                    else
-                        msgOffset = 1;
-                }
-                if (WindowMode == WindowModes.Sell || WindowMode == WindowModes.SellMagic)
-                    msgOffset += 3;
-
-                DaggerfallMessageBox messageBox = new DaggerfallMessageBox(uiManager, this);
-                TextFile.Token[] tokens = DaggerfallUnity.Instance.TextProvider.GetRandomTokens(TradeMessageBaseId + msgOffset);
-                messageBox.SetTextTokens(tokens, this);
                 messageBox.AddButton(DaggerfallMessageBox.MessageBoxButtons.Yes);
                 messageBox.AddButton(DaggerfallMessageBox.MessageBoxButtons.No);
                 messageBox.OnButtonClick += ConfirmTrade_OnButtonClick;
-                uiManager.PushWindow(messageBox);
             }
+            uiManager.PushWindow(messageBox);
         }
 
         // OnTrade event. (value=0:steal, numItems=0:caught)
