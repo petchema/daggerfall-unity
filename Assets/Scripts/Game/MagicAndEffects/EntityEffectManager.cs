@@ -1939,6 +1939,10 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
                     DaggerfallUI.AddHUDText(TextManager.Instance.GetLocalizedText("youAreSilenced"), 1.5f);
 
                 readySpell = null;
+                readySpellCastingCost = 0;
+                instantCast = false;
+                castInProgress = false;
+                readySpellDoesNotCostSpellPoints = false;
                 return true;
             }
 
