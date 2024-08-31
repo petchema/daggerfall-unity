@@ -17,6 +17,7 @@ using DaggerfallConnect;
 using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Game.Utility;
 using System.Collections.Generic;
+using System;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -941,22 +942,25 @@ namespace DaggerfallWorkshop.Game
                 // If something is between enemy and target then return false (was reduce hearingScale by half), to minimize
                 // enemies walking against walls.
                 // Hearing is not impeded by doors or other non-static objects
-                Ray ray = new Ray(transform.position, directionToTarget);
-                int nhits;
-                while (true) {
-                    nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, distanceToTarget, defaultLayerOnlyMask);
-                    if (nhits < hitsBuffer.Length)
-                        break;
-                    // hitsBuffer may have overflowed, retry with a larger buffer
-                    hitsBuffer = new RaycastHit[nhits + 1];
-                };
-                for (int i = 0; i < nhits; i++)
+                int RayCastBudget = 100;
+                List<Vector3> Path;
+                bool PathFound = PathFinding.FindShortestPath(transform.position, target.transform.position, ref RayCastBudget, out Path);
+                if (PathFound)
                 {
-                    //DaggerfallEntityBehaviour entity = hit.transform.gameObject.GetComponent<DaggerfallEntityBehaviour>();
-                    if (GameObjectHelper.IsStaticGeometry(hitsBuffer[i].transform.gameObject))
-                        return false;
+                    // Find the most distant point in the path visible from our current position
+                    int Aim = 0;
+                    int NextAim;
+                    while ((NextAim = Aim + 4) < Path.Count && !Physics.Raycast(position, Path[NextAim], distanceToTarget, defaultLayerOnlyMask))
+                    {
+                        Aim = NextAim;
+                    }
+                    while ((NextAim = Aim + 1) < Path.Count && !Physics.Raycast(position, Path[NextAim], distanceToTarget, defaultLayerOnlyMask))
+                    {
+                        Aim = NextAim;
+                    }
+                    position = Path[Aim];
+                    Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
                 }
-                position = target.transform.position;
                 return true;
             }
 
