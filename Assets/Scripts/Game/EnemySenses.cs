@@ -200,7 +200,7 @@ namespace DaggerfallWorkshop.Game
         public delegate bool CanSeeTargetCallback(DaggerfallEntityBehaviour target);
         public CanSeeTargetCallback CanSeeTargetHandler { get; set; }
 
-        public delegate bool CanHearTargetCallback();
+        public delegate bool CanHearTargetCallback(out Vector3 position);
         public CanHearTargetCallback CanHearTargetHandler { get; set; }
 
         public delegate bool CanDetectOtherwiseCallback(DaggerfallEntityBehaviour target);
@@ -430,8 +430,9 @@ namespace DaggerfallWorkshop.Game
 
                 // Classic stealth mechanics would be interfered with by hearing, so only enable
                 // hearing if the enemy has detected the target. If target is visible we can omit hearing.
+                Vector3 positionHeard = ResetPlayerPos;
                 if (detectedTarget && !targetInSight)
-                    targetInEarshot = CanHearTargetHandler();
+                    targetInEarshot = CanHearTargetHandler(out positionHeard);
                 else
                     targetInEarshot = false;
 
@@ -451,7 +452,7 @@ namespace DaggerfallWorkshop.Game
                 if (!blockedByIllusionEffect && (targetInSight || targetInEarshot))
                 {
                     detectedTarget = true;
-                    lastKnownTargetPos = target.transform.position;
+                    lastKnownTargetPos = targetInSight ? target.transform.position : positionHeard;
                     lastHadLOSTimer = 200f;
                 }
                 else if (!blockedByIllusionEffect && StealthCheck())
@@ -926,13 +927,14 @@ namespace DaggerfallWorkshop.Game
         private static int defaultLayerOnlyMask = 0;
         private static RaycastHit[] hitsBuffer = new RaycastHit[4];
 
-        bool CanHearTarget()
+        bool CanHearTarget(out Vector3 position)
         {
             float hearingScale = 1f;
 
             if (defaultLayerOnlyMask == 0)
                 defaultLayerOnlyMask = 1 << LayerMask.NameToLayer("Default");
 
+            position = ResetPlayerPos;
             // TODO: Modify this by how much noise the target is making
             if (distanceToTarget < (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier)
             {
@@ -954,6 +956,7 @@ namespace DaggerfallWorkshop.Game
                     if (GameObjectHelper.IsStaticGeometry(hitsBuffer[i].transform.gameObject))
                         return false;
                 }
+                position = target.transform.position;
                 return true;
             }
 
