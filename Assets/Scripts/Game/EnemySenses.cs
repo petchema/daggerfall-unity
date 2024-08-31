@@ -939,12 +939,10 @@ namespace DaggerfallWorkshop.Game
             // TODO: Modify this by how much noise the target is making
             if (distanceToTarget < (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier)
             {
-                // If something is between enemy and target then return false (was reduce hearingScale by half), to minimize
-                // enemies walking against walls.
                 // Hearing is not impeded by doors or other non-static objects
                 int RayCastBudget = 100;
                 List<Vector3> Path;
-                bool PathFound = PathFinding.FindShortestPath(transform.position, target.transform.position, ref RayCastBudget, out Path);
+                bool PathFound = PathFinding.FindShortestPath(transform.position, target.transform.position, ref RayCastBudget, out Path, 1.5f);
                 if (PathFound)
                 {
                     // Find the most distant point in the path visible from our current position
@@ -959,7 +957,7 @@ namespace DaggerfallWorkshop.Game
                         Aim = NextAim;
                     }
                     position = Path[Aim];
-                    Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
+                    // Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
                 }
                 return true;
             }

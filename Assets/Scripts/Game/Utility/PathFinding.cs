@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using DaggerfallWorkshop.Utility;
-using UnityEditor.Localization.Plugins.XLIFF.V12;
 using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.Utility
@@ -96,24 +95,32 @@ namespace DaggerfallWorkshop.Game.Utility
         public static bool IsNavigable(Vector3 source, Vector3 destination)
         {
             Vector3 vector = destination - source;
+            Vector3 normalized = vector.normalized;
+            // Add some overlap, because paths can get thru walls if a node lands exactly on a wall
+            float epsilon = 0.01f;
             if (defaultLayerOnlyMask == 0)
                 defaultLayerOnlyMask = 1 << LayerMask.NameToLayer("Default");
 
-            Ray ray = new Ray(source, vector.normalized);
+            Ray ray = new Ray(source - normalized * epsilon, normalized);
             int nhits;
             while (true) {
-                nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude, defaultLayerOnlyMask);
+                nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, defaultLayerOnlyMask);
                 if (nhits < hitsBuffer.Length)
                     break;
                 // hitsBuffer may have overflowed, retry with a larger buffer
                 hitsBuffer = new RaycastHit[nhits + 1];
             };
+            bool navigable = true;
             for (int i = 0; i < nhits; i++)
             {
                 if (GameObjectHelper.IsStaticGeometry(hitsBuffer[i].transform.gameObject))
-                    return false;
+                {
+                    navigable = false;
+                    break;
+                }
             }
-            return true;
+            Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 1f, true);
+            return navigable;
         }
 
         private static List<Vector3> RebuildPath(ChainedPath path)
@@ -155,9 +162,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     if (--RaycastBudget == 0)
                         goto GIVEUP;
                     Vector3 source = Path.source != null ? space.Reify(Path.source.position) : start;
-                    bool navigable = IsNavigable(source, space.Reify(Path.position));
-                    Debug.DrawLine(source, space.Reify(Path.position), navigable ? Color.green : Color.red, 1f);
-                    if (navigable)
+                    if (IsNavigable(source, space.Reify(Path.position)))
                     {
                         // Are we arrived?
                         if (space.IsNeighboor(Path.position, destination))
@@ -179,8 +184,8 @@ namespace DaggerfallWorkshop.Game.Utility
                                 for (int z = -1; z <= 1; z++)
                                 {
                                     Vector3Int newPosition = new Vector3Int(Path.position.x + x, Path.position.y + y, Path.position.z + z);
-                                    float newCost = Path.cost + space.MeasuredCost(Path.position, newPosition) * weight;
-                                    openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(newPosition, destination), Path));
+                                    float newCost = Path.cost + space.MeasuredCost(Path.position, newPosition);
+                                    openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(newPosition, destination) * weight, Path));
                                 }
                             }
                         }
