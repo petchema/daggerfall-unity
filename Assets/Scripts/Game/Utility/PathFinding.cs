@@ -68,23 +68,25 @@ namespace DaggerfallWorkshop.Game.Utility
             {
                 return Vector3.Distance(source, destination);
             }
+            internal float MeasuredCost(Vector3 source, Vector3 destination)
+            {
+                return Vector3.Distance(source, destination);
+            }
+            internal float MeasuredCostInt(Vector3Int sourceGridNode, Vector3Int destinationGridNode)
+            {
+                return Vector3Int.Distance(sourceGridNode, destinationGridNode);
+            }
 
-            internal float HeuristicCost(Vector3Int sourceGridNode, Vector3 destination)
+            internal List<Vector3> RebuildPath(ChainedPath path)
             {
-                return HeuristicCost(Reify(sourceGridNode), destination);
-            }
-            internal float HeuristicCost(Vector3Int sourceGridNode, Vector3Int destinationGridNode)
-            {
-                return HeuristicCost(Reify(sourceGridNode), Reify(destinationGridNode));
-            }
-
-            internal float MeasuredCost(Vector3 source, Vector3Int destinationGridNode)
-            {
-                return HeuristicCost(source, Reify(destinationGridNode));
-            }
-            internal float MeasuredCost(Vector3Int sourceGridNode, Vector3Int destinationGridNode)
-            {
-                return HeuristicCost(Reify(sourceGridNode), Reify(destinationGridNode));
+                List<Vector3> result = new List<Vector3>();
+                while (path != null)
+                {
+                    result.Add(Reify(path.position));
+                    path = path.source;
+                }
+                result.Reverse();
+                return result;
             }
         }
 
@@ -119,19 +121,8 @@ namespace DaggerfallWorkshop.Game.Utility
                     break;
                 }
             }
-            Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 1f, true);
+            // Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 1f, true);
             return navigable;
-        }
-
-        private static List<Vector3> RebuildPath(ChainedPath path)
-        {
-            List<Vector3> result = new List<Vector3>();
-            while (path != null)
-            {
-                result.Insert(0, path.position); // is that efficient enough?
-                path = path.source;
-            }
-            return result;
         }
 
         public static bool FindShortestPath(Vector3 start, Vector3 destination, float maxLength, ref int RaycastBudget, out List<Vector3> path, float weight = 1f)
@@ -150,7 +141,7 @@ namespace DaggerfallWorkshop.Game.Utility
                         Vector3Int position = discretizedStart + new Vector3Int(x, y, z);
                         if (--RaycastBudget == 0)
                             goto GIVEUP;
-                        openList.Enqueue(new ChainedPath(position, 0f, space.MeasuredCost(start, position) * weight, null));
+                        openList.Enqueue(new ChainedPath(position, 0f, space.MeasuredCost(start, space.Reify(position)) * weight, null));
                     }
                 }
             }
@@ -171,7 +162,7 @@ namespace DaggerfallWorkshop.Game.Utility
                                 goto GIVEUP;
                             if (IsNavigable(space.Reify(Path.position), destination))
                             {
-                                path = RebuildPath(Path);
+                                path = space.RebuildPath(Path);
                                 path.Add(destination);
                                 return true;
                             }
@@ -184,9 +175,9 @@ namespace DaggerfallWorkshop.Game.Utility
                                 for (int z = -1; z <= 1; z++)
                                 {
                                     Vector3Int newPosition = new Vector3Int(Path.position.x + x, Path.position.y + y, Path.position.z + z);
-                                    float newCost = Path.cost + space.MeasuredCost(Path.position, newPosition);
+                                    float newCost = Path.cost + space.MeasuredCostInt(Path.position, newPosition);
                                     if (newCost <= maxLength)
-                                        openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(newPosition, destination) * weight, Path));
+                                        openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(space.Reify(newPosition), destination) * weight, Path));
                                 }
                             }
                         }
