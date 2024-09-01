@@ -10,14 +10,12 @@
 //
 
 using UnityEngine;
-using DaggerfallWorkshop.Utility;
 using DaggerfallWorkshop.Game.Entity;
 using DaggerfallWorkshop.Game.Formulas;
 using DaggerfallConnect;
 using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Game.Utility;
 using System.Collections.Generic;
-using System;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -941,9 +939,8 @@ namespace DaggerfallWorkshop.Game
             if (distanceToTarget < hearingDistance)
             {
                 // Hearing is not impeded by doors or other non-static objects
-                int RayCastBudget = 100;
                 List<Vector3> Path;
-                bool PathFound = PathFinding.FindShortestPath(transform.position, target.transform.position, hearingDistance, ref RayCastBudget, out Path, 1.5f);
+                bool PathFound = PathFinding.FindShortestPath(spaceHolder.GetSpace(), transform.position, target.transform.position, hearingDistance, out Path, 1.5f);
                 if (PathFound)
                 {
                     // Find the most distant point in the path visible from our current position
