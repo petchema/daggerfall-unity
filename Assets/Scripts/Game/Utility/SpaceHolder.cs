@@ -1,3 +1,4 @@
+using DaggerfallWorkshop.Game.Serialization;
 using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.Utility
@@ -10,7 +11,22 @@ namespace DaggerfallWorkshop.Game.Utility
         public readonly Vector3 Origin = Vector3.zero;
         public readonly Vector3 Step = new Vector3(1f, 1f, 1f);
 
-        public DiscretizedSpace GetSpace() { return Space ?? Space = BuildDiscretizedSpace(); }
+        static SpaceHolder instance = null;
+        public static SpaceHolder Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    GameObject go = new GameObject();
+                    go.name = "SpaceHolder";
+                    instance = go.AddComponent<SpaceHolder>();
+                }
+                return instance;
+            }
+        }
+
+        public DiscretizedSpace GetSpace() { return Space ?? (Space = BuildDiscretizedSpace()); }
 
         public void Start()
         {
@@ -19,41 +35,56 @@ namespace DaggerfallWorkshop.Game.Utility
 
         protected DiscretizedSpace BuildDiscretizedSpace()
         {
-            space = new DiscretizedSpace(Origin, Step);
-            space.SetRaycastBudget(0);
-            return space;
+            Space = new DiscretizedSpace(Origin, Step);
+            Space.SetRaycastBudget(0);
+            return Space;
         }
 
         public void OnEnable()
         {
-            PlayerEnterExit.OnTransitionInterior += DiscardSpace;
-            PlayerEnterExit.OnTransitionDungeonInterior += DiscardSpace;
-            PlayerEnterExit.OnTransitionExterior += DiscardSpace;
-            PlayerEnterExit.OnTransitionDungeonExterior += DiscardSpace;
-            StartGameBehaviour.OnNewGame += DiscardSpace;
-            SaveLoadManager.OnLoad += DiscardSpace;
-            StreamingWorld.OnFloatingOriginChange += DiscardSpace;
+            PlayerEnterExit.OnTransitionInterior += OnTransition;
+            PlayerEnterExit.OnTransitionDungeonInterior += OnTransition;
+            PlayerEnterExit.OnTransitionExterior += OnTransition;
+            PlayerEnterExit.OnTransitionDungeonExterior += OnTransition;
+            StartGameBehaviour.OnNewGame += OnNewGame;
+            SaveLoadManager.OnLoad += OnLoad;
+            StreamingWorld.OnFloatingOriginChange += OnFloatingOriginChange;
         }
 
         public void OnDisable()
         {
-            PlayerEnterExit.OnTransitionInterior -= DiscardSpace;
-            PlayerEnterExit.OnTransitionDungeonInterior -= DiscardSpace;
-            PlayerEnterExit.OnTransitionExterior -= DiscardSpace;
-            PlayerEnterExit.OnTransitionDungeonExterior -= DiscardSpace;
-            StartGameBehaviour.OnNewGame -= DiscardSpace;
-            SaveLoadManager.OnLoad -= DiscardSpace;
-            StreamingWorld.OnFloatingOriginChange -= DiscardSpace;
+            PlayerEnterExit.OnTransitionInterior -= OnTransition;
+            PlayerEnterExit.OnTransitionDungeonInterior -= OnTransition;
+            PlayerEnterExit.OnTransitionExterior -= OnTransition;
+            PlayerEnterExit.OnTransitionDungeonExterior -= OnTransition;
+            StartGameBehaviour.OnNewGame -= OnNewGame;
+            SaveLoadManager.OnLoad -= OnLoad;
+            StreamingWorld.OnFloatingOriginChange -= OnFloatingOriginChange;
         }
 
         public void Update()
         {
-            space?.SetRaycastBudget(RaycastBudgetPerFrame);
+            Space?.SetRaycastBudget(RaycastBudgetPerFrame);
         }
 
-        private void DiscardSpace(PlayerEnterExit.TransitionEventArgs args)
+        private void OnTransition(PlayerEnterExit.TransitionEventArgs args)
         {
-            space = null;
+            Space = null;
+        }
+
+        private void OnLoad(SaveData_v1 saveData)
+        {
+            Space = null;
+        }
+
+        private void OnNewGame()
+        {
+            Space = null;
+        }
+
+        private void OnFloatingOriginChange()
+        {
+            Space = null;
         }
     }
 }

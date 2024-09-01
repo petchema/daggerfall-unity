@@ -5,7 +5,7 @@ using UnityEngine;
 namespace DaggerfallWorkshop.Game.Utility
 {
 
-    public class PathFinding
+    public static class PathFinding
     {
         protected class ChainedPath : IComparable<ChainedPath> 
         {
@@ -28,7 +28,20 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
-        public bool FindShortestPath(DiscretizedSpace space, Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
+
+        static List<Vector3> RebuildPath(DiscretizedSpace space, ChainedPath path)
+        {
+            List<Vector3> result = new List<Vector3>();
+            while (path != null)
+            {
+                result.Add(space.Reify(path.position));
+                path = path.source;
+            }
+            result.Reverse();
+            return result;
+        }
+
+        public static bool FindShortestPath(DiscretizedSpace space, Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
         {
             PriorityQueue<ChainedPath> openList = new PriorityQueue<ChainedPath>();
             ISet<Vector3> closedList = new HashSet<Vector3>();
@@ -55,15 +68,15 @@ namespace DaggerfallWorkshop.Game.Utility
                     ChainedPath Path = openList.Dequeue();
                     if (!closedList.Contains(Path.position))
                     {
-                        Vector3 source = Path.source != null ? space.Reify(Path.source.position) : start;
-                        if (space.IsNavigable(source, space.Reify(Path.position)))
+                        bool isNavigable = Path.source != null ? space.IsNavigableInt(Path.source.position, Path.position) : space.IsNavigable(start, space.Reify(Path.position));
+                        if (isNavigable)
                         {
                             // Are we arrived yet?
                             if (destinationList.Contains(Path.position))
                             {
                                 if (space.IsNavigable(space.Reify(Path.position), destination))
                                 {
-                                    path = space.RebuildPath(Path);
+                                    path = RebuildPath(space, Path);
                                     path.Add(destination);
                                     return true;
                                 }
@@ -79,10 +92,9 @@ namespace DaggerfallWorkshop.Game.Utility
                         }
                         closedList.Add(Path.position);
                     }
-                }
-                 
+                } 
             } 
-            catch(DiscretizedSpace.OverRaycastBudget)
+            catch(OverRaycastBudgetException)
             {
                 // do nothing, just return path couldn't be found
             }

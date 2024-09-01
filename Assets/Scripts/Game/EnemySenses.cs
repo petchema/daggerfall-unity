@@ -939,23 +939,22 @@ namespace DaggerfallWorkshop.Game
             if (distanceToTarget < hearingDistance)
             {
                 // Hearing is not impeded by doors or other non-static objects
-                List<Vector3> Path;
-                bool PathFound = PathFinding.FindShortestPath(spaceHolder.GetSpace(), transform.position, target.transform.position, hearingDistance, out Path, 1.5f);
+                bool PathFound = PathFinding.FindShortestPath(SpaceHolder.Instance.GetSpace(), transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
                 if (PathFound)
                 {
                     // Find the most distant point in the path visible from our current position
                     int Aim = 0;
                     int NextAim;
-                    while ((NextAim = Aim + 4) < Path.Count && !Physics.Raycast(position, Path[NextAim], distanceToTarget, defaultLayerOnlyMask))
+                    while ((NextAim = Aim + 4) < Path.Count && !Physics.Raycast(position, Path[NextAim], defaultLayerOnlyMask))
                     {
                         Aim = NextAim;
                     }
-                    while ((NextAim = Aim + 1) < Path.Count && !Physics.Raycast(position, Path[NextAim], distanceToTarget, defaultLayerOnlyMask))
+                    while ((NextAim = Aim + 1) < Path.Count && !Physics.Raycast(position, Path[NextAim], defaultLayerOnlyMask))
                     {
                         Aim = NextAim;
                     }
                     position = Path[Aim];
-                    // Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
+                    Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
                 }
                 return true;
             }

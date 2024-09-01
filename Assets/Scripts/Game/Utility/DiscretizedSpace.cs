@@ -7,7 +7,7 @@ namespace DaggerfallWorkshop.Game.Utility
 {
 
     [System.Serializable]
-    public class OverRaycastBudgetException : System.Exception
+    public class OverRaycastBudgetException : Exception
     {
         public OverRaycastBudgetException() { }
         public OverRaycastBudgetException(string message) : base(message) { }
@@ -25,8 +25,14 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public struct Movement
         {
-            public readonly Vector3 delta;
+            public readonly Vector3Int delta;
             public readonly float cost;
+
+            public Movement(int x, int y, int z, float cost)
+            {
+                delta = new Vector3Int(x, y, z);
+                this.cost = cost;
+            }
         }
         private static List<Movement> movements = null;
         public DiscretizedSpace(Vector3 origin, Vector3 step)
@@ -109,18 +115,6 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             return movements;
         }
-
-        public List<Vector3> RebuildPath(ChainedPath path)
-        {
-            List<Vector3> result = new List<Vector3>();
-            while (path != null)
-            {
-                result.Add(Reify(path.position));
-                path = path.source;
-            }
-            result.Reverse();
-            return result;
-        }
     
         private static int defaultLayerOnlyMask = 0;
         private RaycastHit[] hitsBuffer = new RaycastHit[4];
@@ -153,8 +147,36 @@ namespace DaggerfallWorkshop.Game.Utility
                     break;
                 }
             }
-            // Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 1f, true);
+            Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 1f, false);
             return navigable;
+        }
+
+        private struct NavigableCacheKey
+        {
+            Vector3Int source;
+            Vector3Int destination;
+
+            public NavigableCacheKey(Vector3Int source, Vector3Int destination)
+            {
+                this.source = source;
+                this.destination = destination;
+            }
+        }
+        private Dictionary<NavigableCacheKey, bool> NavigableCache = new Dictionary<NavigableCacheKey, bool>();
+
+        internal bool IsNavigableInt(Vector3Int source, Vector3Int destination)
+        {
+            NavigableCacheKey key = new NavigableCacheKey(source, destination);
+            if (NavigableCache.TryGetValue(key, out bool isNavigable))
+            {
+                Debug.DrawLine(Reify(source), Reify(destination), isNavigable ? Color.yellow : Color.cyan, 1f, false);
+            }
+            else
+            {
+                isNavigable = IsNavigable(Reify(source), Reify(destination));
+                NavigableCache.Add(key, isNavigable);
+            }
+            return isNavigable;
         }
     }
 }
