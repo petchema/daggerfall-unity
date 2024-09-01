@@ -937,12 +937,13 @@ namespace DaggerfallWorkshop.Game
 
             position = ResetPlayerPos;
             // TODO: Modify this by how much noise the target is making
-            if (distanceToTarget < (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier)
+            float hearingDistance = (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier;
+            if (distanceToTarget < hearingDistance)
             {
                 // Hearing is not impeded by doors or other non-static objects
                 int RayCastBudget = 100;
                 List<Vector3> Path;
-                bool PathFound = PathFinding.FindShortestPath(transform.position, target.transform.position, ref RayCastBudget, out Path, 1.5f);
+                bool PathFound = PathFinding.FindShortestPath(transform.position, target.transform.position, hearingDistance, ref RayCastBudget, out Path, 1.5f);
                 if (PathFound)
                 {
                     // Find the most distant point in the path visible from our current position

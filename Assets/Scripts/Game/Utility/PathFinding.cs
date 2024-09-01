@@ -134,9 +134,9 @@ namespace DaggerfallWorkshop.Game.Utility
             return result;
         }
 
-        public static bool FindShortestPath(Vector3 start, Vector3 destination, ref int RaycastBudget, out List<Vector3> path, float weight = 1f)
+        public static bool FindShortestPath(Vector3 start, Vector3 destination, float maxLength, ref int RaycastBudget, out List<Vector3> path, float weight = 1f)
         {
-            Vector3 step = new Vector3(0.5f, 0.5f, 0.5f);
+            Vector3 step = new Vector3(1f, 1f, 1f);
             PriorityQueue<ChainedPath> openList = new PriorityQueue<ChainedPath>();
             ISet<Vector3> closedList = new HashSet<Vector3>();
             DiscretizedSpace space = new DiscretizedSpace(Vector3.zero, step);  // origin should be arbitrary
@@ -185,7 +185,8 @@ namespace DaggerfallWorkshop.Game.Utility
                                 {
                                     Vector3Int newPosition = new Vector3Int(Path.position.x + x, Path.position.y + y, Path.position.z + z);
                                     float newCost = Path.cost + space.MeasuredCost(Path.position, newPosition);
-                                    openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(newPosition, destination) * weight, Path));
+                                    if (newCost <= maxLength)
+                                        openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(newPosition, destination) * weight, Path));
                                 }
                             }
                         }
