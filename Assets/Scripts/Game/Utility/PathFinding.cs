@@ -12,13 +12,15 @@ namespace DaggerfallWorkshop.Game.Utility
             public readonly Vector3Int position;
             public readonly float cost;
             public readonly float estimatedTotalCost; // cost + heuristic cost of remaining path
+            public readonly int movementIndex;
             public readonly ChainedPath source;
 
-            public ChainedPath(Vector3Int position, float cost, float estimatedTotalCost, ChainedPath source)
+            public ChainedPath(Vector3Int position, float cost, float estimatedTotalCost, int movementIndex, ChainedPath source)
             {
                 this.position = position;
                 this.cost = cost;
                 this.estimatedTotalCost = estimatedTotalCost;
+                this.movementIndex = movementIndex;
                 this.source = source;
             }
 
@@ -55,7 +57,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     for (int z = 0; z <= 1; z++)
                     {
                         Vector3Int startPosition = new Vector3Int(discretizedStart.x + x, discretizedStart.y + y, discretizedStart.z + z);
-                        openList.Enqueue(new ChainedPath(startPosition, 0f, space.MeasuredCost(start, space.Reify(startPosition)) * weight, null));
+                        openList.Enqueue(new ChainedPath(startPosition, 0f, space.MeasuredCost(start, space.Reify(startPosition)) * weight, -1, null));
                         Vector3Int destinationPosition = new Vector3Int(discretizedDestination.x + x, discretizedDestination.y + y, discretizedDestination.z + z);
                         destinationList.Add(destinationPosition);
                     }
@@ -68,7 +70,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     ChainedPath Path = openList.Dequeue();
                     if (!closedList.Contains(Path.position))
                     {
-                        bool isNavigable = Path.source != null ? space.IsNavigableInt(Path.source.position, Path.position) : space.IsNavigable(start, space.Reify(Path.position));
+                        bool isNavigable = Path.source != null ? space.IsNavigableInt(Path.source.position, Path.position, Path.movementIndex) : space.IsNavigable(start, space.Reify(Path.position));
                         if (isNavigable)
                         {
                             // Are we arrived yet?
@@ -82,12 +84,14 @@ namespace DaggerfallWorkshop.Game.Utility
                                 }
                             }
 
-                            foreach (DiscretizedSpace.Movement movement in space.GetMovements())
+                            List<DiscretizedSpace.Movement> movements = space.GetMovements();
+                            for (int i = 0; i < movements.Count - 1; i++)
                             {
+                                DiscretizedSpace.Movement movement = movements[i];
                                 Vector3Int newPosition = Path.position + movement.delta;
                                 float newCost = Path.cost + movement.cost;
                                 if (newCost <= maxLength)
-                                    openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(space.Reify(newPosition), destination) * weight, Path));
+                                    openList.Enqueue(new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(space.Reify(newPosition), destination) * weight, i, Path));
                             }
                         }
                         closedList.Add(Path.position);

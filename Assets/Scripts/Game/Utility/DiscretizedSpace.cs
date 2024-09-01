@@ -21,6 +21,7 @@ namespace DaggerfallWorkshop.Game.Utility
     {
         private Vector3 origin;
         private Vector3 step;
+        private Vector3 inverseStep;
         private int raycastBudget = 0;
 
         public struct Movement
@@ -39,6 +40,7 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             this.origin = origin;
             this.step = step;
+            inverseStep = new Vector3(1f / step.x, 1f / step.y, 1f / step.z);
             raycastBudget = 0;
             if (movements == null)
             {
@@ -51,7 +53,7 @@ namespace DaggerfallWorkshop.Game.Utility
                         {
                             if (x != 0 || y != 0 || z != 0)
                             {
-                                float cost = Mathf.Sqrt(x * x + y * y + z * z);
+                                float cost = Mathf.Sqrt(Mathf.Pow(x * step.x, 2) + Mathf.Pow(y * step.y, 2) + Mathf.Pow(z * step.z, 2));
                                 Movement movement = new Movement(x, y, z, cost);
                                 movements.Add(movement);
                             }
@@ -76,9 +78,9 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public Vector3Int Discretize(Vector3 vector)
         {
-            return new Vector3Int((int) Mathf.Floor((vector.x - origin.x) / step.x),
-                                (int) Mathf.Floor((vector.y - origin.y) / step.y),
-                                (int) Mathf.Floor((vector.z - origin.z) / step.z));
+            return new Vector3Int((int) Mathf.Floor((vector.x - origin.x) * inverseStep.x),
+                                (int) Mathf.Floor((vector.y - origin.y) * inverseStep.y),
+                                (int) Mathf.Floor((vector.z - origin.z) * inverseStep.z));
         }
 
         public Vector3 Reify(Vector3Int gridNode)
@@ -86,17 +88,6 @@ namespace DaggerfallWorkshop.Game.Utility
             return new Vector3(origin.x + gridNode.x * step.x,
                             origin.y + gridNode.y * step.y,
                             origin.z + gridNode.z * step.z);
-        }
-
-        public bool IsNeighboor(Vector3 source, Vector3 destination)
-        {
-            return Mathf.Abs(destination.x - source.x) < step.x &&
-                Mathf.Abs(destination.y - source.y) < step.y &&
-                Mathf.Abs(destination.z - source.z) < step.z;
-        }
-        public bool IsNeighboor(Vector3Int sourceGridNode, Vector3 destination)
-        {
-            return IsNeighboor(Reify(sourceGridNode), destination);
         }
 
         public float HeuristicCost(Vector3 source, Vector3 destination)
@@ -147,36 +138,48 @@ namespace DaggerfallWorkshop.Game.Utility
                     break;
                 }
             }
-            Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 1f, false);
+            Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 0.1f, false);
             return navigable;
         }
-
-        private struct NavigableCacheKey
+        public class NavigableCacheEntry
         {
-            Vector3Int source;
-            Vector3Int destination;
+            public int computed; // Bitfield of directions that have been already computed (movementIndex-based)
+            public int navigable; // If computed bit is set, bitfield of directions that are navigable (movementIndex-based)
 
-            public NavigableCacheKey(Vector3Int source, Vector3Int destination)
+            public NavigableCacheEntry(int computed, int navigable)
             {
-                this.source = source;
-                this.destination = destination;
+                this.computed = computed;
+                this.navigable = navigable;
             }
         }
-        private Dictionary<NavigableCacheKey, bool> NavigableCache = new Dictionary<NavigableCacheKey, bool>();
+        public Dictionary<Vector3Int, NavigableCacheEntry> NavigableCache = new Dictionary<Vector3Int, NavigableCacheEntry>();
 
-        internal bool IsNavigableInt(Vector3Int source, Vector3Int destination)
+        internal bool IsNavigableInt(Vector3Int source, Vector3Int destination, int movementIndex)
         {
-            NavigableCacheKey key = new NavigableCacheKey(source, destination);
-            if (NavigableCache.TryGetValue(key, out bool isNavigable))
+            int shift = 1 << movementIndex;
+            bool isNavigable;
+            if (NavigableCache.TryGetValue(source, out NavigableCacheEntry entry))
             {
-                Debug.DrawLine(Reify(source), Reify(destination), isNavigable ? Color.yellow : Color.cyan, 1f, false);
+                if ((entry.computed & shift) != 0)
+                {
+                    isNavigable = (entry.navigable & shift) != 0;
+                    Debug.DrawLine(Reify(source), Reify(destination), isNavigable ? Color.yellow : Color.cyan, 0.1f, false);
+                }
+                else
+                {
+                    isNavigable = IsNavigable(Reify(source), Reify(destination));
+                    entry.computed |= shift;
+                    if (isNavigable)
+                        entry.navigable |= shift;
+                }
             }
             else
             {
                 isNavigable = IsNavigable(Reify(source), Reify(destination));
-                NavigableCache.Add(key, isNavigable);
+                entry = new NavigableCacheEntry(shift, isNavigable ? shift : 0);
+                NavigableCache.Add(source, entry);
             }
             return isNavigable;
-        }
+    }
     }
 }
