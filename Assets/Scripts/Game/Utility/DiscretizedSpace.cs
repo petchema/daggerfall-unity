@@ -141,7 +141,7 @@ namespace DaggerfallWorkshop.Game.Utility
             Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 0.1f, false);
             return navigable;
         }
-        public class NavigableCacheEntry
+        public struct NavigableCacheEntry
         {
             public int computed; // Bitfield of directions that have been already computed (movementIndex-based)
             public int navigable; // If computed bit is set, bitfield of directions that are navigable (movementIndex-based)
@@ -171,6 +171,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     entry.computed |= shift;
                     if (isNavigable)
                         entry.navigable |= shift;
+                    NavigableCache.Add(source, entry);
                 }
             }
             else
