@@ -171,7 +171,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     entry.computed |= shift;
                     if (isNavigable)
                         entry.navigable |= shift;
-                    NavigableCache.Add(source, entry);
+                    NavigableCache[source] = entry;
                 }
             }
             else
@@ -181,6 +181,47 @@ namespace DaggerfallWorkshop.Game.Utility
                 NavigableCache.Add(source, entry);
             }
             return isNavigable;
-    }
+        }
+
+        public readonly struct ShortestPathCacheKey
+        {
+            readonly Vector3Int discretizedStart;
+            readonly Vector3Int discretizedDestination;
+            readonly float maxLength;
+            readonly float weight;
+
+            public ShortestPathCacheKey(Vector3Int discretizedStart, Vector3Int discretizedDestination, float maxLength, float weight)
+            {
+                this.discretizedStart = discretizedStart;
+                this.discretizedDestination = discretizedDestination;
+                this.maxLength = maxLength;
+                this.weight = weight;
+            }
+        }
+        public readonly struct ShortestPathCacheValue
+        {
+            public readonly bool pathFound;
+            public readonly List<Vector3> path;
+
+            public ShortestPathCacheValue(bool pathFound, List<Vector3> path) : this()
+            {
+                this.pathFound = pathFound;
+                this.path = path;
+            }
+        }
+
+        protected Dictionary<ShortestPathCacheKey,ShortestPathCacheValue> ShortestPathCache = new Dictionary<ShortestPathCacheKey, ShortestPathCacheValue>();
+        public void PositiveShortestPathCaching(ShortestPathCacheKey cacheKey, List<Vector3> path)
+        {
+            ShortestPathCache[cacheKey] = new ShortestPathCacheValue(true, path);
+        }
+        public void NegativeShortestPathCaching(ShortestPathCacheKey cacheKey)
+        {
+            ShortestPathCache[cacheKey] = new ShortestPathCacheValue(false, null);
+        }
+        public bool TryGetCachedShortestPath(ShortestPathCacheKey cacheKey, out ShortestPathCacheValue cachedValue)
+        {
+            return ShortestPathCache.TryGetValue(cacheKey, out cachedValue);
+        }
     }
 }
