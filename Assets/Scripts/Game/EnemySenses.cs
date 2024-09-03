@@ -79,6 +79,7 @@ namespace DaggerfallWorkshop.Game
         float classicSpawnYDistLower = 0f;
         float classicDespawnXZDist = 0f;
         float classicDespawnYDist = 0f;
+        PathFindingContext pathFindingContext = new PathFindingContext();
 
         public DaggerfallEntityBehaviour Target
         {
@@ -939,7 +940,7 @@ namespace DaggerfallWorkshop.Game
             if (distanceToTarget < hearingDistance)
             {
                 // Hearing is not impeded by doors or other non-static objects
-                bool PathFound = PathFinding.FindShortestPath(SpaceHolder.Instance.GetSpace(), transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
+                bool PathFound = PathFinding.FindShortestPath(SpaceHolder.Instance.GetSpace(), pathFindingContext, transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
                 if (PathFound)
                 {
                     // Find the most distant point in the path visible from our current position
@@ -956,7 +957,7 @@ namespace DaggerfallWorkshop.Game
                     position = Path[Aim];
                     Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
                 }
-                return true;
+                return PathFound;
             }
 
             return false;

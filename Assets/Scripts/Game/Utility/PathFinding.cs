@@ -62,7 +62,7 @@ namespace DaggerfallWorkshop.Game.Utility
         }
 
 
-        public static bool FindShortestPath(DiscretizedSpace space, Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
+        public static bool FindShortestPath(DiscretizedSpace space, PathFindingContext pathFindingContext, Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
         {
 
             ChainedPathStore store = new ChainedPathStore();
@@ -71,8 +71,8 @@ namespace DaggerfallWorkshop.Game.Utility
             ISet<Vector3> destinationList = new HashSet<Vector3>();
             Vector3Int discretizedStart = space.Discretize(start);
             Vector3Int discretizedDestination = space.Discretize(destination);
-            DiscretizedSpace.ShortestPathCacheKey cacheKey = new DiscretizedSpace.ShortestPathCacheKey(discretizedStart, discretizedDestination, maxLength, weight);
-            if (space.TryGetCachedShortestPath(cacheKey, out DiscretizedSpace.ShortestPathCacheValue cachedShortestPath))
+            PathFindingContext.CacheKey cacheKey = new PathFindingContext.CacheKey(discretizedStart, discretizedDestination, maxLength, weight);
+            if (pathFindingContext.HasCachedShortestPath(cacheKey, out PathFindingContext.CacheValue cachedShortestPath))
             {
                 path = cachedShortestPath.path;
                 return cachedShortestPath.pathFound;
@@ -116,7 +116,8 @@ namespace DaggerfallWorkshop.Game.Utility
                                     path = RebuildPath(space, store, Path);
                                     // Destination does not have discretized position, so it's synthetically added to the result
                                     path.Add(destination);
-                                    space.PositiveShortestPathCaching(cacheKey, path);
+                                    cachedShortestPath = new PathFindingContext.CacheValue(true, path);
+                                    pathFindingContext.CacheShortestPath(cacheKey, cachedShortestPath);
                                     return true;
                                 }
                             }
@@ -138,7 +139,8 @@ namespace DaggerfallWorkshop.Game.Utility
                     }
                 }
                 // Only cache result if not interrupted by raycast budget
-                space.NegativeShortestPathCaching(cacheKey);
+                cachedShortestPath = new PathFindingContext.CacheValue(false, null);
+                pathFindingContext.CacheShortestPath(cacheKey, cachedShortestPath);
             } 
             catch(OverRaycastBudgetException)
             {
