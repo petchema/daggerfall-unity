@@ -5,9 +5,34 @@ using UnityEngine;
 namespace DaggerfallWorkshop.Game.Utility
 {
 
-    public static class PathFinding
+    public class PathFinding
     {
-        protected readonly struct ChainedPath : IComparable<ChainedPath> 
+        private readonly DiscretizedSpace space;
+        private readonly float TTL = 15; // seconds
+
+        public enum PathFindingResult
+        {
+            Success,
+            Failure,
+            NotCompleted
+        }
+
+        // Current query
+        private float cacheTTL = 0f;
+        private Vector3 start;
+        private Vector3 destination; 
+        private float maxLength;
+        private float weight;
+
+        // Working state
+        private ChainedPathStore store;
+        private PriorityQueue<ChainedPath> openList;
+        private ISet<Vector3> closedList;
+        private ISet<Vector3> destinationList;
+        private PathFindingResult status;
+        private List<Vector3> foundPath;
+
+        readonly struct ChainedPath : IComparable<ChainedPath> 
         {
             public readonly Vector3Int position;
             public readonly float cost;
@@ -44,6 +69,10 @@ namespace DaggerfallWorkshop.Game.Utility
                 // Does not check if that's a released element
                 return paths[index];
             }
+            public void Clear()
+            {
+                paths.Clear();
+            }
         }
 
         static List<Vector3> RebuildPath(DiscretizedSpace space, ChainedPathStore allocator, ChainedPath path)
@@ -61,22 +90,87 @@ namespace DaggerfallWorkshop.Game.Utility
             return result;
         }
 
-
-        public static bool FindShortestPath(DiscretizedSpace space, PathFindingContext pathFindingContext, Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
+        public PathFinding(DiscretizedSpace space)
         {
+            this.space = space;
+            store = new ChainedPathStore();
+            openList = new PriorityQueue<ChainedPath>();
+            closedList = new HashSet<Vector3>();
+            destinationList = new HashSet<Vector3>();
+        }
 
-            ChainedPathStore store = new ChainedPathStore();
-            PriorityQueue<ChainedPath> openList = new PriorityQueue<ChainedPath>();
-            ISet<Vector3> closedList = new HashSet<Vector3>();
-            ISet<Vector3> destinationList = new HashSet<Vector3>();
+        public PathFindingResult RetryableFindShortestPath(Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
+        {
+            bool isResumable = false;
+            // Information too old, parameters changed or target has moved: we don't have a cached answer and can't resume computation
+            if (Time.time >= cacheTTL
+                || this.maxLength != maxLength
+                || this.weight != weight
+                || (destination - this.destination).magnitude > 2f)
+            {
+                // Indeed we must start over
+            }
+            else if (status == PathFindingResult.Success)
+            {
+                // Assuming we're following the path, can we return a suffix of foundPath?
+                int closest = 0;
+                float minSqrDist = (start - foundPath[closest]).sqrMagnitude;
+                while (closest < foundPath.Count - 1)
+                {
+                    int nextClosest = closest + 1;
+                    float nextMinSqrDist = (start - foundPath[nextClosest]).sqrMagnitude;
+                    if (nextMinSqrDist >= minSqrDist)
+                        break;
+        
+                    closest = nextClosest;
+                    minSqrDist = nextMinSqrDist;
+                }
+                if (minSqrDist < 1f)
+                {
+                    path = foundPath.GetRange(closest, foundPath.Count - closest);
+                    return PathFindingResult.Success;
+                }
+            }
+            else if (status == PathFindingResult.Failure)
+            {
+                // Cached answer was that target was unreachable and we haven't moved much: probably still true
+                if ((start - this.start).magnitude < 2f)
+                {
+                    path = null;
+                    return PathFindingResult.Failure;
+                }
+            }
+            else
+            {
+                // Query hasn't changed but we aren't done yet: let's continue
+                isResumable = true;
+            }
+
+            if (!isResumable)
+            {
+                Initialization(start, destination, maxLength, weight);
+            }
+            FindShortestPath();
+            path = foundPath;
+            return status;
+        }
+
+        private void Initialization(Vector3 start, Vector3 destination, float maxLength, float weight)
+        {
+            this.start = start;
+            this.destination = destination;
+            this.maxLength = maxLength;
+            this.weight = weight;
+            cacheTTL = Time.time + TTL;
+
+            store.Clear();
+            openList.Clear();
+            closedList.Clear();
+            destinationList.Clear();
+            status = PathFindingResult.NotCompleted;
+            
             Vector3Int discretizedStart = space.Discretize(start);
             Vector3Int discretizedDestination = space.Discretize(destination);
-            PathFindingContext.CacheKey cacheKey = new PathFindingContext.CacheKey(discretizedStart, discretizedDestination, maxLength, weight);
-            if (pathFindingContext.HasCachedShortestPath(cacheKey, out PathFindingContext.CacheValue cachedShortestPath))
-            {
-                path = cachedShortestPath.path;
-                return cachedShortestPath.pathFound;
-            }
             for (int x = 0; x <= 1; x++) 
             {
                 for (int y = 0; y <= 1; y++)
@@ -94,11 +188,17 @@ namespace DaggerfallWorkshop.Game.Utility
                     }
                 }
             }
+        }
+
+        public void FindShortestPath()
+        {
+            List<ChainedPath> newPathsBuffer = new List<ChainedPath>(26);
             try
             {
                 while (openList.Count() > 0)
                 {
-                    ChainedPath Path = openList.Dequeue();
+                    // Don't remove from openList just yet, in case we're interrupted by OverRaycastBudgetException
+                    ChainedPath Path = openList.Peek();
                     int pathIndex = store.Add(Path);
                     if (!closedList.Contains(Path.position))
                     {
@@ -113,12 +213,11 @@ namespace DaggerfallWorkshop.Game.Utility
                             {
                                 if (space.IsNavigable(space.Reify(Path.position), destination))
                                 {
-                                    path = RebuildPath(space, store, Path);
+                                    foundPath = RebuildPath(space, store, Path);
                                     // Destination does not have discretized position, so it's synthetically added to the result
-                                    path.Add(destination);
-                                    cachedShortestPath = new PathFindingContext.CacheValue(true, path);
-                                    pathFindingContext.CacheShortestPath(cacheKey, cachedShortestPath);
-                                    return true;
+                                    foundPath.Add(destination);
+                                    status = PathFindingResult.Success;
+                                    return;
                                 }
                             }
 
@@ -131,23 +230,28 @@ namespace DaggerfallWorkshop.Game.Utility
                                 if (newCost <= maxLength)
                                 {
                                     ChainedPath newPath = new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(space.Reify(newPosition), destination) * weight, i, pathIndex);
-                                    openList.Enqueue(newPath);
+                                    newPathsBuffer.Add(newPath);
                                 }
                             }
                         }
+                        openList.Dequeue();
+                        foreach (ChainedPath newPath in newPathsBuffer)
+                            openList.Enqueue(newPath);
+                        newPathsBuffer.Clear();
                         closedList.Add(Path.position);
                     }
+                    else
+                        openList.Dequeue();
                 }
-                // Only cache result if not interrupted by raycast budget
-                cachedShortestPath = new PathFindingContext.CacheValue(false, null);
-                pathFindingContext.CacheShortestPath(cacheKey, cachedShortestPath);
+                foundPath = null;
+                status = PathFindingResult.Failure;
             } 
             catch(OverRaycastBudgetException)
             {
-                // do nothing, just return path couldn't be found
+                foundPath = null;
+                status = PathFindingResult.NotCompleted;
             }
-            path = null;
-            return false;
+            return;
         }
         
     }

@@ -6,7 +6,7 @@ namespace DaggerfallWorkshop.Game.Utility
     public class SpaceHolder : MonoBehaviour
     {
         public DiscretizedSpace Space = null;
-        public int RaycastBudgetPerFrame = 50;
+        public int RaycastBudgetPerFrame = 25;
 
         public readonly Vector3 Origin = Vector3.zero;
         public readonly Vector3 Step = new Vector3(0.7f, 0.7f, 0.7f);

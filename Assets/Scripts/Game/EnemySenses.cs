@@ -16,6 +16,7 @@ using DaggerfallConnect;
 using DaggerfallWorkshop.Game.Questing;
 using DaggerfallWorkshop.Game.Utility;
 using System.Collections.Generic;
+using static DaggerfallWorkshop.Game.Utility.PathFinding;
 
 namespace DaggerfallWorkshop.Game
 {
@@ -79,7 +80,7 @@ namespace DaggerfallWorkshop.Game
         float classicSpawnYDistLower = 0f;
         float classicDespawnXZDist = 0f;
         float classicDespawnYDist = 0f;
-        PathFindingContext pathFindingContext = new PathFindingContext();
+        PathFinding pathFinding;
 
         public DaggerfallEntityBehaviour Target
         {
@@ -239,6 +240,8 @@ namespace DaggerfallWorkshop.Game
             // 180 degrees is classic's value. 190 degrees is actual human FOV according to online sources.
             if (DaggerfallUnity.Settings.EnhancedCombatAI)
                 FieldOfView = 190;
+
+            pathFinding = new PathFinding(SpaceHolder.Instance.GetSpace());
         }
 
         void FixedUpdate()
@@ -937,8 +940,8 @@ namespace DaggerfallWorkshop.Game
             {
                 DiscretizedSpace space = SpaceHolder.Instance.GetSpace();
                 // Hearing is not impeded by doors or other non-static objects
-                bool PathFound = PathFinding.FindShortestPath(SpaceHolder.Instance.GetSpace(), pathFindingContext, transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
-                if (PathFound)
+                PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
+                if (PathFound == PathFindingResult.Success)
                 {
                     // Find the most distant point in the path visible from our current position
                     int Aim = 1;

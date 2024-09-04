@@ -72,5 +72,10 @@ namespace DaggerfallWorkshop.Game.Utility
             {
                 return data.Count;
             }
+
+            public void Clear()
+            {
+                data.Clear();
+            }
         }
 }
