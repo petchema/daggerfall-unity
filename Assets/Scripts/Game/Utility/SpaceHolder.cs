@@ -9,7 +9,7 @@ namespace DaggerfallWorkshop.Game.Utility
         public int RaycastBudgetPerFrame = 50;
 
         public readonly Vector3 Origin = Vector3.zero;
-        public readonly Vector3 Step = new Vector3(1f, 1f, 1f);
+        public readonly Vector3 Step = new Vector3(0.7f, 0.7f, 0.7f);
 
         static SpaceHolder instance = null;
         public static SpaceHolder Instance

@@ -23,6 +23,7 @@ namespace DaggerfallWorkshop.Game.Utility
         private Vector3 step;
         private Vector3 inverseStep;
         private int raycastBudget = 0;
+        private static int LayersMask = 0;
 
         public struct Movement
         {
@@ -76,6 +77,16 @@ namespace DaggerfallWorkshop.Game.Utility
                 throw new OverRaycastBudgetException();
         }
 
+        public int GetLayersMask()
+        {
+            if (LayersMask == 0)
+                LayersMask = ~((1 << LayerMask.NameToLayer("Automap")) |
+                               (1 << LayerMask.NameToLayer("Enemies")) |
+                               (1 << LayerMask.NameToLayer("Player")) |
+                               (1 << LayerMask.NameToLayer("SpellMissiles")) ) ;; // 1 << LayerMask.NameToLayer("Default");
+            return LayersMask;
+        }
+
         public Vector3Int Discretize(Vector3 vector)
         {
             return new Vector3Int((int) Mathf.Floor((vector.x - origin.x) * inverseStep.x),
@@ -107,7 +118,6 @@ namespace DaggerfallWorkshop.Game.Utility
             return movements;
         }
     
-        private static int defaultLayerOnlyMask = 0;
         private RaycastHit[] hitsBuffer = new RaycastHit[4];
 
         public bool IsNavigable(Vector3 source, Vector3 destination)
@@ -115,19 +125,18 @@ namespace DaggerfallWorkshop.Game.Utility
             Vector3 vector = destination - source;
             Vector3 normalized = vector.normalized;
             // Add some overlap, because paths can get thru walls if a node lands exactly on a wall
-            float epsilon = 0.01f;
-            if (defaultLayerOnlyMask == 0)
-                defaultLayerOnlyMask = 1 << LayerMask.NameToLayer("Default");
+            float epsilon = 0.05f;
 
             Ray ray = new Ray(source - normalized * epsilon, normalized);
             int nhits;
             while (true) {
                 DecrRaycastBudget();
-                nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, defaultLayerOnlyMask);
+                nhits = Physics.SphereCastNonAlloc(ray, 0.2f, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
+                // nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 if (nhits < hitsBuffer.Length)
                     break;
                 // hitsBuffer may have overflowed, retry with a larger buffer
-                hitsBuffer = new RaycastHit[nhits + 1];
+                hitsBuffer = new RaycastHit[hitsBuffer.Length * 2];
             };
             bool navigable = true;
             for (int i = 0; i < nhits; i++)
@@ -163,7 +172,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 if ((entry.computed & shift) != 0)
                 {
                     isNavigable = (entry.navigable & shift) != 0;
-                    Debug.DrawLine(Reify(source), Reify(destination), isNavigable ? Color.yellow : Color.cyan, 0.1f, false);
+                    Debug.DrawLine(Reify(source), Reify(destination), isNavigable ? Color.cyan : Color.blue, 0.1f, false);
                 }
                 else
                 {
@@ -178,7 +187,7 @@ namespace DaggerfallWorkshop.Game.Utility
             {
                 isNavigable = IsNavigable(Reify(source), Reify(destination));
                 entry = new NavigableCacheEntry(shift, isNavigable ? shift : 0);
-                NavigableCache.Add(source, entry);
+                NavigableCache[source] = entry;
             }
             return isNavigable;
         }

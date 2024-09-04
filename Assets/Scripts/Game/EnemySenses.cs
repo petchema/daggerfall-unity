@@ -924,40 +924,40 @@ namespace DaggerfallWorkshop.Game
             return seen;
         }
 
-        private static int defaultLayerOnlyMask = 0;
         private static RaycastHit[] hitsBuffer = new RaycastHit[4];
 
         bool CanHearTarget(out Vector3 position)
         {
             float hearingScale = 1f;
 
-            if (defaultLayerOnlyMask == 0)
-                defaultLayerOnlyMask = 1 << LayerMask.NameToLayer("Default");
-
             position = ResetPlayerPos;
             // TODO: Modify this by how much noise the target is making
             float hearingDistance = (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier;
             if (distanceToTarget < hearingDistance)
             {
+                DiscretizedSpace space = SpaceHolder.Instance.GetSpace();
                 // Hearing is not impeded by doors or other non-static objects
                 bool PathFound = PathFinding.FindShortestPath(SpaceHolder.Instance.GetSpace(), pathFindingContext, transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
                 if (PathFound)
                 {
                     // Find the most distant point in the path visible from our current position
-                    int Aim = 0;
+                    int Aim = 1;
                     int NextAim;
-                    while ((NextAim = Aim + 4) < Path.Count && !Physics.Raycast(position, Path[NextAim], defaultLayerOnlyMask))
+                    while ((NextAim = Aim + 4) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
                     {
                         Aim = NextAim;
                     }
-                    while ((NextAim = Aim + 1) < Path.Count && !Physics.Raycast(position, Path[NextAim], defaultLayerOnlyMask))
+                    while ((NextAim = Aim + 1) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
                     {
                         Aim = NextAim;
                     }
-                    position = Path[Aim];
+                    // Help "get thru de door"
+                    float amplification = 2f;
+                    position = Path[Aim] * (1f + amplification) - Path[Aim-1] * amplification;
                     Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
+                    Debug.DrawLine(transform.position, position, Color.white, 0.2f);
+                    return true;
                 }
-                return PathFound;
             }
 
             return false;
