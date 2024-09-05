@@ -106,7 +106,7 @@ namespace DaggerfallWorkshop.Game.Utility
             if (Time.time >= cacheTTL
                 || this.maxLength != maxLength
                 || this.weight != weight
-                || (destination - this.destination).magnitude > 2f)
+                || (destination - this.destination).sqrMagnitude > 4f)
             {
                 // Indeed we must start over
             }
@@ -133,8 +133,8 @@ namespace DaggerfallWorkshop.Game.Utility
             }
             else if (status == PathFindingResult.Failure)
             {
-                // Cached answer was that target was unreachable and we haven't moved much: probably still true
-                if ((start - this.start).magnitude < 2f)
+                // Cached answer was that target was unreachable and nobody has moved much (destination checked above): probably still true
+                if ((start - this.start).sqrMagnitude < 4f)
                 {
                     path = null;
                     return PathFindingResult.Failure;

@@ -131,7 +131,7 @@ namespace DaggerfallWorkshop.Game.Utility
             int nhits;
             while (true) {
                 DecrRaycastBudget();
-                nhits = Physics.SphereCastNonAlloc(ray, 0.2f, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
+                nhits = Physics.SphereCastNonAlloc(ray, 0.25f, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 // nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 if (nhits < hitsBuffer.Length)
                     break;

@@ -940,26 +940,43 @@ namespace DaggerfallWorkshop.Game
             {
                 DiscretizedSpace space = SpaceHolder.Instance.GetSpace();
                 // Hearing is not impeded by doors or other non-static objects
-                PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
-                if (PathFound == PathFindingResult.Success)
+                if (space.IsNavigable(transform.position, target.transform.position))
                 {
-                    // Find the most distant point in the path visible from our current position
-                    int Aim = 1;
-                    int NextAim;
-                    while ((NextAim = Aim + 4) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
-                    {
-                        Aim = NextAim;
-                    }
-                    while ((NextAim = Aim + 1) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
-                    {
-                        Aim = NextAim;
-                    }
-                    // Help "get thru de door"
-                    float amplification = 2f;
-                    position = Path[Aim] * (1f + amplification) - Path[Aim-1] * amplification;
-                    Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
-                    Debug.DrawLine(transform.position, position, Color.white, 0.2f);
+                    position = target.transform.position;
                     return true;
+                } 
+                else if (DaggerfallUnity.Settings.EnhancedCombatAI)
+                {
+                    PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
+                    if (PathFound == PathFindingResult.Success)
+                    {
+                        // Find the most distant point in the path visible from our current position
+                        int Aim = 1;
+                        int NextAim;
+                        while ((NextAim = Aim + 4) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
+                        {
+                            Aim = NextAim;
+                        }
+                        while ((NextAim = Aim + 1) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
+                        {
+                            Aim = NextAim;
+                        }
+                        // Help "get thru de door"
+                        float amplification = 2f;
+                        position = Path[Aim] * (1f + amplification) - Path[Aim-1] * amplification;
+                        // Alternatives tried:
+                        // position = Path[Aim] + (Path[Aim] - transform.position).normalized * amplification;
+
+                        // Vector3 trueLastSeenPosition = position;
+                        // while ((NextAim = Aim + 1) < Path.Count && (Path[NextAim] - trueLastSeenPosition).sqrMagnitude <= 4f)
+                        // {
+                        //     Aim = NextAim;
+                        // }
+                        // position = Path[Aim];
+                        Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
+                        Debug.DrawLine(transform.position, position, Color.white, 0.2f);
+                        return true;
+                    }
                 }
             }
 
