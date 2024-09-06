@@ -193,64 +193,68 @@ namespace DaggerfallWorkshop.Game.Utility
         public void FindShortestPath()
         {
             List<ChainedPath> newPathsBuffer = new List<ChainedPath>(26);
-            try
+            bool overBudget = false;
+            while (!overBudget && openList.Count() > 0)
             {
-                while (openList.Count() > 0)
+                // Don't remove from openList just yet, in case we're interrupted by OverRaycastBudgetException
+                ChainedPath Path = openList.Peek();
+                int pathIndex = store.Add(Path);
+                if (!closedList.Contains(Path.position))
                 {
-                    // Don't remove from openList just yet, in case we're interrupted by OverRaycastBudgetException
-                    ChainedPath Path = openList.Peek();
-                    int pathIndex = store.Add(Path);
-                    if (!closedList.Contains(Path.position))
+                    PathFindingResult isNavigable = Path.sourceChainedPathIndex >= 0 
+                        ? space.IsNavigableInt(store.Get(Path.sourceChainedPathIndex).position, Path.position, Path.movementIndex) 
+                        // Start does not have discretized position, so it's special cased as "source index = -1"
+                        : space.IsNavigable(start, space.Reify(Path.position));
+                    if (isNavigable == PathFindingResult.NotCompleted)
                     {
-                        bool isNavigable = Path.sourceChainedPathIndex >= 0 
-                            ? space.IsNavigableInt(store.Get(Path.sourceChainedPathIndex).position, Path.position, Path.movementIndex) 
-                            // Start does not have discretized position, so it's special cased as "source index = -1"
-                            : space.IsNavigable(start, space.Reify(Path.position));
-                        if (isNavigable)
+                        overBudget = true;
+                        break;
+                    }
+                    if (isNavigable == PathFindingResult.Success)
+                    {
+                        // Are we arrived yet?
+                        if (destinationList.Contains(Path.position))
                         {
-                            // Are we arrived yet?
-                            if (destinationList.Contains(Path.position))
+                            PathFindingResult isNavigableToDestination = space.IsNavigable(space.Reify(Path.position), destination);
+                            if (isNavigableToDestination == PathFindingResult.NotCompleted)
                             {
-                                if (space.IsNavigable(space.Reify(Path.position), destination))
-                                {
-                                    foundPath = RebuildPath(space, store, Path);
-                                    // Destination does not have discretized position, so it's synthetically added to the result
-                                    foundPath.Add(destination);
-                                    status = PathFindingResult.Success;
-                                    return;
-                                }
+                                overBudget = true;
+                                break;
                             }
-
-                            List<DiscretizedSpace.Movement> movements = space.GetMovements();
-                            for (int i = 0; i < movements.Count - 1; i++)
+                            if (isNavigableToDestination == PathFindingResult.Success)
                             {
-                                DiscretizedSpace.Movement movement = movements[i];
-                                Vector3Int newPosition = Path.position + movement.delta;
-                                float newCost = Path.cost + movement.cost;
-                                if (newCost <= maxLength)
-                                {
-                                    ChainedPath newPath = new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(space.Reify(newPosition), destination) * weight, i, pathIndex);
-                                    newPathsBuffer.Add(newPath);
-                                }
+                                foundPath = RebuildPath(space, store, Path);
+                                // Destination does not have discretized position, so it's synthetically added to the result
+                                foundPath.Add(destination);
+                                status = PathFindingResult.Success;
+                                return;
                             }
                         }
-                        openList.Dequeue();
-                        foreach (ChainedPath newPath in newPathsBuffer)
-                            openList.Enqueue(newPath);
-                        newPathsBuffer.Clear();
-                        closedList.Add(Path.position);
+
+                        List<DiscretizedSpace.Movement> movements = space.GetMovements();
+                        for (int i = 0; i < movements.Count - 1; i++)
+                        {
+                            DiscretizedSpace.Movement movement = movements[i];
+                            Vector3Int newPosition = Path.position + movement.delta;
+                            float newCost = Path.cost + movement.cost;
+                            if (newCost <= maxLength)
+                            {
+                                ChainedPath newPath = new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(space.Reify(newPosition), destination) * weight, i, pathIndex);
+                                newPathsBuffer.Add(newPath);
+                            }
+                        }
                     }
-                    else
-                        openList.Dequeue();
+                    openList.Dequeue();
+                    foreach (ChainedPath newPath in newPathsBuffer)
+                        openList.Enqueue(newPath);
+                    newPathsBuffer.Clear();
+                    closedList.Add(Path.position);
                 }
-                foundPath = null;
-                status = PathFindingResult.Failure;
-            } 
-            catch(OverRaycastBudgetException)
-            {
-                foundPath = null;
-                status = PathFindingResult.NotCompleted;
+                else
+                    openList.Dequeue();
             }
+            foundPath = null;
+            status = overBudget ? PathFindingResult.NotCompleted : PathFindingResult.Failure;
             return;
         }
         

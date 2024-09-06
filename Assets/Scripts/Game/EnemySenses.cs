@@ -940,7 +940,8 @@ namespace DaggerfallWorkshop.Game
             {
                 DiscretizedSpace space = SpaceHolder.Instance.GetSpace();
                 // Hearing is not impeded by doors or other non-static objects
-                if (space.IsNavigable(transform.position, target.transform.position))
+                PathFindingResult straightHearing = space.IsNavigable(transform.position, target.transform.position, onBudget: false);
+                if (straightHearing == PathFindingResult.Success)
                 {
                     position = target.transform.position;
                     return true;
@@ -953,13 +954,24 @@ namespace DaggerfallWorkshop.Game
                         // Find the most distant point in the path visible from our current position
                         int Aim = 1;
                         int NextAim;
-                        while ((NextAim = Aim + 4) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
+                        PathFindingResult isVisible;
+                        while ((NextAim = Aim + 4) < Path.Count)
                         {
-                            Aim = NextAim;
+                            isVisible = space.IsNavigable(transform.position, Path[NextAim]);
+                            if (isVisible == PathFindingResult.Success)
+                                Aim = NextAim;
+                            else if (isVisible == PathFindingResult.Failure)
+                                break;
+                            else return false;
                         }
-                        while ((NextAim = Aim + 1) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]))
+                        while ((NextAim = Aim + 1) < Path.Count)
                         {
-                            Aim = NextAim;
+                            isVisible = space.IsNavigable(transform.position, Path[NextAim]);
+                            if (isVisible == PathFindingResult.Success)
+                                Aim = NextAim;
+                            else if (isVisible == PathFindingResult.Failure)
+                                break;
+                            else return false;
                         }
                         // Help "get thru de door"
                         float amplification = 2f;

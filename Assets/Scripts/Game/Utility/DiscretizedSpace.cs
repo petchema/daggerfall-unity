@@ -3,20 +3,10 @@ using System.Collections.Generic;
 using DaggerfallWorkshop.Utility;
 using UnityEngine;
 using UnityEngine.Assertions;
+using static DaggerfallWorkshop.Game.Utility.PathFinding;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
-
-    [System.Serializable]
-    public class OverRaycastBudgetException : Exception
-    {
-        public OverRaycastBudgetException() { }
-        public OverRaycastBudgetException(string message) : base(message) { }
-        public OverRaycastBudgetException(string message, System.Exception inner) : base(message, inner) { }
-        protected OverRaycastBudgetException(
-            System.Runtime.Serialization.SerializationInfo info,
-            System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-    }
 
     public class DiscretizedSpace
     {
@@ -76,12 +66,12 @@ namespace DaggerfallWorkshop.Game.Utility
             raycastBudget = budget;
         }
 
-        private void DecrRaycastBudget()
+        private bool DecrRaycastBudget()
         {
-            if (raycastBudget > 0)
-                raycastBudget--;
-            else 
-                throw new OverRaycastBudgetException();
+            if (raycastBudget == 0)
+                return false;
+            raycastBudget--;
+            return true;
         }
 
         public int GetLayersMask()
@@ -127,7 +117,7 @@ namespace DaggerfallWorkshop.Game.Utility
     
         private RaycastHit[] hitsBuffer = new RaycastHit[4];
 
-        public bool IsNavigable(Vector3 source, Vector3 destination)
+        public PathFindingResult IsNavigable(Vector3 source, Vector3 destination, bool onBudget = true)
         {
             Vector3 vector = destination - source;
             Vector3 normalized = vector.normalized;
@@ -137,7 +127,8 @@ namespace DaggerfallWorkshop.Game.Utility
             Ray ray = new Ray(source - normalized * epsilon, normalized);
             int nhits;
             while (true) {
-                DecrRaycastBudget();
+                if (onBudget && !DecrRaycastBudget())
+                    return PathFindingResult.NotCompleted;
                 nhits = Physics.SphereCastNonAlloc(ray, 0.25f, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 // nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 if (nhits < hitsBuffer.Length)
@@ -155,7 +146,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 }
             }
             Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 0.1f, false);
-            return navigable;
+            return navigable ? PathFindingResult.Success : PathFindingResult.Failure;
         }
 
         static readonly int subdivisionShift = 4; // space will be divised in NxNxN cubes N = 2^subdivisionShift
@@ -164,10 +155,10 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public struct NavigableCacheEntry
         {
-            public Int64 flags; // Bitfield of directions that have been already computed (movementIndex-based)
+            public UInt64 flags; // Bitfield of directions that have been already computed (movementIndex-based)
                                 // 64 is sufficient for storing 2 bits for 26 directions
 
-            public NavigableCacheEntry(int flags)
+            public NavigableCacheEntry(uint flags)
             {
                 this.flags = flags;
             }
@@ -301,31 +292,35 @@ namespace DaggerfallWorkshop.Game.Utility
                                                     01 = (unused)
                                                     10 = not navigable
                                                     11 = navigable */
-        static readonly int computedBit = 0x2;
-        static readonly int navigableBit = 0x1;
+        static readonly uint computedBit = 0x2;
+        static readonly uint navigableBit = 0x1;
 
-        internal bool IsNavigableInt(Vector3Int source, Vector3Int destination, int movementIndex)
+        internal PathFindingResult IsNavigableInt(Vector3Int source, Vector3Int destination, int movementIndex)
         {
             int shift = movementIndex * bitsPerMovement;
-            bool isNavigable;
+            PathFindingResult isNavigable;
             if (spaceCache.TryGetValue(source.x, source.y, source.z, out NavigableCacheEntry entry))
             {
                 if ((entry.flags & (computedBit << shift)) != 0)
                 {
-                    isNavigable = (entry.flags & (navigableBit << shift)) != 0;
-                    Debug.DrawLine(Reify(source), Reify(destination), isNavigable ? Color.cyan : Color.blue, 0.1f, false);
+                    isNavigable = (entry.flags & (navigableBit << shift)) != 0 ? PathFindingResult.Success : PathFindingResult.Failure;
+                    Debug.DrawLine(Reify(source), Reify(destination), isNavigable == PathFindingResult.Success ? Color.cyan : Color.blue, 0.1f, false);
                 }
                 else
                 {
                     isNavigable = IsNavigable(Reify(source), Reify(destination));
-                    entry.flags = entry.flags | (isNavigable ? computedBit | navigableBit : computedBit) << shift;
+                    if (isNavigable == PathFindingResult.NotCompleted)
+                        return isNavigable;
+                    entry.flags = entry.flags | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
                     spaceCache.Set(source.x, source.y, source.z, entry);
                 }
             }
             else
             {
                 isNavigable = IsNavigable(Reify(source), Reify(destination));
-                entry = new NavigableCacheEntry((isNavigable ? computedBit | navigableBit : computedBit) << shift);
+                if (isNavigable == PathFindingResult.NotCompleted)
+                    return isNavigable;
+                entry = new NavigableCacheEntry((isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift);
                 spaceCache.Set(source.x, source.y, source.z, entry);
             }
             return isNavigable;
