@@ -50,13 +50,6 @@ namespace DaggerfallWorkshop.Game.Utility
             spaceCache = new SpaceMetaCube();
             spaceCache.Init();
 
-            NavigableCacheEntry entry = new NavigableCacheEntry();
-            entry.computed = 0b101;
-            entry.navigable = 0b100;
-            spaceCache.Set(42, 766, -40, entry);
-            Assert.IsTrue(spaceCache.TryGetValue(42, 766, -40, out NavigableCacheEntry entry2));
-            Assert.AreEqual(entry2, entry);
-
             if (movements == null)
             {
                 movements = new List<Movement>();
@@ -171,13 +164,12 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public struct NavigableCacheEntry
         {
-            public int computed; // Bitfield of directions that have been already computed (movementIndex-based)
-            public int navigable; // If computed bit is set, bitfield of directions that are navigable (movementIndex-based)
+            public Int64 flags; // Bitfield of directions that have been already computed (movementIndex-based)
+                                // 64 is sufficient for storing 2 bits for 26 directions
 
-            public NavigableCacheEntry(int computed, int navigable)
+            public NavigableCacheEntry(int flags)
             {
-                this.computed = computed;
-                this.navigable = navigable;
+                this.flags = flags;
             }
         }
 
@@ -305,30 +297,35 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
+        static readonly int bitsPerMovement = 2; /* 00 = unknown
+                                                    01 = (unused)
+                                                    10 = not navigable
+                                                    11 = navigable */
+        static readonly int computedBit = 0x2;
+        static readonly int navigableBit = 0x1;
+
         internal bool IsNavigableInt(Vector3Int source, Vector3Int destination, int movementIndex)
         {
-            int shift = 1 << movementIndex;
+            int shift = movementIndex * bitsPerMovement;
             bool isNavigable;
             if (spaceCache.TryGetValue(source.x, source.y, source.z, out NavigableCacheEntry entry))
             {
-                if ((entry.computed & shift) != 0)
+                if ((entry.flags & (computedBit << shift)) != 0)
                 {
-                    isNavigable = (entry.navigable & shift) != 0;
+                    isNavigable = (entry.flags & (navigableBit << shift)) != 0;
                     Debug.DrawLine(Reify(source), Reify(destination), isNavigable ? Color.cyan : Color.blue, 0.1f, false);
                 }
                 else
                 {
                     isNavigable = IsNavigable(Reify(source), Reify(destination));
-                    entry.computed |= shift;
-                    if (isNavigable)
-                        entry.navigable |= shift;
+                    entry.flags = entry.flags | (isNavigable ? computedBit | navigableBit : computedBit) << shift;
                     spaceCache.Set(source.x, source.y, source.z, entry);
                 }
             }
             else
             {
                 isNavigable = IsNavigable(Reify(source), Reify(destination));
-                entry = new NavigableCacheEntry(shift, isNavigable ? shift : 0);
+                entry = new NavigableCacheEntry((isNavigable ? computedBit | navigableBit : computedBit) << shift);
                 spaceCache.Set(source.x, source.y, source.z, entry);
             }
             return isNavigable;
