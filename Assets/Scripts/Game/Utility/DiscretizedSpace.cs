@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DaggerfallWorkshop.Utility;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
@@ -37,12 +38,25 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
         private static List<Movement> movements = null;
+
+        private SpaceMetaCube spaceCache;
+
         public DiscretizedSpace(Vector3 origin, Vector3 step)
         {
             this.origin = origin;
             this.step = step;
             inverseStep = new Vector3(1f / step.x, 1f / step.y, 1f / step.z);
             raycastBudget = 0;
+            spaceCache = new SpaceMetaCube();
+            spaceCache.Init();
+
+            NavigableCacheEntry entry = new NavigableCacheEntry();
+            entry.computed = 0b101;
+            entry.navigable = 0b100;
+            spaceCache.Set(42, 766, -40, entry);
+            Assert.IsTrue(spaceCache.TryGetValue(42, 766, -40, out NavigableCacheEntry entry2));
+            Assert.AreEqual(entry2, entry);
+
             if (movements == null)
             {
                 movements = new List<Movement>();
@@ -150,6 +164,11 @@ namespace DaggerfallWorkshop.Game.Utility
             Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 0.1f, false);
             return navigable;
         }
+
+        static readonly int subdivisionShift = 4; // space will be divised in NxNxN cubes N = 2^subdivisionShift
+        static readonly int subdivisionMask = (1 << subdivisionShift) - 1;
+        static readonly int resizeExtra = 3; // How many extra rows/columns/... to allocate over what's necessary when resizing
+
         public struct NavigableCacheEntry
         {
             public int computed; // Bitfield of directions that have been already computed (movementIndex-based)
@@ -161,13 +180,136 @@ namespace DaggerfallWorkshop.Game.Utility
                 this.navigable = navigable;
             }
         }
-        public Dictionary<Vector3Int, NavigableCacheEntry> NavigableCache = new Dictionary<Vector3Int, NavigableCacheEntry>();
+
+        static NavigableCacheEntry NoNavigableCacheEntry = new NavigableCacheEntry(); // use "default" instead?
+
+        struct SpaceCube
+        {
+            // Flattened multidimensionnal array
+            NavigableCacheEntry[,,] cube;
+            public void Init()
+            {
+                cube = new NavigableCacheEntry[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
+            }
+            public bool IsMissing()
+            {
+                return cube == null;
+            }
+            public NavigableCacheEntry Get(int x, int y, int z)
+            {
+                return cube[z, y, x];
+            }
+            public void Set(int x, int y, int z, NavigableCacheEntry entry)
+            {
+                cube[z, y, x] = entry;
+            }
+        } 
+        // Cube of Cubes
+        struct SpaceMetaCube
+        {
+            int xLowerBound;
+            int yLowerBound;
+            int zLowerBound;
+            SpaceCube[][][] cache;
+
+            internal void Init()
+            {
+                cache = new SpaceCube[0][][];
+                xLowerBound = yLowerBound = zLowerBound = 0;
+            }
+            public bool TryGetValue(int x, int y, int z, out NavigableCacheEntry entry)
+            {
+                entry = NoNavigableCacheEntry;
+                int cubeZ = z >> subdivisionShift;
+                if (cubeZ < zLowerBound || cubeZ >= zLowerBound + cache.Length)
+                    return false;
+                SpaceCube[][] plane = cache[cubeZ - zLowerBound];
+                if (plane == null)
+                    return false;
+
+                int cubeY = y >> subdivisionShift;
+                if (cubeY < yLowerBound || cubeY >= yLowerBound + plane.Length)
+                    return false;
+                SpaceCube[] row = plane[cubeY - yLowerBound];
+                if (row == null)
+                    return false;
+
+                int cubeX = x >> subdivisionShift;
+                if (cubeX < xLowerBound || cubeX >= xLowerBound + row.Length)
+                    return false;
+                SpaceCube cube = row[cubeX - xLowerBound];
+                if (cube.IsMissing())
+                    return false;
+
+                entry = cube.Get(x & subdivisionMask, y & subdivisionMask, z & subdivisionMask);
+                return true;
+            }
+            public void Set(int x, int y, int z, NavigableCacheEntry entry)
+            {
+                int cubeZ = z >> subdivisionShift;
+                if (cubeZ < zLowerBound || cubeZ >= zLowerBound + cache.Length)
+                {
+                    bool isCacheEmpty = cache.Length == 0;
+                    int newZLowerBound = isCacheEmpty ? cubeZ - resizeExtra : Math.Min(zLowerBound, cubeZ - resizeExtra);
+                    int maxZ = isCacheEmpty ? cubeZ + resizeExtra : Math.Max(zLowerBound + cache.Length - 1, cubeZ + resizeExtra);
+                    SpaceCube[][][] newCache = new SpaceCube[maxZ - newZLowerBound + 1][][];
+                    if (!isCacheEmpty)
+                        Array.Copy(cache, 0, newCache, zLowerBound - newZLowerBound, cache.Length);
+                    cache = newCache;
+                    zLowerBound = newZLowerBound;
+                }
+                SpaceCube[][] plane = cache[cubeZ - zLowerBound];
+                if (plane == null)
+                {
+                    cache[cubeZ - zLowerBound] = plane = new SpaceCube[0][];
+                }
+
+                int cubeY = y >> subdivisionShift;
+                if (cubeY < yLowerBound || cubeY >= yLowerBound + plane.Length)
+                {
+                    bool isPlaneEmpty = plane.Length == 0;
+                    int newYLowerBound = isPlaneEmpty ? cubeY - resizeExtra : Math.Min(yLowerBound, cubeY - resizeExtra);
+                    int maxY = isPlaneEmpty ? cubeY + resizeExtra : Math.Max(yLowerBound + plane.Length - 1, cubeY + resizeExtra);
+                    SpaceCube[][] newPlane = new SpaceCube[maxY - newYLowerBound + 1][];
+                    if (!isPlaneEmpty)
+                        Array.Copy(plane, 0, newPlane, yLowerBound - newYLowerBound, plane.Length);
+                    cache[cubeZ - zLowerBound] = plane = newPlane;
+                    yLowerBound = newYLowerBound;
+                }
+                SpaceCube[] row = plane[cubeY - yLowerBound];
+                if (row == null)
+                {
+                    plane[cubeY - yLowerBound] = row = new SpaceCube[0];
+                }
+
+                int cubeX = x >> subdivisionShift;
+                if (cubeX < xLowerBound || cubeX >= xLowerBound + row.Length)
+                {
+                    bool isRowEmpty = row.Length == 0;
+                    int newXLowerBound = isRowEmpty ? cubeX - resizeExtra : Math.Min(xLowerBound, cubeX - resizeExtra);
+                    int maxX = isRowEmpty ? cubeX + resizeExtra : Math.Max(xLowerBound + row.Length - 1, cubeX + resizeExtra);
+                    SpaceCube[] newRow = new SpaceCube[maxX - newXLowerBound + 1];
+                    if (!isRowEmpty)
+                        Array.Copy(row, 0, newRow, xLowerBound - newXLowerBound, row.Length);
+                    plane[cubeY - yLowerBound] = row = newRow;
+                    xLowerBound = newXLowerBound;
+                }
+
+                SpaceCube cube = row[cubeX - xLowerBound];
+                if (cube.IsMissing())
+                {
+                    cube.Init();
+                    row[cubeX - xLowerBound] = cube;
+                }
+                cube.Set(x & subdivisionMask, y & subdivisionMask, z & subdivisionMask, entry);
+            }
+        }
 
         internal bool IsNavigableInt(Vector3Int source, Vector3Int destination, int movementIndex)
         {
             int shift = 1 << movementIndex;
             bool isNavigable;
-            if (NavigableCache.TryGetValue(source, out NavigableCacheEntry entry))
+            if (spaceCache.TryGetValue(source.x, source.y, source.z, out NavigableCacheEntry entry))
             {
                 if ((entry.computed & shift) != 0)
                 {
@@ -180,14 +322,14 @@ namespace DaggerfallWorkshop.Game.Utility
                     entry.computed |= shift;
                     if (isNavigable)
                         entry.navigable |= shift;
-                    NavigableCache[source] = entry;
+                    spaceCache.Set(source.x, source.y, source.z, entry);
                 }
             }
             else
             {
                 isNavigable = IsNavigable(Reify(source), Reify(destination));
                 entry = new NavigableCacheEntry(shift, isNavigable ? shift : 0);
-                NavigableCache[source] = entry;
+                spaceCache.Set(source.x, source.y, source.z, entry);
             }
             return isNavigable;
         }
