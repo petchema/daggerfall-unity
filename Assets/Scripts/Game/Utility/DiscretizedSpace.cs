@@ -170,7 +170,6 @@ namespace DaggerfallWorkshop.Game.Utility
 
         static readonly int subdivisionShift = 4; // space will be divised in NxNxN cubes N = 2^subdivisionShift
         static readonly int subdivisionMask = (1 << subdivisionShift) - 1;
-        static readonly int resizeExtra = 3; // How many extra rows/columns/... to allocate over what's necessary when resizing
 
         public struct NavigableCacheEntry
         {
@@ -209,99 +208,77 @@ namespace DaggerfallWorkshop.Game.Utility
         // Cube of Cubes
         struct SpaceMetaCube
         {
-            int xLowerBound;
-            int yLowerBound;
-            int zLowerBound;
-            SpaceCube[][][] cache;
+            Dictionary<Vector3Int, SpaceCube> cache;
+            Vector3Int lastKey;
+            SpaceCube? lastCube;
+#if DEBUG
+            int access;
+            int hit;
+#endif
 
             internal void Init()
             {
-                cache = new SpaceCube[0][][];
-                xLowerBound = yLowerBound = zLowerBound = 0;
+                cache = new Dictionary<Vector3Int, SpaceCube>(128);
+                lastKey = Vector3Int.zero;
+                lastCube = null;
+#if DEBUG
+                access = 0;
+                hit = 0;
+#endif
             }
             public bool TryGetValue(Vector3Int pos, out NavigableCacheEntry entry)
             {
-                entry = NoNavigableCacheEntry;
-                int cubeZ = pos.z >> subdivisionShift;
-                if (cubeZ < zLowerBound || cubeZ >= zLowerBound + cache.Length)
-                    return false;
-                SpaceCube[][] plane = cache[cubeZ - zLowerBound];
-                if (plane == null)
-                    return false;
-
-                int cubeY = pos.y >> subdivisionShift;
-                if (cubeY < yLowerBound || cubeY >= yLowerBound + plane.Length)
-                    return false;
-                SpaceCube[] row = plane[cubeY - yLowerBound];
-                if (row == null)
-                    return false;
-
-                int cubeX = pos.x >> subdivisionShift;
-                if (cubeX < xLowerBound || cubeX >= xLowerBound + row.Length)
-                    return false;
-                SpaceCube cube = row[cubeX - xLowerBound];
-                if (cube.IsMissing())
-                    return false;
-
-                entry = cube.Get(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask);
-                return true;
+#if DEBUG
+                if (access % 1024 == 0)
+                {
+                    Debug.LogFormat("SpaceMetaCube {0} access {1} hits ({2} success rate)", access, hit, 100f * hit / access);
+                }
+                access++;
+#endif
+                Vector3Int key = new Vector3Int(pos.z >> subdivisionShift, pos.y >> subdivisionShift, pos.x >> subdivisionShift);
+                if (key == lastKey)
+                {
+#if DEBUG
+                    hit++;
+#endif
+                    if (lastCube == null)
+                    {
+                        entry = NoNavigableCacheEntry;
+                        return false;
+                    }
+                    else
+                    {
+                        entry = ((SpaceCube) lastCube).Get(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask);
+                        return true;
+                    }
+                }
+                else 
+                {
+                    lastKey = key;
+                    if(cache.TryGetValue(key, out SpaceCube cube))
+                    {
+                        lastCube = cube;
+                        entry = cube.Get(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask);
+                        return true;
+                    }
+                    else
+                    {
+                        lastCube = null;
+                        entry = NoNavigableCacheEntry;
+                        return false;
+                    }
+                }
             }
             public void Set(Vector3Int pos, NavigableCacheEntry entry)
             {
-                int cubeZ = pos.z >> subdivisionShift;
-                if (cubeZ < zLowerBound || cubeZ >= zLowerBound + cache.Length)
+                Vector3Int key = new Vector3Int(pos.z >> subdivisionShift, pos.y >> subdivisionShift, pos.x >> subdivisionShift);
+                if (!cache.TryGetValue(key, out SpaceCube cube))
                 {
-                    bool isCacheEmpty = cache.Length == 0;
-                    int newZLowerBound = isCacheEmpty ? cubeZ - resizeExtra : Math.Min(zLowerBound, cubeZ - resizeExtra);
-                    int maxZ = isCacheEmpty ? cubeZ + resizeExtra : Math.Max(zLowerBound + cache.Length - 1, cubeZ + resizeExtra);
-                    SpaceCube[][][] newCache = new SpaceCube[maxZ - newZLowerBound + 1][][];
-                    if (!isCacheEmpty)
-                        Array.Copy(cache, 0, newCache, zLowerBound - newZLowerBound, cache.Length);
-                    cache = newCache;
-                    zLowerBound = newZLowerBound;
-                }
-                SpaceCube[][] plane = cache[cubeZ - zLowerBound];
-                if (plane == null)
-                {
-                    cache[cubeZ - zLowerBound] = plane = new SpaceCube[0][];
-                }
-
-                int cubeY = pos.y >> subdivisionShift;
-                if (cubeY < yLowerBound || cubeY >= yLowerBound + plane.Length)
-                {
-                    bool isPlaneEmpty = plane.Length == 0;
-                    int newYLowerBound = isPlaneEmpty ? cubeY - resizeExtra : Math.Min(yLowerBound, cubeY - resizeExtra);
-                    int maxY = isPlaneEmpty ? cubeY + resizeExtra : Math.Max(yLowerBound + plane.Length - 1, cubeY + resizeExtra);
-                    SpaceCube[][] newPlane = new SpaceCube[maxY - newYLowerBound + 1][];
-                    if (!isPlaneEmpty)
-                        Array.Copy(plane, 0, newPlane, yLowerBound - newYLowerBound, plane.Length);
-                    cache[cubeZ - zLowerBound] = plane = newPlane;
-                    yLowerBound = newYLowerBound;
-                }
-                SpaceCube[] row = plane[cubeY - yLowerBound];
-                if (row == null)
-                {
-                    plane[cubeY - yLowerBound] = row = new SpaceCube[0];
-                }
-
-                int cubeX = pos.x >> subdivisionShift;
-                if (cubeX < xLowerBound || cubeX >= xLowerBound + row.Length)
-                {
-                    bool isRowEmpty = row.Length == 0;
-                    int newXLowerBound = isRowEmpty ? cubeX - resizeExtra : Math.Min(xLowerBound, cubeX - resizeExtra);
-                    int maxX = isRowEmpty ? cubeX + resizeExtra : Math.Max(xLowerBound + row.Length - 1, cubeX + resizeExtra);
-                    SpaceCube[] newRow = new SpaceCube[maxX - newXLowerBound + 1];
-                    if (!isRowEmpty)
-                        Array.Copy(row, 0, newRow, xLowerBound - newXLowerBound, row.Length);
-                    plane[cubeY - yLowerBound] = row = newRow;
-                    xLowerBound = newXLowerBound;
-                }
-
-                SpaceCube cube = row[cubeX - xLowerBound];
-                if (cube.IsMissing())
-                {
+                    cube = new SpaceCube();
                     cube.Init();
-                    row[cubeX - xLowerBound] = cube;
+                    cache.Add(key, cube);
+                    if (lastKey == key)
+                        lastCube = cube;
                 }
                 cube.Set(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask, entry);
             }
