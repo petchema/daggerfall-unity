@@ -231,8 +231,8 @@ namespace DaggerfallWorkshop.Game.Utility
                             }
                         }
 
-                        List<DiscretizedSpace.Movement> movements = space.GetMovements();
-                        for (int i = 0; i < movements.Count - 1; i++)
+                        DiscretizedSpace.Movement[] movements = space.GetMovements();
+                        for (int i = 0; i < movements.Length - 1; i++)
                         {
                             DiscretizedSpace.Movement movement = movements[i];
                             Vector3Int newPosition = Path.position + movement.delta;

@@ -20,14 +20,18 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             public readonly Vector3Int delta;
             public readonly float cost;
+            public readonly int shift;
+            public readonly bool side;
 
-            public Movement(int x, int y, int z, float cost)
+            public Movement(int x, int y, int z, float cost, int shift, bool side)
             {
                 delta = new Vector3Int(x, y, z);
                 this.cost = cost;
+                this.shift = shift;
+                this.side = side;
             }
         }
-        private static List<Movement> movements = null;
+        private static Movement[] movements = null;
 
         private SpaceMetaCube spaceCache;
 
@@ -42,7 +46,8 @@ namespace DaggerfallWorkshop.Game.Utility
 
             if (movements == null)
             {
-                movements = new List<Movement>();
+                movements = new Movement[26];
+                int shift = 0;
                 for (int x = -1; x <= 1; x++)
                 {
                     for (int y = -1; y <= 1; y++)
@@ -51,13 +56,27 @@ namespace DaggerfallWorkshop.Game.Utility
                         {
                             if (x != 0 || y != 0 || z != 0)
                             {
-                                float cost = Mathf.Sqrt(Mathf.Pow(x * step.x, 2) + Mathf.Pow(y * step.y, 2) + Mathf.Pow(z * step.z, 2));
-                                Movement movement = new Movement(x, y, z, cost);
-                                movements.Add(movement);
+                                bool found = false;
+                                for (int i = 0; i < shift * 2; i++)
+                                {
+                                    if (movements[i].delta.x == x && movements[i].delta.y == y && movements[i].delta.z == z)
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found)
+                                {
+                                    float cost = Mathf.Sqrt(Mathf.Pow(x * step.x, 2) + Mathf.Pow(y * step.y, 2) + Mathf.Pow(z * step.z, 2));
+                                    movements[shift * 2] = new Movement(x, y, z, cost, shift, false);
+                                    movements[shift * 2 + 1] = new Movement(-x, -y, -z, cost, shift, true);
+                                    shift++;
+                                }
                             }
                         }
                     }
                 }
+                Assert.AreEqual(shift, 13);
             }
         }
 
@@ -110,7 +129,7 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             return Vector3Int.Distance(sourceGridNode, destinationGridNode);
         }
-        public List<Movement> GetMovements()
+        public Movement[] GetMovements()
         {
             return movements;
         }
@@ -155,8 +174,8 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public struct NavigableCacheEntry
         {
-            public UInt64 flags; // Bitfield of directions that have been already computed (movementIndex-based)
-                                // 64 is sufficient for storing 2 bits for 26 directions
+            public UInt32 flags; // Bitfield of directions that have been already computed (movementIndex-based)
+                                 // 32 is sufficient for storing 2 bits for 13 orientations
 
             public NavigableCacheEntry(uint flags)
             {
@@ -200,36 +219,36 @@ namespace DaggerfallWorkshop.Game.Utility
                 cache = new SpaceCube[0][][];
                 xLowerBound = yLowerBound = zLowerBound = 0;
             }
-            public bool TryGetValue(int x, int y, int z, out NavigableCacheEntry entry)
+            public bool TryGetValue(Vector3Int pos, out NavigableCacheEntry entry)
             {
                 entry = NoNavigableCacheEntry;
-                int cubeZ = z >> subdivisionShift;
+                int cubeZ = pos.z >> subdivisionShift;
                 if (cubeZ < zLowerBound || cubeZ >= zLowerBound + cache.Length)
                     return false;
                 SpaceCube[][] plane = cache[cubeZ - zLowerBound];
                 if (plane == null)
                     return false;
 
-                int cubeY = y >> subdivisionShift;
+                int cubeY = pos.y >> subdivisionShift;
                 if (cubeY < yLowerBound || cubeY >= yLowerBound + plane.Length)
                     return false;
                 SpaceCube[] row = plane[cubeY - yLowerBound];
                 if (row == null)
                     return false;
 
-                int cubeX = x >> subdivisionShift;
+                int cubeX = pos.x >> subdivisionShift;
                 if (cubeX < xLowerBound || cubeX >= xLowerBound + row.Length)
                     return false;
                 SpaceCube cube = row[cubeX - xLowerBound];
                 if (cube.IsMissing())
                     return false;
 
-                entry = cube.Get(x & subdivisionMask, y & subdivisionMask, z & subdivisionMask);
+                entry = cube.Get(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask);
                 return true;
             }
-            public void Set(int x, int y, int z, NavigableCacheEntry entry)
+            public void Set(Vector3Int pos, NavigableCacheEntry entry)
             {
-                int cubeZ = z >> subdivisionShift;
+                int cubeZ = pos.z >> subdivisionShift;
                 if (cubeZ < zLowerBound || cubeZ >= zLowerBound + cache.Length)
                 {
                     bool isCacheEmpty = cache.Length == 0;
@@ -247,7 +266,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     cache[cubeZ - zLowerBound] = plane = new SpaceCube[0][];
                 }
 
-                int cubeY = y >> subdivisionShift;
+                int cubeY = pos.y >> subdivisionShift;
                 if (cubeY < yLowerBound || cubeY >= yLowerBound + plane.Length)
                 {
                     bool isPlaneEmpty = plane.Length == 0;
@@ -265,7 +284,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     plane[cubeY - yLowerBound] = row = new SpaceCube[0];
                 }
 
-                int cubeX = x >> subdivisionShift;
+                int cubeX = pos.x >> subdivisionShift;
                 if (cubeX < xLowerBound || cubeX >= xLowerBound + row.Length)
                 {
                     bool isRowEmpty = row.Length == 0;
@@ -284,7 +303,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     cube.Init();
                     row[cubeX - xLowerBound] = cube;
                 }
-                cube.Set(x & subdivisionMask, y & subdivisionMask, z & subdivisionMask, entry);
+                cube.Set(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask, entry);
             }
         }
 
@@ -297,9 +316,10 @@ namespace DaggerfallWorkshop.Game.Utility
 
         internal PathFindingResult IsNavigableInt(Vector3Int source, Vector3Int destination, int movementIndex)
         {
-            int shift = movementIndex * bitsPerMovement;
+            int shift = movements[movementIndex].shift * bitsPerMovement;
+            Vector3Int side = movements[movementIndex].side ? destination : source;
             PathFindingResult isNavigable;
-            if (spaceCache.TryGetValue(source.x, source.y, source.z, out NavigableCacheEntry entry))
+            if (spaceCache.TryGetValue(side, out NavigableCacheEntry entry))
             {
                 if ((entry.flags & (computedBit << shift)) != 0)
                 {
@@ -312,7 +332,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     if (isNavigable == PathFindingResult.NotCompleted)
                         return isNavigable;
                     entry.flags = entry.flags | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
-                    spaceCache.Set(source.x, source.y, source.z, entry);
+                    spaceCache.Set(side, entry);
                 }
             }
             else
@@ -321,7 +341,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 if (isNavigable == PathFindingResult.NotCompleted)
                     return isNavigable;
                 entry = new NavigableCacheEntry((isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift);
-                spaceCache.Set(source.x, source.y, source.z, entry);
+                spaceCache.Set(side, entry);
             }
             return isNavigable;
         }
