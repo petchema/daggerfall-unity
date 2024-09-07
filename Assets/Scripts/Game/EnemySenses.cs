@@ -240,8 +240,6 @@ namespace DaggerfallWorkshop.Game
             // 180 degrees is classic's value. 190 degrees is actual human FOV according to online sources.
             if (DaggerfallUnity.Settings.EnhancedCombatAI)
                 FieldOfView = 190;
-
-            pathFinding = new PathFinding(SpaceHolder.Instance.GetSpace());
         }
 
         void FixedUpdate()
@@ -938,16 +936,21 @@ namespace DaggerfallWorkshop.Game
             float hearingDistance = (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier;
             if (distanceToTarget < hearingDistance)
             {
-                DiscretizedSpace space = SpaceHolder.Instance.GetSpace();
+                // Any better way to make sure a SpaceHolder is instanciated?
+                SpaceHolder spaceHolder = SpaceHolder.Instance;
                 // Hearing is not impeded by doors or other non-static objects
-                PathFindingResult straightHearing = space.IsNavigable(transform.position, target.transform.position, onBudget: false);
+                PathFindingResult straightHearing = DiscretizedSpace.RawIsNavigable(transform.position, target.transform.position);
                 if (straightHearing == PathFindingResult.Success)
                 {
                     position = target.transform.position;
                     return true;
                 } 
-                else if (DaggerfallUnity.Settings.EnhancedCombatAI)
+                else if (DaggerfallUnity.Settings.EnhancedCombatAI && PathFinding.GetCyclesBudget() > 0)
                 {
+                    DiscretizedSpace space = spaceHolder.GetSpace();
+                    if (pathFinding == null)
+                        pathFinding = new PathFinding(space);
+
                     PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
                     if (PathFound == PathFindingResult.Success)
                     {

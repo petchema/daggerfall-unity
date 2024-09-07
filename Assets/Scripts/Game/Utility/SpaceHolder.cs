@@ -1,3 +1,4 @@
+using System;
 using DaggerfallWorkshop.Game.Serialization;
 using UnityEngine;
 
@@ -6,13 +7,16 @@ namespace DaggerfallWorkshop.Game.Utility
     public class SpaceHolder : MonoBehaviour
     {
         public DiscretizedSpace Space = null;
-        public int CyclesBudgetPerFrame = 500;
-        public int RaycastBudgetPerFrame = 25;
 
         public readonly Vector3 Origin = Vector3.zero;
         public readonly Vector3 Step = new Vector3(0.75f, 0.75f, 0.75f);
 
         static SpaceHolder instance = null;
+#if DEBUG_HEARING
+        private float HearingCyclesUsedTimer = 0f;
+        private int MaxHearingCyclesUsedInAFrame = 0;
+        private int MaxHearingRaycastsUsedInAFrame = 0;
+#endif
         public static SpaceHolder Instance
         {
             get
@@ -65,8 +69,27 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public void Update()
         {
-            PathFinding.SetCyclesBudget(CyclesBudgetPerFrame);
-            Space?.SetRaycastBudget(RaycastBudgetPerFrame);
+            if (DaggerfallUnity.Settings.HearingMaxCyclesPerFrame > 0 &&
+                DaggerfallUnity.Settings.HearingMaxRaycastsPerFrame > 0)
+            {
+#if DEBUG_HEARING
+                int hearingCyclesUsed = DaggerfallUnity.Settings.HearingMaxCyclesPerFrame - PathFinding.GetCyclesBudget();
+                if (hearingCyclesUsed > MaxHearingCyclesUsedInAFrame)
+                    MaxHearingCyclesUsedInAFrame = hearingCyclesUsed;
+                int hearingRaycastsUsed = Space == null ? 0 : DaggerfallUnity.Settings.HearingMaxRaycastsPerFrame - Space.GetRaycastBudget();
+                if (hearingRaycastsUsed > MaxHearingRaycastsUsedInAFrame)
+                    MaxHearingRaycastsUsedInAFrame = hearingRaycastsUsed;
+                if (Time.time > HearingCyclesUsedTimer)
+                {
+                    DaggerfallUI.AddHUDText(String.Format("Max raycasts/frame {0} cycles/frame {1} cache {2} cubes", MaxHearingRaycastsUsedInAFrame, MaxHearingCyclesUsedInAFrame, Space?.GetCacheCount()));
+                    MaxHearingCyclesUsedInAFrame = 0;
+                    MaxHearingRaycastsUsedInAFrame = 0;
+                    HearingCyclesUsedTimer = Time.time + 2f;
+                }
+#endif
+                PathFinding.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCyclesPerFrame);
+                Space?.SetRaycastBudget(DaggerfallUnity.Settings.HearingMaxRaycastsPerFrame);
+            }
         }
 
         private void OnTransition(PlayerEnterExit.TransitionEventArgs args)

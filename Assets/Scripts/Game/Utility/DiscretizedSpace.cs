@@ -80,6 +80,10 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
+        internal int GetRaycastBudget()
+        {
+            return raycastBudget;
+        }
         public void SetRaycastBudget(int raycastBudget)
         {
             this.raycastBudget = raycastBudget;
@@ -93,7 +97,7 @@ namespace DaggerfallWorkshop.Game.Utility
             return true;
         }
 
-        public int GetLayersMask()
+        public static int GetLayersMask()
         {
             if (LayersMask == 0)
                 LayersMask = ~((1 << LayerMask.NameToLayer("Automap")) |
@@ -134,9 +138,18 @@ namespace DaggerfallWorkshop.Game.Utility
             return movements;
         }
     
-        private RaycastHit[] hitsBuffer = new RaycastHit[4];
+        public PathFindingResult IsNavigable(Vector3 source, Vector3 destination)
+        {
+            if (!DecrRaycastBudget())
+                return PathFindingResult.NotCompleted;
+            PathFindingResult isNavigable = RawIsNavigable(source, destination);
+            Debug.DrawLine(source, destination, isNavigable == PathFindingResult.Success ? Color.green : Color.red, 0.1f, false);
+            return isNavigable;
+        }
 
-        public PathFindingResult IsNavigable(Vector3 source, Vector3 destination, bool onBudget = true)
+        private static RaycastHit[] hitsBuffer = new RaycastHit[4];
+
+        public static PathFindingResult RawIsNavigable(Vector3 source, Vector3 destination)
         {
             Vector3 vector = destination - source;
             Vector3 normalized = vector.normalized;
@@ -146,8 +159,6 @@ namespace DaggerfallWorkshop.Game.Utility
             Ray ray = new Ray(source - normalized * epsilon, normalized);
             int nhits;
             while (true) {
-                if (onBudget && !DecrRaycastBudget())
-                    return PathFindingResult.NotCompleted;
                 nhits = Physics.SphereCastNonAlloc(ray, 0.25f, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 // nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 if (nhits < hitsBuffer.Length)
@@ -164,7 +175,6 @@ namespace DaggerfallWorkshop.Game.Utility
                     break;
                 }
             }
-            Debug.DrawLine(source, destination, navigable ? Color.green : Color.red, 0.1f, false);
             return navigable ? PathFindingResult.Success : PathFindingResult.Failure;
         }
 
@@ -211,7 +221,7 @@ namespace DaggerfallWorkshop.Game.Utility
             Dictionary<Vector3Int, SpaceCube> cache;
             Vector3Int lastKey;
             SpaceCube? lastCube;
-#if DEBUG
+#if DEBUG_HEARING
             int access;
             int hit;
 #endif
@@ -221,14 +231,18 @@ namespace DaggerfallWorkshop.Game.Utility
                 cache = new Dictionary<Vector3Int, SpaceCube>(128);
                 lastKey = Vector3Int.zero;
                 lastCube = null;
-#if DEBUG
+#if DEBUG_HEARING
                 access = 0;
                 hit = 0;
 #endif
             }
+            internal int Count()
+            {
+                return cache.Count;
+            }
             public bool TryGetValue(Vector3Int pos, out NavigableCacheEntry entry)
             {
-#if DEBUG
+#if DEBUG_HEARING
                 if (access % 1024 == 0)
                 {
                     Debug.LogFormat("SpaceMetaCube {0} access {1} hits ({2} success rate)", access, hit, 100f * hit / access);
@@ -238,7 +252,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 Vector3Int key = new Vector3Int(pos.z >> subdivisionShift, pos.y >> subdivisionShift, pos.x >> subdivisionShift);
                 if (key == lastKey)
                 {
-#if DEBUG
+#if DEBUG_HEARING
                     hit++;
 #endif
                     if (lastCube == null)
@@ -321,6 +335,11 @@ namespace DaggerfallWorkshop.Game.Utility
                 spaceCache.Set(side, entry);
             }
             return isNavigable;
+        }
+
+        internal object GetCacheCount()
+        {
+            return spaceCache.Count();
         }
     }
 }

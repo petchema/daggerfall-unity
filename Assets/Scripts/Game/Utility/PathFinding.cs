@@ -106,6 +106,12 @@ namespace DaggerfallWorkshop.Game.Utility
             PathFinding.cyclesBudget = cyclesBudget;
         }
 
+
+        internal static int GetCyclesBudget()
+        {
+            return cyclesBudget;
+        }
+
         private static bool DecrCyclesBudget()
         {
             if (cyclesBudget == 0)
@@ -277,6 +283,5 @@ namespace DaggerfallWorkshop.Game.Utility
             status = overBudget ? PathFindingResult.NotCompleted : PathFindingResult.Failure;
             return;
         }
-        
     }
 }
