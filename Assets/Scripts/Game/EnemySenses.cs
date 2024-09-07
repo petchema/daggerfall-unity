@@ -925,8 +925,6 @@ namespace DaggerfallWorkshop.Game
             return seen;
         }
 
-        private static RaycastHit[] hitsBuffer = new RaycastHit[4];
-
         bool CanHearTarget(out Vector3 position)
         {
             float hearingScale = 1f;
