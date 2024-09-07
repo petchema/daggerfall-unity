@@ -6,6 +6,7 @@ namespace DaggerfallWorkshop.Game.Utility
     public class SpaceHolder : MonoBehaviour
     {
         public DiscretizedSpace Space = null;
+        public int CyclesBudgetPerFrame = 500;
         public int RaycastBudgetPerFrame = 25;
 
         public readonly Vector3 Origin = Vector3.zero;
@@ -64,6 +65,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public void Update()
         {
+            PathFinding.SetCyclesBudget(CyclesBudgetPerFrame);
             Space?.SetRaycastBudget(RaycastBudgetPerFrame);
         }
 

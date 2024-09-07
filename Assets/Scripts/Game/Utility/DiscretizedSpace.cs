@@ -80,9 +80,9 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
-        public void SetRaycastBudget(int budget)
+        public void SetRaycastBudget(int raycastBudget)
         {
-            raycastBudget = budget;
+            this.raycastBudget = raycastBudget;
         }
 
         private bool DecrRaycastBudget()
