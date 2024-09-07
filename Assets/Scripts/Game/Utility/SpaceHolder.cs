@@ -9,7 +9,10 @@ namespace DaggerfallWorkshop.Game.Utility
         public DiscretizedSpace Space = null;
 
         public readonly Vector3 Origin = Vector3.zero;
-        public readonly Vector3 Step = new Vector3(0.75f, 0.75f, 0.75f);
+        // Use Spherecasts on a grid, should be sufficient to pass thru gridResolution + 2 * Radius apertures?
+        // At least along axes
+        public static readonly float GridResolution = 0.75f;
+        public static readonly float Radius = 0.2f;
 
         static SpaceHolder instance = null;
 #if DEBUG_HEARING
@@ -40,7 +43,8 @@ namespace DaggerfallWorkshop.Game.Utility
 
         protected DiscretizedSpace BuildDiscretizedSpace()
         {
-            Space = new DiscretizedSpace(Origin, Step);
+            Vector3 Step = new Vector3(GridResolution, GridResolution, GridResolution);
+            Space = new DiscretizedSpace(Origin, Step, Radius);
             Space.SetRaycastBudget(0);
             return Space;
         }

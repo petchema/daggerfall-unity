@@ -171,7 +171,7 @@ TerrainHeightmapPixelError=5
 SmallerDungeons=False
 CustomBooksImport=True
 AssetCacheThreshold = 25
-HearingMaxCyclesPerFrame = 1000
+HearingMaxCyclesPerFrame = 2000
 HearingMaxRaycastsPerFrame = 25
 
 [Enhancements]

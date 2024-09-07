@@ -8,7 +8,7 @@ namespace DaggerfallWorkshop.Game.Utility
     public class PathFinding
     {
         private readonly DiscretizedSpace space;
-        private readonly float TTL = 15; // seconds
+        private readonly float TTL = 15f; // seconds
 
         public enum PathFindingResult
         {

@@ -938,59 +938,64 @@ namespace DaggerfallWorkshop.Game
             {
                 // Any better way to make sure a SpaceHolder is instanciated?
                 SpaceHolder spaceHolder = SpaceHolder.Instance;
-                // Hearing is not impeded by doors or other non-static objects
-                PathFindingResult straightHearing = DiscretizedSpace.RawIsNavigable(transform.position, target.transform.position);
-                if (straightHearing == PathFindingResult.Success)
-                {
-                    position = target.transform.position;
-                    return true;
-                } 
-                else if (DaggerfallUnity.Settings.EnhancedCombatAI && PathFinding.GetCyclesBudget() > 0)
-                {
-                    DiscretizedSpace space = spaceHolder.GetSpace();
-                    if (pathFinding == null)
-                        pathFinding = new PathFinding(space);
 
-                    PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
-                    if (PathFound == PathFindingResult.Success)
+                if (!DaggerfallUnity.Settings.EnhancedCombatAI)
+                {
+                    // Hearing is not impeded by doors or other non-static objects
+                    PathFindingResult straightHearing = DiscretizedSpace.RawIsNavigable(transform.position, target.transform.position, 0f);
+                    if (straightHearing == PathFindingResult.Success)
                     {
-                        // Find the most distant point in the path visible from our current position
-                        int Aim = 1;
-                        int NextAim;
-                        PathFindingResult isVisible;
-                        while ((NextAim = Aim + 4) < Path.Count)
-                        {
-                            isVisible = space.IsNavigable(transform.position, Path[NextAim]);
-                            if (isVisible == PathFindingResult.Success)
-                                Aim = NextAim;
-                            else if (isVisible == PathFindingResult.Failure)
-                                break;
-                            else return false;
-                        }
-                        while ((NextAim = Aim + 1) < Path.Count)
-                        {
-                            isVisible = space.IsNavigable(transform.position, Path[NextAim]);
-                            if (isVisible == PathFindingResult.Success)
-                                Aim = NextAim;
-                            else if (isVisible == PathFindingResult.Failure)
-                                break;
-                            else return false;
-                        }
-                        // Help "get thru de door"
-                        float amplification = 2f;
-                        position = Path[Aim] * (1f + amplification) - Path[Aim-1] * amplification;
-                        // Alternatives tried:
-                        // position = Path[Aim] + (Path[Aim] - transform.position).normalized * amplification;
-
-                        // Vector3 trueLastSeenPosition = position;
-                        // while ((NextAim = Aim + 1) < Path.Count && (Path[NextAim] - trueLastSeenPosition).sqrMagnitude <= 4f)
-                        // {
-                        //     Aim = NextAim;
-                        // }
-                        // position = Path[Aim];
-                        Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
-                        Debug.DrawLine(transform.position, position, Color.white, 0.2f);
+                        position = target.transform.position;
                         return true;
+                    }
+                }
+                else
+                {   
+                    // Prefer using Spherecasts to avoid running into aperture sides
+                    PathFindingResult straightHearing = DiscretizedSpace.RawIsNavigable(transform.position, target.transform.position, SpaceHolder.Radius);
+                    if (straightHearing == PathFindingResult.Success)
+                    {
+                        position = target.transform.position;
+                        return true;
+                    } 
+                    else if (PathFinding.GetCyclesBudget() > 0)
+                    {
+                        DiscretizedSpace space = spaceHolder.GetSpace();
+                        if (pathFinding == null)
+                            pathFinding = new PathFinding(space);
+
+                        PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
+                        if (PathFound == PathFindingResult.Success)
+                        {
+                            // Find the most distant point in the path visible from our current position
+                            int Aim = 1;
+                            int NextAim;
+                            PathFindingResult isVisible;
+                            while ((NextAim = Aim + 4) < Path.Count)
+                            {
+                                isVisible = space.IsNavigable(transform.position, Path[NextAim]);
+                                if (isVisible == PathFindingResult.Success)
+                                    Aim = NextAim;
+                                else if (isVisible == PathFindingResult.Failure)
+                                    break;
+                                else return false;
+                            }
+                            while ((NextAim = Aim + 1) < Path.Count)
+                            {
+                                isVisible = space.IsNavigable(transform.position, Path[NextAim]);
+                                if (isVisible == PathFindingResult.Success)
+                                    Aim = NextAim;
+                                else if (isVisible == PathFindingResult.Failure)
+                                    break;
+                                else return false;
+                            }
+                            // Help "get thru de door"
+                            float amplification = 2f;
+                            position = Path[Aim] * (1f + amplification) - Path[Aim-1] * amplification;
+                            // Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
+                            Debug.DrawLine(transform.position, position, Color.white, 0.2f);
+                            return true;
+                        }
                     }
                 }
             }

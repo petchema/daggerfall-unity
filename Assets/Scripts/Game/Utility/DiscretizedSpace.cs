@@ -13,6 +13,7 @@ namespace DaggerfallWorkshop.Game.Utility
         private Vector3 origin;
         private Vector3 step;
         private Vector3 inverseStep;
+        private float radius;
         private int raycastBudget = 0;
         private static int LayersMask = 0;
 
@@ -35,10 +36,11 @@ namespace DaggerfallWorkshop.Game.Utility
 
         private SpaceMetaCube spaceCache;
 
-        public DiscretizedSpace(Vector3 origin, Vector3 step)
+        public DiscretizedSpace(Vector3 origin, Vector3 step, float radius)
         {
             this.origin = origin;
             this.step = step;
+            this.radius = radius;
             inverseStep = new Vector3(1f / step.x, 1f / step.y, 1f / step.z);
             raycastBudget = 0;
             spaceCache = new SpaceMetaCube();
@@ -142,25 +144,28 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             if (!DecrRaycastBudget())
                 return PathFindingResult.NotCompleted;
-            PathFindingResult isNavigable = RawIsNavigable(source, destination);
+            PathFindingResult isNavigable = RawIsNavigable(source, destination, radius);
             Debug.DrawLine(source, destination, isNavigable == PathFindingResult.Success ? Color.green : Color.red, 0.1f, false);
             return isNavigable;
         }
 
         private static RaycastHit[] hitsBuffer = new RaycastHit[4];
 
-        public static PathFindingResult RawIsNavigable(Vector3 source, Vector3 destination)
+        public static PathFindingResult RawIsNavigable(Vector3 source, Vector3 destination, float radius)
         {
             Vector3 vector = destination - source;
             Vector3 normalized = vector.normalized;
-            // Add some overlap, because paths can get thru walls if a node lands exactly on a wall
+            // Add some overlap, because paths can get thru walls if a node lands exactly on a wall (for raycasts, at least)
             float epsilon = 0.05f;
 
             Ray ray = new Ray(source - normalized * epsilon, normalized);
             int nhits;
             while (true) {
-                nhits = Physics.SphereCastNonAlloc(ray, 0.25f, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
-                // nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
+                if (radius == 0f)
+                    nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
+                else
+                    nhits = Physics.SphereCastNonAlloc(ray, radius, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
+
                 if (nhits < hitsBuffer.Length)
                     break;
                 // hitsBuffer may have overflowed, retry with a larger buffer
@@ -215,10 +220,11 @@ namespace DaggerfallWorkshop.Game.Utility
                 cube[z, y, x] = entry;
             }
         } 
-        // Cube of Cubes
+        // Dictionary of Cubes
         struct SpaceMetaCube
         {
             Dictionary<Vector3Int, SpaceCube> cache;
+            // One entry cache. For 16x16x16 cubes, I have seen ~80% hit rates
             Vector3Int lastKey;
             SpaceCube? lastCube;
 #if DEBUG_HEARING
