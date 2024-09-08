@@ -966,30 +966,23 @@ namespace DaggerfallWorkshop.Game
                         if (PathFound == PathFindingResult.Success)
                         {
                             // Find the most distant point in the path visible from our current position
-                            int Aim = 1;
+                            int Aim = 1; // Never aim at Path[0]
                             int NextAim;
-                            PathFindingResult isVisible;
-                            while ((NextAim = Aim + 4) < Path.Count)
+                            while ((NextAim = Aim + 4) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]) == PathFindingResult.Success)
                             {
-                                isVisible = space.IsNavigable(transform.position, Path[NextAim]);
-                                if (isVisible == PathFindingResult.Success)
-                                    Aim = NextAim;
-                                else if (isVisible == PathFindingResult.Failure)
-                                    break;
-                                else return false;
+                                Aim = NextAim;
                             }
-                            while ((NextAim = Aim + 1) < Path.Count)
+                            if ((NextAim = Aim + 2) < NextAim && space.IsNavigable(transform.position, Path[NextAim]) == PathFindingResult.Success)
                             {
-                                isVisible = space.IsNavigable(transform.position, Path[NextAim]);
-                                if (isVisible == PathFindingResult.Success)
-                                    Aim = NextAim;
-                                else if (isVisible == PathFindingResult.Failure)
-                                    break;
-                                else return false;
+                                Aim = NextAim;
+                            }
+                            if ((NextAim = Aim + 1) < NextAim && space.IsNavigable(transform.position, Path[NextAim]) == PathFindingResult.Success)
+                            {
+                                Aim = NextAim;
                             }
                             // Help "get thru de door"
-                            float amplification = 2f;
-                            position = Path[Aim] * (1f + amplification) - Path[Aim-1] * amplification;
+                            Vector3 LastDirection = (Path[Aim] - Path[Aim-1]).normalized; 
+                            position = Path[Aim] + LastDirection * 1.5f;
                             // Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
                             Debug.DrawLine(transform.position, position, Color.white, 0.2f);
                             return true;

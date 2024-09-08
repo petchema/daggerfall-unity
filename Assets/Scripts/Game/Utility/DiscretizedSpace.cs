@@ -321,7 +321,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 if ((entry.flags & (computedBit << shift)) != 0)
                 {
                     isNavigable = (entry.flags & (navigableBit << shift)) != 0 ? PathFindingResult.Success : PathFindingResult.Failure;
-                    Debug.DrawLine(Reify(source), Reify(destination), isNavigable == PathFindingResult.Success ? Color.cyan : Color.blue, 0.1f, false);
+                    Debug.DrawLine(Reify(source), Reify(destination), isNavigable == PathFindingResult.Success ? Color.yellow : Color.magenta, 0.1f, false);
                 }
                 else
                 {

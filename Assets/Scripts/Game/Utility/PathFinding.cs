@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.Utility
@@ -134,21 +135,15 @@ namespace DaggerfallWorkshop.Game.Utility
             else if (status == PathFindingResult.Success)
             {
                 // Assuming we're following the path, can we return a suffix of foundPath?
-                int closest = 0;
-                float minSqrDist = (start - foundPath[closest]).sqrMagnitude;
-                while (closest < foundPath.Count - 1)
+                int firstForward = 0;
+                // Look for the first step heading "forward"
+                while (firstForward < foundPath.Count - 1 && 
+                       Vector3.Dot(foundPath[firstForward] - start, foundPath[firstForward + 1] - foundPath[firstForward]) < 0f)
+                    firstForward++;
+                float minSqrDist = (foundPath[firstForward] - start).sqrMagnitude;
+                if (minSqrDist < 2f)
                 {
-                    int nextClosest = closest + 1;
-                    float nextMinSqrDist = (start - foundPath[nextClosest]).sqrMagnitude;
-                    if (nextMinSqrDist >= minSqrDist)
-                        break;
-        
-                    closest = nextClosest;
-                    minSqrDist = nextMinSqrDist;
-                }
-                if (minSqrDist < 1f)
-                {
-                    path = foundPath.GetRange(closest, foundPath.Count - closest);
+                    path = foundPath = foundPath.GetRange(firstForward, foundPath.Count - firstForward);
                     return PathFindingResult.Success;
                 }
             }
