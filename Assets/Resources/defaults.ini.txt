@@ -172,7 +172,7 @@ SmallerDungeons=False
 CustomBooksImport=True
 AssetCacheThreshold = 25
 HearingMaxCyclesPerFrame = 2000
-HearingMaxRaycastsPerFrame = 25
+HearingMaxRaycastsPerFrame = 20
 
 [Enhancements]
 LypyL_GameConsole=True
