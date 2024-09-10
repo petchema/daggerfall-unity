@@ -342,7 +342,7 @@ namespace DaggerfallWorkshop
         public bool BowLeftHandWithSwitching { get; set; }
         public int LoiterLimitInHours { get; set; }
         public int HearingMaxCyclesPerFrame { get; set; }
-        public int HearingMaxRaycastsPerFrame { get; set; }
+        public int HearingRaycastCost { get; set; }
 
         #endregion
 
@@ -576,7 +576,7 @@ namespace DaggerfallWorkshop
             BowLeftHandWithSwitching = GetBool(sectionEnhancements, "BowLeftHandWithSwitching");
             LoiterLimitInHours = GetInt(sectionEnhancements, "LoiterLimitInHours");
             HearingMaxCyclesPerFrame = GetInt(sectionExperimental, "HearingMaxCyclesPerFrame");
-            HearingMaxRaycastsPerFrame = GetInt(sectionExperimental, "HearingMaxRaycastsPerFrame");
+            HearingRaycastCost = GetInt(sectionExperimental, "HearingRaycastCost");
         }
 
         /// <summary>
@@ -752,7 +752,7 @@ namespace DaggerfallWorkshop
             SetBool(sectionExperimental, "SmallerDungeons", SmallerDungeons);
             SetInt(sectionExperimental, "AssetCacheThreshold", AssetCacheThreshold);
             SetInt(sectionExperimental, "HearingMaxCyclesPerFrame", HearingMaxCyclesPerFrame);
-            SetInt(sectionExperimental, "HearingMaxRaycastsPerFrame", HearingMaxRaycastsPerFrame);
+            SetInt(sectionExperimental, "HearingRaycastCost", HearingRaycastCost);
 
             SetBool(sectionEnhancements, "LypyL_GameConsole", LypyL_GameConsole);
             SetBool(sectionEnhancements, "LypyL_ModSystem", LypyL_ModSystem);

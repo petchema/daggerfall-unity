@@ -9,7 +9,7 @@ namespace DaggerfallWorkshop.Game.Utility
         public DiscretizedSpace Space = null;
 
         public readonly Vector3 Origin = Vector3.zero;
-        // Use Spherecasts on a grid, should be sufficient to pass thru gridResolution + 2 * Radius apertures?
+        // Use Spherecasts on a grid, should be sufficient to pass thru gridResolution + 2 * Radius openings?
         // At least along axes
         public static readonly float GridResolution = 0.75f;
         public static readonly float Radius = 0.2f;
@@ -18,7 +18,6 @@ namespace DaggerfallWorkshop.Game.Utility
 #if DEBUG_HEARING
         private float HearingCyclesUsedTimer = 0f;
         private int MaxHearingCyclesUsedInAFrame = 0;
-        private int MaxHearingRaycastsUsedInAFrame = 0;
 #endif
         public static SpaceHolder Instance
         {
@@ -45,7 +44,6 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             Vector3 Step = new Vector3(GridResolution, GridResolution, GridResolution);
             Space = new DiscretizedSpace(Origin, Step, Radius);
-            Space.SetRaycastBudget(0);
             return Space;
         }
 
@@ -73,26 +71,20 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public void Update()
         {
-            if (DaggerfallUnity.Settings.HearingMaxCyclesPerFrame > 0 &&
-                DaggerfallUnity.Settings.HearingMaxRaycastsPerFrame > 0)
+            if (DaggerfallUnity.Settings.HearingMaxCyclesPerFrame > 0)
             {
 #if DEBUG_HEARING
                 int hearingCyclesUsed = DaggerfallUnity.Settings.HearingMaxCyclesPerFrame - PathFinding.GetCyclesBudget();
                 if (hearingCyclesUsed > MaxHearingCyclesUsedInAFrame)
                     MaxHearingCyclesUsedInAFrame = hearingCyclesUsed;
-                int hearingRaycastsUsed = Space == null ? 0 : DaggerfallUnity.Settings.HearingMaxRaycastsPerFrame - Space.GetRaycastBudget();
-                if (hearingRaycastsUsed > MaxHearingRaycastsUsedInAFrame)
-                    MaxHearingRaycastsUsedInAFrame = hearingRaycastsUsed;
                 if (Time.time > HearingCyclesUsedTimer)
                 {
-                    DaggerfallUI.AddHUDText(String.Format("Max raycasts/frame {0} cycles/frame {1} cache {2} cubes", MaxHearingRaycastsUsedInAFrame, MaxHearingCyclesUsedInAFrame, Space?.GetCacheCount()));
+                    DaggerfallUI.AddHUDText(String.Format("Max cycles/frame {1} cache {2} cubes", MaxHearingCyclesUsedInAFrame, Space?.GetCacheCount()));
                     MaxHearingCyclesUsedInAFrame = 0;
-                    MaxHearingRaycastsUsedInAFrame = 0;
                     HearingCyclesUsedTimer = Time.time + 2f;
                 }
 #endif
-                PathFinding.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCyclesPerFrame);
-                Space?.SetRaycastBudget(DaggerfallUnity.Settings.HearingMaxRaycastsPerFrame);
+                DiscretizedSpace.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCyclesPerFrame);
             }
         }
 

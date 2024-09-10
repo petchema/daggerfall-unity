@@ -18,8 +18,6 @@ namespace DaggerfallWorkshop.Game.Utility
             NotCompleted
         }
 
-        private static int cyclesBudget = 0;
-
         // Current query
         private float cacheTTL = 0f;
         private Vector3 start;
@@ -100,25 +98,6 @@ namespace DaggerfallWorkshop.Game.Utility
             openList = new PriorityQueue<ChainedPath>();
             closedList = new HashSet<Vector3>();
             destinationList = new HashSet<Vector3>();
-        }
-
-        public static void SetCyclesBudget(int cyclesBudget)
-        {
-            PathFinding.cyclesBudget = cyclesBudget;
-        }
-
-
-        internal static int GetCyclesBudget()
-        {
-            return cyclesBudget;
-        }
-
-        private static bool DecrCyclesBudget()
-        {
-            if (cyclesBudget == 0)
-                return false;
-            cyclesBudget--;
-            return true;
         }
 
         public PathFindingResult RetryableFindShortestPath(Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
@@ -212,7 +191,7 @@ namespace DaggerfallWorkshop.Game.Utility
             bool overBudget = false;
             while (!overBudget && openList.Count() > 0)
             {
-                if (!DecrCyclesBudget())
+                if (!DiscretizedSpace.DecrCyclesBudget())
                 {
                     overBudget = true;
                     break;

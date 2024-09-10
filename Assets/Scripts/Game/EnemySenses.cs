@@ -956,7 +956,7 @@ namespace DaggerfallWorkshop.Game
                         position = target.transform.position;
                         return true;
                     } 
-                    else if (PathFinding.GetCyclesBudget() > 0)
+                    else if (DiscretizedSpace.GetCyclesBudget() > 0)
                     {
                         DiscretizedSpace space = spaceHolder.GetSpace();
                         if (pathFinding == null)

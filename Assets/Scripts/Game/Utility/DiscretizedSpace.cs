@@ -14,7 +14,7 @@ namespace DaggerfallWorkshop.Game.Utility
         private Vector3 step;
         private Vector3 inverseStep;
         private float radius;
-        private int raycastBudget = 0;
+        private static int cyclesBudget = 0;
         private static int LayersMask = 0;
 
         public struct Movement
@@ -42,7 +42,6 @@ namespace DaggerfallWorkshop.Game.Utility
             this.step = step;
             this.radius = radius;
             inverseStep = new Vector3(1f / step.x, 1f / step.y, 1f / step.z);
-            raycastBudget = 0;
             spaceCache = new SpaceMetaCube();
             spaceCache.Init();
 
@@ -82,20 +81,29 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
-        internal int GetRaycastBudget()
+        public static void SetCyclesBudget(int cyclesBudget)
         {
-            return raycastBudget;
-        }
-        public void SetRaycastBudget(int raycastBudget)
-        {
-            this.raycastBudget = raycastBudget;
+            DiscretizedSpace.cyclesBudget = cyclesBudget;
         }
 
-        private bool DecrRaycastBudget()
+
+        internal static int GetCyclesBudget()
         {
-            if (raycastBudget == 0)
+            return cyclesBudget;
+        }
+
+        public static bool DecrCyclesBudget()
+        {
+            if (cyclesBudget == 0)
                 return false;
-            raycastBudget--;
+            cyclesBudget--;
+            return true;
+        }
+        public static bool DecrRaycastBudget()
+        {
+            if (cyclesBudget < DaggerfallUnity.Settings.HearingRaycastCost)
+                return false;
+            cyclesBudget -= DaggerfallUnity.Settings.HearingRaycastCost;
             return true;
         }
 
