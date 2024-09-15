@@ -105,7 +105,6 @@ namespace DaggerfallWorkshop.Game.Utility
             bool isResumable = false;
             // Information too old, parameters changed or target has moved: we don't have a cached answer and can't resume computation
             if (Time.time >= cacheTTL
-                || this.maxLength != maxLength
                 || this.weight != weight
                 || (destination - this.destination).sqrMagnitude > 4f)
             {
@@ -122,14 +121,21 @@ namespace DaggerfallWorkshop.Game.Utility
                 float minSqrDist = (foundPath[firstForward] - start).sqrMagnitude;
                 if (minSqrDist < 2f)
                 {
-                    path = foundPath = foundPath.GetRange(firstForward, foundPath.Count - firstForward);
-                    return PathFindingResult.Success;
+                    // maxLength may have changed, is the path still matching?
+                    float pathLength = Mathf.Sqrt(minSqrDist);
+                    for (int i = firstForward; i < foundPath.Count - 1; i++)
+                        pathLength += Vector3.Distance(foundPath[i], foundPath[i+1]);
+                    if (pathLength <= maxLength)
+                    {
+                        path = foundPath = foundPath.GetRange(firstForward, foundPath.Count - firstForward);
+                        return PathFindingResult.Success;
+                    }
                 }
             }
             else if (status == PathFindingResult.Failure)
             {
                 // Cached answer was that target was unreachable and nobody has moved much (destination checked above): probably still true
-                if ((start - this.start).sqrMagnitude < 4f)
+                if (this.maxLength >= maxLength && (start - this.start).sqrMagnitude < 4f)
                 {
                     path = null;
                     return PathFindingResult.Failure;

@@ -72,6 +72,7 @@ namespace DaggerfallWorkshop.Game.Entity
         protected uint timeOfLastSkillTraining = 0;
 
         protected uint timeOfLastStealthCheck = 0;
+        protected ulong timeOfLastNoisyEvent = 0;
 
         protected int startingLevelUpSkillSum = 0;
         protected int currentLevelUpSkillSum = 0;
@@ -190,6 +191,7 @@ namespace DaggerfallWorkshop.Game.Entity
         public bool HaveShownSurrenderToGuardsDialogue { get { return haveShownSurrenderToGuardsDialogue; } set { haveShownSurrenderToGuardsDialogue = value; } }
         public bool Arrested { get { return arrested; } set { arrested = value; } }
         public bool InPrison { get ; set ; }
+        public ulong TimeOfLastNoisyEvent { get { return timeOfLastNoisyEvent; } set { timeOfLastNoisyEvent = value; } }
         public bool IsInBeastForm { get; set; }
         public List<string> BackStory { get; set; }
         public VampireClans PreviousVampireClan { get; set; }

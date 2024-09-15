@@ -931,6 +931,19 @@ namespace DaggerfallWorkshop.Game
 
             position = ResetPlayerPos;
             // TODO: Modify this by how much noise the target is making
+            if (target == player)
+            {
+                PlayerMotor playerMotor = GameManager.Instance.PlayerMotor;
+                uint gameMinutes = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
+                if (GameManager.Instance.PlayerEntity.TimeOfLastNoisyEvent + 60 > DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToSeconds())
+                    hearingScale *= 2.0f;
+                else if (!playerMotor.IsGrounded)
+                    hearingScale *= 0.1f;
+                else if (playerMotor.IsRunning)
+                    hearingScale *= 1.25f;
+                else if (playerMotor.IsMovingLessThanHalfSpeed)
+                    hearingScale *= 0.5f;
+            }
             float hearingDistance = (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier;
             if (distanceToTarget < hearingDistance)
             {
@@ -949,7 +962,7 @@ namespace DaggerfallWorkshop.Game
                 }
                 else
                 {   
-                    // Prefer using Spherecasts to avoid running into aperture sides
+                    // Prefer using Spherecasts to avoid running into opening sides
                     PathFindingResult straightHearing = DiscretizedSpace.RawIsNavigable(transform.position, target.transform.position, SpaceHolder.Radius);
                     if (straightHearing == PathFindingResult.Success)
                     {

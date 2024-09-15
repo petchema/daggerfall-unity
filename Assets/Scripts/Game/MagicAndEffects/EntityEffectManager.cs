@@ -2119,6 +2119,7 @@ namespace DaggerfallWorkshop.Game.MagicAndEffects
             }
             else
             {
+                GameManager.Instance.PlayerEntity.TimeOfLastNoisyEvent = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToSeconds();
                 DaggerfallMissile missile = InstantiateSpellMissile(readySpell.Settings.ElementType);
                 if (missile)
                     missile.Payload = readySpell;

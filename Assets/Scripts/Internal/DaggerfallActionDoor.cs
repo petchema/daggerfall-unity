@@ -217,6 +217,9 @@ namespace DaggerfallWorkshop
                 }
             }
 
+            if (byPlayer)
+                GameManager.Instance.PlayerEntity.TimeOfLastNoisyEvent = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToSeconds();
+
             if (byPlayer && Game.GameManager.Instance.PlayerEnterExit.IsPlayerInsideDungeonCastle)
                 Game.GameManager.Instance.MakeEnemiesHostile();
         }

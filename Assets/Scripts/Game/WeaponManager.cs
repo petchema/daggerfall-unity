@@ -609,6 +609,7 @@ namespace DaggerfallWorkshop.Game
                         else if (enemyEntity.MobileEnemy.ParrySounds)
                             enemySounds.PlayParrySound();
                     }
+                    playerEntity.TimeOfLastNoisyEvent = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToSeconds();
 
                     // Handle weapon striking enchantments - this could change damage amount
                     if (strikingWeapon != null && strikingWeapon.IsEnchanted)
