@@ -11,14 +11,10 @@ namespace DaggerfallWorkshop.Game.Utility
         public readonly Vector3 Origin = Vector3.zero;
         // Use Spherecasts on a grid, should be sufficient to pass thru gridResolution + 2 * Radius openings?
         // At least along axes
-        public static readonly float GridResolution = 0.75f;
+        public static readonly float GridResolution = 0.65f;
         public static readonly float Radius = 0.2f;
 
         static SpaceHolder instance = null;
-#if DEBUG_HEARING
-        private float HearingCyclesUsedTimer = 0f;
-        private int MaxHearingCyclesUsedInAFrame = 0;
-#endif
         public static SpaceHolder Instance
         {
             get
@@ -69,22 +65,11 @@ namespace DaggerfallWorkshop.Game.Utility
             StreamingWorld.OnFloatingOriginChange -= OnFloatingOriginChange;
         }
 
-        public void Update()
+        public void FixedUpdate()
         {
-            if (DaggerfallUnity.Settings.HearingMaxCyclesPerFrame > 0)
+            if (DaggerfallUnity.Settings.HearingMaxCycles > 0)
             {
-#if DEBUG_HEARING
-                int hearingCyclesUsed = DaggerfallUnity.Settings.HearingMaxCyclesPerFrame - PathFinding.GetCyclesBudget();
-                if (hearingCyclesUsed > MaxHearingCyclesUsedInAFrame)
-                    MaxHearingCyclesUsedInAFrame = hearingCyclesUsed;
-                if (Time.time > HearingCyclesUsedTimer)
-                {
-                    DaggerfallUI.AddHUDText(String.Format("Max cycles/frame {1} cache {2} cubes", MaxHearingCyclesUsedInAFrame, Space?.GetCacheCount()));
-                    MaxHearingCyclesUsedInAFrame = 0;
-                    HearingCyclesUsedTimer = Time.time + 2f;
-                }
-#endif
-                DiscretizedSpace.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCyclesPerFrame);
+                DiscretizedSpace.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCycles);
             }
         }
 

@@ -26,13 +26,15 @@ namespace DaggerfallWorkshop.Game.Utility
         private float weight;
 
         // Working state
+        private bool inProgress = false;
         private ChainedPathStore store;
         private PriorityQueue<ChainedPath> openList;
         private ISet<Vector3> closedList;
         private ISet<Vector3> destinationList;
         private PathFindingResult status;
-        private List<Vector3> foundPath;
+        private List<ResultChainedPath> foundPath;
 
+        // Used by A*
         readonly struct ChainedPath : IComparable<ChainedPath> 
         {
             public readonly Vector3Int position;
@@ -76,15 +78,33 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
-        static List<Vector3> RebuildPath(DiscretizedSpace space, ChainedPathStore allocator, ChainedPath path)
+        // Used for API result
+        public readonly struct ResultChainedPath
         {
-            List<Vector3> result = new List<Vector3>();
-            while (true)
+            public readonly Vector3 position;
+            public readonly float remainingDistanceToDestination;
+
+            public ResultChainedPath(Vector3 position, float remainingDistanceToDestination) : this()
             {
-                result.Add(space.Reify(path.position));
-                if (path.sourceChainedPathIndex < 0)
-                    break;
+                this.position = position;
+                this.remainingDistanceToDestination = remainingDistanceToDestination;
+            }
+        }
+
+        static List<ResultChainedPath> RebuildPath(DiscretizedSpace space, ChainedPathStore allocator, ChainedPath path, Vector3 destination)
+        {
+            DiscretizedSpace.Movement[] movements = space.GetMovements();
+            List<ResultChainedPath> result = new List<ResultChainedPath>();
+            // Destination does not have discretized position, so it's synthetically added to the result
+            result.Add(new ResultChainedPath(destination, 0f));
+            Vector3 waypoint = space.Reify(path.position);
+            float remainingDistanceToDestination = Vector2.Distance(destination, waypoint);
+            result.Add(new ResultChainedPath(waypoint, remainingDistanceToDestination));
+            while (path.sourceChainedPathIndex >= 0)
+            {
+                remainingDistanceToDestination += movements[path.movementIndex].cost;
                 path = allocator.Get(path.sourceChainedPathIndex);
+                result.Add(new ResultChainedPath(space.Reify(path.position), remainingDistanceToDestination));
             }
             // We could synthetically add the source at the beginning of the result path, but who cares?
             result.Reverse();
@@ -100,7 +120,7 @@ namespace DaggerfallWorkshop.Game.Utility
             destinationList = new HashSet<Vector3>();
         }
 
-        public PathFindingResult RetryableFindShortestPath(Vector3 start, Vector3 destination, float maxLength, out List<Vector3> path, float weight = 1f)
+        public PathFindingResult RetryableFindShortestPath(Vector3 start, Vector3 destination, float maxLength, out List<ResultChainedPath> path, float weight = 1f)
         {
             bool isResumable = false;
             // Information too old, parameters changed or target has moved: we don't have a cached answer and can't resume computation
@@ -116,27 +136,36 @@ namespace DaggerfallWorkshop.Game.Utility
                 int firstForward = 0;
                 // Look for the first step heading "forward"
                 while (firstForward < foundPath.Count - 1 && 
-                       Vector3.Dot(foundPath[firstForward] - start, foundPath[firstForward + 1] - foundPath[firstForward]) < 0f)
+                       Vector3.Dot(foundPath[firstForward].position - start, foundPath[firstForward + 1].position - foundPath[firstForward].position) < 0f)
                     firstForward++;
-                float minSqrDist = (foundPath[firstForward] - start).sqrMagnitude;
-                if (minSqrDist < 2f)
+                float minSqrDist = (foundPath[firstForward].position - start).sqrMagnitude;
+                if (minSqrDist < 3f)
                 {
                     // maxLength may have changed, is the path still matching?
-                    float pathLength = Mathf.Sqrt(minSqrDist);
-                    for (int i = firstForward; i < foundPath.Count - 1; i++)
-                        pathLength += Vector3.Distance(foundPath[i], foundPath[i+1]);
+                    float pathLength = Mathf.Sqrt(minSqrDist) + foundPath[firstForward].remainingDistanceToDestination;
                     if (pathLength <= maxLength)
                     {
-                        path = foundPath = foundPath.GetRange(firstForward, foundPath.Count - firstForward);
+                        Debug.LogFormat("Pathfinding existing path ok, shortened by {0}", firstForward);
+
+                        if (firstForward > 0)
+                        {
+                            foundPath = foundPath.GetRange(firstForward, foundPath.Count - firstForward);
+                        }
+                        path = foundPath;
                         return PathFindingResult.Success;
                     }
+                    else
+                        Debug.LogFormat("Pathfinding existing path too long");
                 }
+                else
+                    Debug.LogFormat("Pathfinding strayed too far from existing path");
             }
             else if (status == PathFindingResult.Failure)
             {
                 // Cached answer was that target was unreachable and nobody has moved much (destination checked above): probably still true
                 if (this.maxLength >= maxLength && (start - this.start).sqrMagnitude < 4f)
                 {
+                    Debug.LogFormat("Pathfinding lack of path still valid");
                     path = null;
                     return PathFindingResult.Failure;
                 }
@@ -144,16 +173,38 @@ namespace DaggerfallWorkshop.Game.Utility
             else
             {
                 // Query hasn't changed but we aren't done yet: let's continue
-                isResumable = true;
+                if (inProgress)
+                    isResumable = true;
             }
 
             if (!isResumable)
             {
+                Debug.LogFormat("Pathfinding starting over");
                 Initialization(start, destination, maxLength, weight);
+                // Try to answer synchronously from Update()?
+                inProgress = true;
+                FindShortestPath();
+                path = foundPath;
+                return status;
             }
-            FindShortestPath();
-            path = foundPath;
-            return status;
+            else
+                Debug.LogFormat("Pathfinding resuming");
+
+            inProgress = true;
+            path = null;
+            return PathFindingResult.NotCompleted;
+        }
+
+        public void FixedUpdate()
+        {
+            if (inProgress)
+            {
+                FindShortestPath();
+                if (status != PathFindingResult.NotCompleted)
+                {
+                    inProgress = false;
+                }
+            }
         }
 
         private void Initialization(Vector3 start, Vector3 destination, float maxLength, float weight)
@@ -229,9 +280,7 @@ namespace DaggerfallWorkshop.Game.Utility
                             }
                             if (isNavigableToDestination == PathFindingResult.Success)
                             {
-                                foundPath = RebuildPath(space, store, Path);
-                                // Destination does not have discretized position, so it's synthetically added to the result
-                                foundPath.Add(destination);
+                                foundPath = RebuildPath(space, store, Path, destination);
                                 status = PathFindingResult.Success;
                                 return;
                             }
@@ -245,8 +294,12 @@ namespace DaggerfallWorkshop.Game.Utility
                             float newCost = Path.cost + movement.cost;
                             if (newCost <= maxLength)
                             {
-                                ChainedPath newPath = new ChainedPath(newPosition, newCost, newCost + space.HeuristicCost(space.Reify(newPosition), destination) * weight, i, pathIndex);
-                                newPathsBuffer.Add(newPath);
+                                float heuristicCost = space.HeuristicCost(space.Reify(newPosition), destination);
+//                                if (newCost + heuristicCost <= maxLength)
+//                                {
+                                    ChainedPath newPath = new ChainedPath(newPosition, newCost, newCost + heuristicCost * weight, i, pathIndex);
+                                    newPathsBuffer.Add(newPath);
+//                                }
                             }
                         }
                     }

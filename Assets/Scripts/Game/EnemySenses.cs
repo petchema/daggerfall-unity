@@ -535,6 +535,8 @@ namespace DaggerfallWorkshop.Game
             // Any enemies actively targeting player will continue to raise alert state
             if (Target == GameManager.Instance.PlayerEntityBehaviour && TargetInSight)
                 GameManager.Instance.PlayerEntity.SetEnemyAlert(true);
+
+            pathFinding?.FixedUpdate();
         }
 
 
@@ -931,19 +933,19 @@ namespace DaggerfallWorkshop.Game
 
             position = ResetPlayerPos;
             // TODO: Modify this by how much noise the target is making
-            if (target == player)
-            {
-                PlayerMotor playerMotor = GameManager.Instance.PlayerMotor;
-                uint gameMinutes = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
-                if (GameManager.Instance.PlayerEntity.TimeOfLastNoisyEvent + 60 > DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToSeconds())
-                    hearingScale *= 2.0f;
-                else if (!playerMotor.IsGrounded)
-                    hearingScale *= 0.1f;
-                else if (playerMotor.IsRunning)
-                    hearingScale *= 1.25f;
-                else if (playerMotor.IsMovingLessThanHalfSpeed)
-                    hearingScale *= 0.5f;
-            }
+            // if (target == player)
+            // {
+            //     PlayerMotor playerMotor = GameManager.Instance.PlayerMotor;
+            //     uint gameMinutes = DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToClassicDaggerfallTime();
+            //     if (GameManager.Instance.PlayerEntity.TimeOfLastNoisyEvent + 60 > DaggerfallUnity.Instance.WorldTime.DaggerfallDateTime.ToSeconds())
+            //         hearingScale *= 2.0f;
+            //     else if (!playerMotor.IsGrounded)
+            //         hearingScale *= 0.1f;
+            //     else if (playerMotor.IsRunning)
+            //         hearingScale *= 1.25f;
+            //     else if (playerMotor.IsMovingLessThanHalfSpeed)
+            //         hearingScale *= 0.5f;
+            // }
             float hearingDistance = (HearingRadius * hearingScale) + mobile.Enemy.HearingModifier;
             if (distanceToTarget < hearingDistance)
             {
@@ -975,27 +977,28 @@ namespace DaggerfallWorkshop.Game
                         if (pathFinding == null)
                             pathFinding = new PathFinding(space);
 
-                        PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<Vector3> Path, 1.5f);
+                        PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<ResultChainedPath> Path, 1.4f);
                         if (PathFound == PathFindingResult.Success)
                         {
                             // Find the most distant point in the path visible from our current position
-                            int Aim = 1; // Never aim at Path[0]
+                            int Aim = 1; // Never aim at Path[0]?
                             int NextAim;
-                            while ((NextAim = Aim + 4) < Path.Count && space.IsNavigable(transform.position, Path[NextAim]) == PathFindingResult.Success)
+                            if ((NextAim = Aim + 4) < Path.Count && space.IsNavigable(transform.position, Path[NextAim].position) == PathFindingResult.Success)
                             {
                                 Aim = NextAim;
                             }
-                            if ((NextAim = Aim + 2) < NextAim && space.IsNavigable(transform.position, Path[NextAim]) == PathFindingResult.Success)
+                            if ((NextAim = Aim + 2) < Path.Count && space.IsNavigable(transform.position, Path[NextAim].position) == PathFindingResult.Success)
                             {
                                 Aim = NextAim;
                             }
-                            if ((NextAim = Aim + 1) < NextAim && space.IsNavigable(transform.position, Path[NextAim]) == PathFindingResult.Success)
+                            if ((NextAim = Aim + 1) < Path.Count && space.IsNavigable(transform.position, Path[NextAim].position) == PathFindingResult.Success)
                             {
                                 Aim = NextAim;
                             }
+                            Debug.DrawLine(transform.position, Path[Aim].position, Color.grey, 0.2f);
                             // Help "get thru de door"
-                            Vector3 LastDirection = (Path[Aim] - Path[Aim-1]).normalized; 
-                            position = Path[Aim] + LastDirection * 1.5f;
+                            Vector3 LastDirection = (Path[Aim].position - Path[Aim-1].position).normalized; 
+                            position = Path[Aim].position + LastDirection * 2f;
                             // Debug.LogFormat("Hearing worked, path length {0} aiming {1} steps ahead", Path.Count, Aim);
                             Debug.DrawLine(transform.position, position, Color.white, 0.2f);
                             return true;

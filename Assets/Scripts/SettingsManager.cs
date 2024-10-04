@@ -341,7 +341,7 @@ namespace DaggerfallWorkshop
         public bool GuildQuestListBox { get; set; }
         public bool BowLeftHandWithSwitching { get; set; }
         public int LoiterLimitInHours { get; set; }
-        public int HearingMaxCyclesPerFrame { get; set; }
+        public int HearingMaxCycles { get; set; }
         public int HearingRaycastCost { get; set; }
 
         #endregion
@@ -575,7 +575,7 @@ namespace DaggerfallWorkshop
             GuildQuestListBox = GetBool(sectionEnhancements, "GuildQuestListBox");
             BowLeftHandWithSwitching = GetBool(sectionEnhancements, "BowLeftHandWithSwitching");
             LoiterLimitInHours = GetInt(sectionEnhancements, "LoiterLimitInHours");
-            HearingMaxCyclesPerFrame = GetInt(sectionExperimental, "HearingMaxCyclesPerFrame");
+            HearingMaxCycles = GetInt(sectionExperimental, "HearingMaxCycles");
             HearingRaycastCost = GetInt(sectionExperimental, "HearingRaycastCost");
         }
 
@@ -751,7 +751,7 @@ namespace DaggerfallWorkshop
             SetFloat(sectionExperimental, "TerrainHeightmapPixelError", TerrainHeightmapPixelError);
             SetBool(sectionExperimental, "SmallerDungeons", SmallerDungeons);
             SetInt(sectionExperimental, "AssetCacheThreshold", AssetCacheThreshold);
-            SetInt(sectionExperimental, "HearingMaxCyclesPerFrame", HearingMaxCyclesPerFrame);
+            SetInt(sectionExperimental, "HearingMaxCycles", HearingMaxCycles);
             SetInt(sectionExperimental, "HearingRaycastCost", HearingRaycastCost);
 
             SetBool(sectionEnhancements, "LypyL_GameConsole", LypyL_GameConsole);
