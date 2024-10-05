@@ -6,7 +6,7 @@ namespace DaggerfallWorkshop.Game.Utility
 {
     public class SpaceHolder : MonoBehaviour
     {
-        public DiscretizedSpace Space = null;
+        public DiscretizedNavigableSpace Space = null;
 
         public readonly Vector3 Origin = Vector3.zero;
         // Use Spherecasts on a grid, should be sufficient to pass thru gridResolution + 2 * Radius openings?
@@ -29,17 +29,17 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
-        public DiscretizedSpace GetSpace() { return Space ?? (Space = BuildDiscretizedSpace()); }
+        public DiscretizedNavigableSpace GetSpace() { return Space ?? (Space = BuildDiscretizedSpace()); }
 
         public void Start()
         {
 
         }
 
-        protected DiscretizedSpace BuildDiscretizedSpace()
+        protected DiscretizedNavigableSpace BuildDiscretizedSpace()
         {
             Vector3 Step = new Vector3(GridResolution, GridResolution, GridResolution);
-            Space = new DiscretizedSpace(Origin, Step, Radius);
+            Space = new DiscretizedNavigableSpace(Origin, Step, Radius);
             return Space;
         }
 
@@ -69,7 +69,7 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             if (DaggerfallUnity.Settings.HearingMaxCycles > 0)
             {
-                DiscretizedSpace.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCycles);
+                DiscretizedNavigableSpace.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCycles);
             }
         }
 

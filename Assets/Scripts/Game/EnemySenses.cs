@@ -955,7 +955,7 @@ namespace DaggerfallWorkshop.Game
                 if (!DaggerfallUnity.Settings.EnhancedCombatAI)
                 {
                     // Hearing is not impeded by doors or other non-static objects
-                    PathFindingResult straightHearing = DiscretizedSpace.RawIsNavigable(transform.position, target.transform.position, 0f);
+                    PathFindingResult straightHearing = DiscretizedNavigableSpace.RawIsNavigable(transform.position, target.transform.position, 0f);
                     if (straightHearing == PathFindingResult.Success)
                     {
                         position = target.transform.position;
@@ -965,15 +965,15 @@ namespace DaggerfallWorkshop.Game
                 else
                 {   
                     // Prefer using Spherecasts to avoid running into opening sides
-                    PathFindingResult straightHearing = DiscretizedSpace.RawIsNavigable(transform.position, target.transform.position, SpaceHolder.Radius);
+                    PathFindingResult straightHearing = DiscretizedNavigableSpace.RawIsNavigable(transform.position, target.transform.position, SpaceHolder.Radius);
                     if (straightHearing == PathFindingResult.Success)
                     {
                         position = target.transform.position;
                         return true;
                     } 
-                    else if (DiscretizedSpace.GetCyclesBudget() > 0)
+                    else if (DiscretizedNavigableSpace.GetCyclesBudget() > 0)
                     {
-                        DiscretizedSpace space = spaceHolder.GetSpace();
+                        DiscretizedNavigableSpace space = spaceHolder.GetSpace();
                         if (pathFinding == null)
                             pathFinding = new PathFinding(space);
 

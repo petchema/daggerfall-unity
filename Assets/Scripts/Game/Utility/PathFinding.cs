@@ -8,7 +8,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
     public class PathFinding
     {
-        private readonly DiscretizedSpace space;
+        private readonly DiscretizedNavigableSpace space;
         private readonly float TTL = 15f; // seconds
 
         public enum PathFindingResult
@@ -29,8 +29,7 @@ namespace DaggerfallWorkshop.Game.Utility
         private bool inProgress = false;
         private ChainedPathStore store;
         private PriorityQueue<ChainedPath> openList;
-        private ISet<Vector3> closedList;
-        private ISet<Vector3> destinationList;
+        private DiscretizedSearchSpace spaceState;
         private PathFindingResult status;
         private List<ResultChainedPath> foundPath;
 
@@ -91,9 +90,9 @@ namespace DaggerfallWorkshop.Game.Utility
             }
         }
 
-        static List<ResultChainedPath> RebuildPath(DiscretizedSpace space, ChainedPathStore allocator, ChainedPath path, Vector3 destination)
+        static List<ResultChainedPath> RebuildPath(DiscretizedNavigableSpace space, ChainedPathStore allocator, ChainedPath path, Vector3 destination)
         {
-            DiscretizedSpace.Movement[] movements = space.GetMovements();
+            DiscretizedNavigableSpace.Movement[] movements = space.GetMovements();
             List<ResultChainedPath> result = new List<ResultChainedPath>();
             // Destination does not have discretized position, so it's synthetically added to the result
             result.Add(new ResultChainedPath(destination, 0f));
@@ -111,13 +110,12 @@ namespace DaggerfallWorkshop.Game.Utility
             return result;
         }
 
-        public PathFinding(DiscretizedSpace space)
+        public PathFinding(DiscretizedNavigableSpace space)
         {
             this.space = space;
             store = new ChainedPathStore();
             openList = new PriorityQueue<ChainedPath>();
-            closedList = new HashSet<Vector3>();
-            destinationList = new HashSet<Vector3>();
+            spaceState = new DiscretizedSearchSpace();
         }
 
         public PathFindingResult RetryableFindShortestPath(Vector3 start, Vector3 destination, float maxLength, out List<ResultChainedPath> path, float weight = 1f)
@@ -217,8 +215,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
             store.Clear();
             openList.Clear();
-            closedList.Clear();
-            destinationList.Clear();
+            spaceState.Clear();
             status = PathFindingResult.NotCompleted;
             
             Vector3Int discretizedStart = space.Discretize(start);
@@ -236,7 +233,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
                         // Also populate destinationList
                         Vector3Int destinationPosition = new Vector3Int(discretizedDestination.x + x, discretizedDestination.y + y, discretizedDestination.z + z);
-                        destinationList.Add(destinationPosition);
+                        spaceState.SetCellDone(destinationPosition);
                     }
                 }
             }
@@ -248,7 +245,7 @@ namespace DaggerfallWorkshop.Game.Utility
             bool overBudget = false;
             while (!overBudget && openList.Count() > 0)
             {
-                if (!DiscretizedSpace.DecrCyclesBudget())
+                if (!DiscretizedNavigableSpace.DecrCyclesBudget())
                 {
                     overBudget = true;
                     break;
@@ -256,7 +253,8 @@ namespace DaggerfallWorkshop.Game.Utility
                 // Don't remove from openList just yet, in case we're interrupted by OverRaycastBudgetException
                 ChainedPath Path = openList.Peek();
                 int pathIndex = store.Add(Path);
-                if (!closedList.Contains(Path.position))
+                DiscretizedSearchSpace.CellState cellState = spaceState.GetCellState(Path.position);
+                if (cellState != DiscretizedSearchSpace.CellState.Closed)
                 {
                     PathFindingResult isNavigable = Path.sourceChainedPathIndex >= 0 
                         ? space.IsNavigableInt(store.Get(Path.sourceChainedPathIndex).position, Path.position, Path.movementIndex) 
@@ -270,7 +268,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     if (isNavigable == PathFindingResult.Success)
                     {
                         // Are we arrived yet?
-                        if (destinationList.Contains(Path.position))
+                        if (cellState == DiscretizedSearchSpace.CellState.Done)
                         {
                             PathFindingResult isNavigableToDestination = space.IsNavigable(space.Reify(Path.position), destination);
                             if (isNavigableToDestination == PathFindingResult.NotCompleted)
@@ -286,10 +284,10 @@ namespace DaggerfallWorkshop.Game.Utility
                             }
                         }
 
-                        DiscretizedSpace.Movement[] movements = space.GetMovements();
+                        DiscretizedNavigableSpace.Movement[] movements = space.GetMovements();
                         for (int i = 0; i < movements.Length - 1; i++)
                         {
-                            DiscretizedSpace.Movement movement = movements[i];
+                            DiscretizedNavigableSpace.Movement movement = movements[i];
                             Vector3Int newPosition = Path.position + movement.delta;
                             float newCost = Path.cost + movement.cost;
                             if (newCost <= maxLength)
@@ -307,7 +305,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     foreach (ChainedPath newPath in newPathsBuffer)
                         openList.Enqueue(newPath);
                     newPathsBuffer.Clear();
-                    closedList.Add(Path.position);
+                    spaceState.SetCellClosed(Path.position);
                 }
                 else
                     openList.Dequeue();
