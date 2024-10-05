@@ -1,3 +1,4 @@
+using System;
 using DaggerfallWorkshop.Utility;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -32,7 +33,7 @@ namespace DaggerfallWorkshop.Game.Utility
         }
         private static Movement[] movements = null;
 
-        private DiscretizedSpace.SpaceMetaCube spaceCache;
+        private DiscretizedSpace.SpaceMetaCube<UInt32> spaceCache;
 
         public DiscretizedNavigableSpace(Vector3 origin, Vector3 step, float radius)
         {
@@ -40,7 +41,7 @@ namespace DaggerfallWorkshop.Game.Utility
             this.step = step;
             this.radius = radius;
             inverseStep = new Vector3(1f / step.x, 1f / step.y, 1f / step.z);
-            spaceCache = new DiscretizedSpace.SpaceMetaCube();
+            spaceCache = new DiscretizedSpace.SpaceMetaCube<UInt32>();
             spaceCache.Init();
 
             if (movements == null)
@@ -202,11 +203,11 @@ namespace DaggerfallWorkshop.Game.Utility
             int shift = movements[movementIndex].shift * bitsPerMovement;
             Vector3Int side = movements[movementIndex].side ? destination : source;
             PathFindingResult isNavigable;
-            if (spaceCache.TryGetValue(side, out DiscretizedSpace.SpaceCacheEntry entry))
+            if (spaceCache.TryGetValue(side, out UInt32 entry))
             {
-                if ((entry.flags & (computedBit << shift)) != 0)
+                if ((entry & (computedBit << shift)) != 0)
                 {
-                    isNavigable = (entry.flags & (navigableBit << shift)) != 0 ? PathFindingResult.Success : PathFindingResult.Failure;
+                    isNavigable = (entry & (navigableBit << shift)) != 0 ? PathFindingResult.Success : PathFindingResult.Failure;
                     Debug.DrawLine(Reify(source), Reify(destination), isNavigable == PathFindingResult.Success ? Color.yellow : Color.magenta, 0.1f, false);
                 }
                 else
@@ -214,7 +215,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     isNavigable = IsNavigable(Reify(source), Reify(destination));
                     if (isNavigable == PathFindingResult.NotCompleted)
                         return isNavigable;
-                    entry.flags = entry.flags | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
+                    entry = entry | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
                     spaceCache.Set(side, entry);
                 }
             }
@@ -223,7 +224,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 isNavigable = IsNavigable(Reify(source), Reify(destination));
                 if (isNavigable == PathFindingResult.NotCompleted)
                     return isNavigable;
-                entry = new DiscretizedSpace.SpaceCacheEntry((isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift);
+                entry = (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
                 spaceCache.Set(side, entry);
             }
             return isNavigable;

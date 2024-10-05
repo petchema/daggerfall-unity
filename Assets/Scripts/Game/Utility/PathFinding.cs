@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 namespace DaggerfallWorkshop.Game.Utility
@@ -180,8 +179,12 @@ namespace DaggerfallWorkshop.Game.Utility
                 Debug.LogFormat("Pathfinding starting over");
                 Initialization(start, destination, maxLength, weight);
                 // Try to answer synchronously from Update()?
-                inProgress = true;
                 FindShortestPath();
+                if (status == PathFindingResult.NotCompleted)
+                {
+                    // Will continue incrementally from FixedUpdate()
+                    inProgress = true;
+                }
                 path = foundPath;
                 return status;
             }
@@ -279,6 +282,10 @@ namespace DaggerfallWorkshop.Game.Utility
                             if (isNavigableToDestination == PathFindingResult.Success)
                             {
                                 foundPath = RebuildPath(space, store, Path, destination);
+#if UNITY_EDITOR
+                                for(int i = 0; i < foundPath.Count - 1; i++)
+                                    Debug.DrawLine(foundPath[i].position, foundPath[i+1].position, Color.white, 1f, false);
+#endif
                                 status = PathFindingResult.Success;
                                 return;
                             }

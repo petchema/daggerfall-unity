@@ -6,19 +6,16 @@ namespace DaggerfallWorkshop.Game.Utility
 
     public class DiscretizedSearchSpace
     {
-        private DiscretizedSpace.SpaceMetaCube spaceCache;
+        private DiscretizedSpace.SpaceMetaCube<byte> spaceCache;
 
         public DiscretizedSearchSpace()
         {
-            spaceCache = new DiscretizedSpace.SpaceMetaCube();
+            spaceCache = new DiscretizedSpace.SpaceMetaCube<byte>();
             spaceCache.Init();
         }
 
-        // FIXME not very information packed, uh
-        static readonly uint doneBit = 0x2;
-        static readonly uint closedBit = 0x1;
-        static readonly DiscretizedSpace.SpaceCacheEntry doneCacheEntry = new DiscretizedSpace.SpaceCacheEntry(doneBit); 
-        static readonly DiscretizedSpace.SpaceCacheEntry closedCacheEntry = new DiscretizedSpace.SpaceCacheEntry(closedBit); 
+        static readonly byte doneBit = 0x2;
+        static readonly byte closedBit = 0x1;
 
         public enum CellState {
             Open, Closed, Done
@@ -26,11 +23,11 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public CellState GetCellState(Vector3Int pos)
         {
-           if (spaceCache.TryGetValue(pos, out DiscretizedSpace.SpaceCacheEntry entry))
+           if (spaceCache.TryGetValue(pos, out byte entry))
            {
-                if ((entry.flags & doneBit) != 0)
+                if ((entry & doneBit) != 0)
                     return CellState.Done;
-                else if ((entry.flags & closedBit) != 0)
+                else if ((entry & closedBit) != 0)
                     return CellState.Closed;
            }
            return CellState.Open;
@@ -38,12 +35,12 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public void SetCellClosed(Vector3Int pos)
         {
-            spaceCache.Set(pos, closedCacheEntry);
+            spaceCache.Set(pos, closedBit);
         }
 
         public void SetCellDone(Vector3Int pos)
         {
-            spaceCache.Set(pos, doneCacheEntry);
+            spaceCache.Set(pos, doneBit);
         }
 
         internal void Clear()

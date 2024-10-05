@@ -11,47 +11,34 @@ namespace DaggerfallWorkshop.Game.Utility
         public static readonly int subdivisionShift = 4; // space will be divised in NxNxN cubes N = 2^subdivisionShift
         public static readonly int subdivisionMask = (1 << subdivisionShift) - 1;
 
-        public struct SpaceCacheEntry
-        {
-            public UInt32 flags; // Bitfield of directions that have been already computed (movementIndex-based)
-                                 // 32 is sufficient for storing 2 bits for 13 orientations
-
-            public SpaceCacheEntry(uint flags)
-            {
-                this.flags = flags;
-            }
-        }
-
-        public static readonly SpaceCacheEntry NoSpaceCacheEntry = new SpaceCacheEntry(); // use "default" instead?
-
-        struct SpaceCube
+        struct SpaceCube<T>
         {
             // Flattened multidimensionnal array
-            SpaceCacheEntry[,,] cube;
+            T[,,] cube;
             public void Init()
             {
-                cube = new SpaceCacheEntry[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
+                cube = new T[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
             }
             public bool IsMissing()
             {
                 return cube == null;
             }
-            public SpaceCacheEntry Get(int x, int y, int z)
+            public T Get(int x, int y, int z)
             {
                 return cube[z, y, x];
             }
-            public void Set(int x, int y, int z, SpaceCacheEntry entry)
+            public void Set(int x, int y, int z, T entry)
             {
                 cube[z, y, x] = entry;
             }
         } 
         // Dictionary of Cubes
-        public struct SpaceMetaCube
+        public struct SpaceMetaCube<T>
         {
-            Dictionary<Vector3Int, SpaceCube> cache;
+            Dictionary<Vector3Int, SpaceCube<T>> cache;
             // One entry cache. For 16x16x16 cubes, I have seen ~80% hit rates
             Vector3Int lastKey;
-            SpaceCube? lastCube;
+            SpaceCube<T>? lastCube;
 #if DEBUG_HEARING
             int access;
             int hit;
@@ -59,7 +46,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
             internal void Init()
             {
-                cache = new Dictionary<Vector3Int, SpaceCube>(128);
+                cache = new Dictionary<Vector3Int, SpaceCube<T>>(128);
                 lastKey = Vector3Int.zero;
                 lastCube = null;
 #if DEBUG_HEARING
@@ -77,7 +64,7 @@ namespace DaggerfallWorkshop.Game.Utility
             {
                 return cache.Count;
             }
-            public bool TryGetValue(Vector3Int pos, out SpaceCacheEntry entry)
+            public bool TryGetValue(Vector3Int pos, out T entry)
             {
 #if DEBUG_HEARING
                 if (access % 1024 == 0)
@@ -94,19 +81,19 @@ namespace DaggerfallWorkshop.Game.Utility
 #endif
                     if (lastCube == null)
                     {
-                        entry = NoSpaceCacheEntry;
+                        entry = default;
                         return false;
                     }
                     else
                     {
-                        entry = ((SpaceCube) lastCube).Get(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask);
+                        entry = ((SpaceCube<T>) lastCube).Get(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask);
                         return true;
                     }
                 }
                 else 
                 {
                     lastKey = key;
-                    if(cache.TryGetValue(key, out SpaceCube cube))
+                    if(cache.TryGetValue(key, out SpaceCube<T> cube))
                     {
                         lastCube = cube;
                         entry = cube.Get(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask);
@@ -115,17 +102,17 @@ namespace DaggerfallWorkshop.Game.Utility
                     else
                     {
                         lastCube = null;
-                        entry = NoSpaceCacheEntry;
+                        entry = default;
                         return false;
                     }
                 }
             }
-            public void Set(Vector3Int pos, SpaceCacheEntry entry)
+            public void Set(Vector3Int pos, T entry)
             {
                 Vector3Int key = new Vector3Int(pos.z >> subdivisionShift, pos.y >> subdivisionShift, pos.x >> subdivisionShift);
-                if (!cache.TryGetValue(key, out SpaceCube cube))
+                if (!cache.TryGetValue(key, out SpaceCube<T> cube))
                 {
-                    cube = new SpaceCube();
+                    cube = new SpaceCube<T>();
                     cube.Init();
                     cache.Add(key, cube);
                     if (lastKey == key)
