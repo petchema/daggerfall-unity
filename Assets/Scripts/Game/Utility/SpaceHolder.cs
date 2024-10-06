@@ -6,7 +6,9 @@ namespace DaggerfallWorkshop.Game.Utility
 {
     public class SpaceHolder : MonoBehaviour
     {
-        public DiscretizedNavigableSpace Space = null;
+        private DiscretizedNavigableSpace Space = null;
+        private DiscretizedSpace.SpaceCubeAllocator<UInt32> NavigableSpaceCubeAllocator = null;
+        private DiscretizedSpace.SpaceCubeAllocator<byte> SearchSpaceCubeAllocator = null;
 
         public readonly Vector3 Origin = Vector3.zero;
         // Use Spherecasts on a grid, should be sufficient to pass thru gridResolution + 2 * Radius openings?
@@ -15,6 +17,7 @@ namespace DaggerfallWorkshop.Game.Utility
         public static readonly float Radius = 0.2f;
 
         static SpaceHolder instance = null;
+
         public static SpaceHolder Instance
         {
             get
@@ -31,6 +34,8 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public DiscretizedNavigableSpace GetSpace() { return Space ?? (Space = BuildDiscretizedSpace()); }
 
+        public DiscretizedSpace.SpaceCubeAllocator<byte> GetSearchSpaceCubeAllocator() { return SearchSpaceCubeAllocator ?? (SearchSpaceCubeAllocator = new DiscretizedSpace.SpaceCubeAllocator<byte>()); }
+
         public void Start()
         {
 
@@ -39,7 +44,8 @@ namespace DaggerfallWorkshop.Game.Utility
         protected DiscretizedNavigableSpace BuildDiscretizedSpace()
         {
             Vector3 Step = new Vector3(GridResolution, GridResolution, GridResolution);
-            Space = new DiscretizedNavigableSpace(Origin, Step, Radius);
+            NavigableSpaceCubeAllocator = new DiscretizedSpace.SpaceCubeAllocator<UInt32>();
+            Space = new DiscretizedNavigableSpace(Origin, Step, Radius, NavigableSpaceCubeAllocator);
             return Space;
         }
 
@@ -70,27 +76,30 @@ namespace DaggerfallWorkshop.Game.Utility
             if (DaggerfallUnity.Settings.HearingMaxCycles > 0)
             {
                 DiscretizedNavigableSpace.SetCyclesBudget(DaggerfallUnity.Settings.HearingMaxCycles);
+                // Background activity, clean arrays for free lists
+                NavigableSpaceCubeAllocator?.Update();
+                SearchSpaceCubeAllocator?.Update();
             }
         }
 
         private void OnTransition(PlayerEnterExit.TransitionEventArgs args)
         {
-            Space = null;
+            Space?.Clear();
         }
 
         private void OnLoad(SaveData_v1 saveData)
         {
-            Space = null;
+            Space?.Clear();
         }
 
         private void OnNewGame()
         {
-            Space = null;
+            Space?.Clear();
         }
 
         private void OnFloatingOriginChange()
         {
-            Space = null;
+            Space?.Clear();
         }
-    }
+   }
 }

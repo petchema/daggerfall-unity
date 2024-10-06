@@ -539,6 +539,15 @@ namespace DaggerfallWorkshop.Game
             pathFinding?.FixedUpdate();
         }
 
+        public void OnDisable()
+        {
+            if (pathFinding != null)
+            {
+                pathFinding.Clear();
+                pathFinding = null;
+            }
+        }
+
 
         #region Public Methods
 
@@ -975,7 +984,7 @@ namespace DaggerfallWorkshop.Game
                     {
                         DiscretizedNavigableSpace space = spaceHolder.GetSpace();
                         if (pathFinding == null)
-                            pathFinding = new PathFinding(space);
+                            pathFinding = new PathFinding(space, spaceHolder.GetSearchSpaceCubeAllocator());
 
                         PathFindingResult PathFound = pathFinding.RetryableFindShortestPath(transform.position, target.transform.position, hearingDistance, out List<ResultChainedPath> Path, 1.4f);
                         if (PathFound == PathFindingResult.Success)

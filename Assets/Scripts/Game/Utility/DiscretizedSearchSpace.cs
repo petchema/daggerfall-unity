@@ -8,10 +8,10 @@ namespace DaggerfallWorkshop.Game.Utility
     {
         private DiscretizedSpace.SpaceMetaCube<byte> spaceCache;
 
-        public DiscretizedSearchSpace()
+        public DiscretizedSearchSpace(DiscretizedSpace.SpaceCubeAllocator<byte> allocator)
         {
             spaceCache = new DiscretizedSpace.SpaceMetaCube<byte>();
-            spaceCache.Init();
+            spaceCache.Init(allocator);
         }
 
         static readonly byte doneBit = 0x2;

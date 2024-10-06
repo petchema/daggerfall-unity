@@ -34,15 +34,17 @@ namespace DaggerfallWorkshop.Game.Utility
         private static Movement[] movements = null;
 
         private DiscretizedSpace.SpaceMetaCube<UInt32> spaceCache;
+        private DiscretizedSpace.SpaceCubeAllocator<UInt32> spaceAllocator;
 
-        public DiscretizedNavigableSpace(Vector3 origin, Vector3 step, float radius)
+        public DiscretizedNavigableSpace(Vector3 origin, Vector3 step, float radius, DiscretizedSpace.SpaceCubeAllocator<UInt32> allocator)
         {
             this.origin = origin;
             this.step = step;
             this.radius = radius;
             inverseStep = new Vector3(1f / step.x, 1f / step.y, 1f / step.z);
             spaceCache = new DiscretizedSpace.SpaceMetaCube<UInt32>();
-            spaceCache.Init();
+            spaceAllocator = allocator;
+            spaceCache.Init(spaceAllocator);
 
             if (movements == null)
             {
@@ -84,7 +86,6 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             DiscretizedNavigableSpace.cyclesBudget = cyclesBudget;
         }
-
 
         internal static int GetCyclesBudget()
         {
@@ -233,6 +234,11 @@ namespace DaggerfallWorkshop.Game.Utility
         internal object GetCacheCount()
         {
             return spaceCache.Count();
+        }
+
+        internal void Clear()
+        {
+            spaceCache.Clear();
         }
     }
 }

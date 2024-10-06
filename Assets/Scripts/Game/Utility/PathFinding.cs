@@ -109,12 +109,12 @@ namespace DaggerfallWorkshop.Game.Utility
             return result;
         }
 
-        public PathFinding(DiscretizedNavigableSpace space)
+        public PathFinding(DiscretizedNavigableSpace space, DiscretizedSpace.SpaceCubeAllocator<byte> allocator)
         {
             this.space = space;
             store = new ChainedPathStore();
             openList = new PriorityQueue<ChainedPath>();
-            spaceState = new DiscretizedSearchSpace();
+            spaceState = new DiscretizedSearchSpace(allocator);
         }
 
         public PathFindingResult RetryableFindShortestPath(Vector3 start, Vector3 destination, float maxLength, out List<ResultChainedPath> path, float weight = 1f)
@@ -206,6 +206,11 @@ namespace DaggerfallWorkshop.Game.Utility
                     inProgress = false;
                 }
             }
+        }
+
+        public void Clear()
+        {
+            spaceState.Clear();
         }
 
         private void Initialization(Vector3 start, Vector3 destination, float maxLength, float weight)

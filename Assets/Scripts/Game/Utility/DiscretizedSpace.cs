@@ -11,14 +11,63 @@ namespace DaggerfallWorkshop.Game.Utility
         public static readonly int subdivisionShift = 4; // space will be divised in NxNxN cubes N = 2^subdivisionShift
         public static readonly int subdivisionMask = (1 << subdivisionShift) - 1;
 
+        public class SpaceCubeAllocator<T>
+        {
+            private readonly Stack<T[,,]> freeList = new Stack<T[,,]>();
+            private readonly Stack<T[,,]> dirtyFreeList = new Stack<T[,,]>();
+
+            public T[,,] Borrow()
+            {
+                if (freeList.Count > 0)
+                {
+                    return freeList.Pop();
+                }
+                else if (dirtyFreeList.Count > 0)
+                {
+                    T[,,] cube = dirtyFreeList.Pop();
+                    Clean(cube);
+                    return cube;
+                }
+                else
+                    return new T[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
+            }
+
+            public void Restore(T[,,] cube)
+            {
+                dirtyFreeList.Push(cube);
+            }
+            private static void Clean(T[,,] cube)
+            {
+                Array.Clear(cube, 0, cube.Length);
+            }
+
+            public void Update()
+            {
+                if (dirtyFreeList.Count > 0)
+                {
+                    T[,,] cube = dirtyFreeList.Pop();
+                    Clean(cube);
+                    freeList.Push(cube);
+                }
+            }
+        }
+
         struct SpaceCube<T>
         {
             // Flattened multidimensionnal array
             T[,,] cube;
+            private readonly SpaceCubeAllocator<T> allocator;
+
+            public SpaceCube(SpaceCubeAllocator<T> allocator)
+            {
+                this.allocator = allocator;
+                cube = null;
+            }
             public void Init()
             {
-                cube = new T[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
+                cube = allocator.Borrow();
             }
+
             public bool IsMissing()
             {
                 return cube == null;
@@ -30,6 +79,12 @@ namespace DaggerfallWorkshop.Game.Utility
             public void Set(int x, int y, int z, T entry)
             {
                 cube[z, y, x] = entry;
+            }
+
+            internal void Clear()
+            {
+                allocator.Restore(cube);
+                cube = null;
             }
         } 
         // Dictionary of Cubes
@@ -43,10 +98,12 @@ namespace DaggerfallWorkshop.Game.Utility
             int access;
             int hit;
 #endif
+            SpaceCubeAllocator<T> allocator;
 
-            internal void Init()
+            internal void Init(SpaceCubeAllocator<T> allocator)
             {
                 cache = new Dictionary<Vector3Int, SpaceCube<T>>(128);
+                this.allocator = allocator;
                 lastKey = Vector3Int.zero;
                 lastCube = null;
 #if DEBUG_HEARING
@@ -56,6 +113,8 @@ namespace DaggerfallWorkshop.Game.Utility
             }
             internal void Clear()
             {
+                foreach (SpaceCube<T> entry in cache.Values)
+                    entry.Clear();
                 cache.Clear();
                 lastKey = Vector3Int.zero;
                 lastCube = null;
@@ -112,7 +171,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 Vector3Int key = new Vector3Int(pos.z >> subdivisionShift, pos.y >> subdivisionShift, pos.x >> subdivisionShift);
                 if (!cache.TryGetValue(key, out SpaceCube<T> cube))
                 {
-                    cube = new SpaceCube<T>();
+                    cube = new SpaceCube<T>(allocator);
                     cube.Init();
                     cache.Add(key, cube);
                     if (lastKey == key)
