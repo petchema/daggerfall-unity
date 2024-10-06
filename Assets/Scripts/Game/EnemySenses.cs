@@ -541,13 +541,8 @@ namespace DaggerfallWorkshop.Game
 
         public void OnDisable()
         {
-            if (pathFinding != null)
-            {
-                pathFinding.Clear();
-                pathFinding = null;
-            }
+            pathFinding?.Clear();
         }
-
 
         #region Public Methods
 

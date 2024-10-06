@@ -16,6 +16,11 @@ namespace DaggerfallWorkshop.Game.Utility
             private readonly Stack<T[,,]> freeList = new Stack<T[,,]>();
             private readonly Stack<T[,,]> dirtyFreeList = new Stack<T[,,]>();
 
+            private T[,,] AllocateNew()
+            {
+                return new T[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
+            }
+
             public T[,,] Borrow()
             {
                 if (freeList.Count > 0)
@@ -29,7 +34,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     return cube;
                 }
                 else
-                    return new T[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
+                    return AllocateNew();
             }
 
             public void Restore(T[,,] cube)
@@ -48,6 +53,10 @@ namespace DaggerfallWorkshop.Game.Utility
                     T[,,] cube = dirtyFreeList.Pop();
                     Clean(cube);
                     freeList.Push(cube);
+                }
+                else if (freeList.Count < 2)
+                {
+                    freeList.Push(AllocateNew());
                 }
             }
         }
