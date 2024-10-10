@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace DaggerfallWorkshop.Game.Utility
 {
@@ -187,6 +188,20 @@ namespace DaggerfallWorkshop.Game.Utility
                         lastCube = cube;
                 }
                 cube.Set(pos.x & subdivisionMask, pos.y & subdivisionMask, pos.z & subdivisionMask, entry);
+            }
+
+            // Starting from pos in direction direction, how many hits can be done in the same SpaceCube?
+            internal int GetOptimalExtension(Vector3Int pos, Vector3Int direction)
+            {
+                int extension = int.MaxValue;
+                if (direction.x < 0) extension = Math.Min(extension, 1 + (pos.x & subdivisionMask));
+                if (direction.x > 0) extension = Math.Min(extension, (1 << subdivisionShift) - (pos.x & subdivisionMask));
+                if (direction.y < 0) extension = Math.Min(extension, 1 + (pos.y & subdivisionMask));
+                if (direction.y > 0) extension = Math.Min(extension, (1 << subdivisionShift) - (pos.y & subdivisionMask));
+                if (direction.z < 0) extension = Math.Min(extension, 1 + (pos.z & subdivisionMask));
+                if (direction.z > 0) extension = Math.Min(extension, (1 << subdivisionShift) - (pos.z & subdivisionMask));
+                // Assert.IsTrue(extension > 0 && extension <= (1 << subdivisionShift));
+                return extension;
             }
         }
     }

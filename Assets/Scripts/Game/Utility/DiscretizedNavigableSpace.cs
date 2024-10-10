@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DaggerfallWorkshop.Utility;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -15,6 +16,7 @@ namespace DaggerfallWorkshop.Game.Utility
         private float radius;
         private static int cyclesBudget = 0;
         private static int LayersMask = 0;
+        private static bool opportunisticRaycast = true;
 
         public struct Movement
         {
@@ -152,14 +154,64 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             if (!DecrRaycastBudget())
                 return PathFindingResult.NotCompleted;
-            PathFindingResult isNavigable = RawIsNavigable(source, destination, radius);
-            Debug.DrawLine(source, destination, isNavigable == PathFindingResult.Success ? Color.green : Color.red, 0.1f, false);
-            return isNavigable;
+            bool isNavigable = RawIsNavigable(source, destination, radius);
+            Debug.DrawLine(source, destination, isNavigable ? Color.green : Color.red, 0.1f, false);
+            return isNavigable ? PathFindingResult.Success : PathFindingResult.Failure;
+        }
+
+        // Return whether one can navigate between source and destination, but also fill collisions array with the presence
+        // of colliders in the same direction over extension times the same length
+        public PathFindingResult IsNavigableExtended(Vector3 source, Vector3 destination, int extension, out bool[] collisions)
+        {
+            if (!DecrRaycastBudget())
+            {
+                collisions = null;
+                return PathFindingResult.NotCompleted;
+            }
+            collisions = RawIsNavigableExtended(source, destination, extension, radius);
+            bool isNavigable = !collisions[0];
+            Debug.DrawLine(source, destination, isNavigable ? Color.green : Color.red, 0.1f, false); 
+            return isNavigable ? PathFindingResult.Success : PathFindingResult.Failure;
         }
 
         private static RaycastHit[] hitsBuffer = new RaycastHit[4];
+        private static int nhits = 0;
 
-        public static PathFindingResult RawIsNavigable(Vector3 source, Vector3 destination, float radius)
+        public static bool RawIsNavigable(Vector3 source, Vector3 destination, float radius)
+        {
+            RawRaycast(source, destination, radius);
+            bool navigable = true;
+            for (int i = 0; i < nhits; i++)
+            {
+                if (GameObjectHelper.IsStaticGeometry(hitsBuffer[i].transform.gameObject))
+                {
+                    navigable = false;
+                    break;
+                }
+            }
+            return navigable;
+        }
+
+        public static bool[] RawIsNavigableExtended(Vector3 source, Vector3 destination, int extension, float radius)
+        {
+            RawRaycast(source, source * (1 - extension) + destination * extension, radius);
+            float sliceLengthInv = 1f / (destination - source).magnitude;
+            bool[] result = new bool[extension];
+            for (int i = 0; i < nhits; i++)
+            {
+                if (GameObjectHelper.IsStaticGeometry(hitsBuffer[i].transform.gameObject))
+                {
+                    int index = (int)(hitsBuffer[i].distance * sliceLengthInv);
+                    if (index >= 0 && index < extension)
+                        result[index] = true;
+                    else
+                        Debug.LogFormat("Raycast extension OOB extension {0} dist {1} step {2} 1/step {3}", extension, hitsBuffer[i].distance, (destination - source).magnitude, sliceLengthInv);
+                }
+            }
+            return result;
+        }
+
+        private static void RawRaycast(Vector3 source, Vector3 destination, float radius)
         {
             Vector3 vector = destination - source;
             Vector3 normalized = vector.normalized;
@@ -167,8 +219,8 @@ namespace DaggerfallWorkshop.Game.Utility
             float epsilon = 0.05f;
 
             Ray ray = new Ray(source - normalized * epsilon, normalized);
-            int nhits;
-            while (true) {
+            while (true)
+            {
                 if (radius == 0f)
                     nhits = Physics.RaycastNonAlloc(ray, hitsBuffer, vector.magnitude + 2f * epsilon, GetLayersMask());
                 else
@@ -179,18 +231,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 // hitsBuffer may have overflowed, retry with a larger buffer
                 hitsBuffer = new RaycastHit[hitsBuffer.Length * 2];
             };
-            bool navigable = true;
-            for (int i = 0; i < nhits; i++)
-            {
-                if (GameObjectHelper.IsStaticGeometry(hitsBuffer[i].transform.gameObject))
-                {
-                    navigable = false;
-                    break;
-                }
-            }
-            return navigable ? PathFindingResult.Success : PathFindingResult.Failure;
         }
-
 
         static readonly int bitsPerMovement = 2; /* 00 = unknown
                                                     01 = (unused)
@@ -210,14 +251,37 @@ namespace DaggerfallWorkshop.Game.Utility
                 {
                     isNavigable = (entry & (navigableBit << shift)) != 0 ? PathFindingResult.Success : PathFindingResult.Failure;
                     Debug.DrawLine(Reify(source), Reify(destination), isNavigable == PathFindingResult.Success ? Color.yellow : Color.magenta, 0.1f, false);
+                    return isNavigable;
                 }
-                else
+            }
+            else
+            {
+                entry = 0;
+            }
+
+            if (opportunisticRaycast)
+            {
+                Vector3Int delta = destination - source;
+                int extension = spaceCache.GetOptimalExtension(side, delta);
+                isNavigable = IsNavigableExtended(Reify(source), Reify(destination), extension, out bool[] collisions);
+                if (isNavigable == PathFindingResult.NotCompleted)
+                    return isNavigable;
+                entry = entry | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
+                spaceCache.Set(side, entry);
+    
+                for (int i = 1; i < collisions.Length; i++)
                 {
-                    isNavigable = IsNavigable(Reify(source), Reify(destination));
-                    if (isNavigable == PathFindingResult.NotCompleted)
-                        return isNavigable;
-                    entry = entry | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
-                    spaceCache.Set(side, entry);
+                    side += delta;
+                    if (spaceCache.TryGetValue(side, out entry))
+                    {
+                        entry = entry & ~((computedBit | navigableBit) << shift);
+                    }
+                    else
+                    {
+                        entry = 0;
+                    }
+                    entry = entry | ((collisions[i] ? computedBit : computedBit | navigableBit ) << shift);
+                    spaceCache.Set(side, entry); 
                 }
             }
             else
@@ -225,7 +289,7 @@ namespace DaggerfallWorkshop.Game.Utility
                 isNavigable = IsNavigable(Reify(source), Reify(destination));
                 if (isNavigable == PathFindingResult.NotCompleted)
                     return isNavigable;
-                entry = (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
+                entry = entry | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
                 spaceCache.Set(side, entry);
             }
             return isNavigable;

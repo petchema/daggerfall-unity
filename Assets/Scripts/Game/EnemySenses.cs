@@ -956,11 +956,12 @@ namespace DaggerfallWorkshop.Game
                 // Any better way to make sure a SpaceHolder is instanciated?
                 SpaceHolder spaceHolder = SpaceHolder.Instance;
 
+                Debug.DrawLine(transform.position, target.transform.position, Color.blue, 0.5f, false);
                 if (!DaggerfallUnity.Settings.EnhancedCombatAI)
                 {
                     // Hearing is not impeded by doors or other non-static objects
-                    PathFindingResult straightHearing = DiscretizedNavigableSpace.RawIsNavigable(transform.position, target.transform.position, 0f);
-                    if (straightHearing == PathFindingResult.Success)
+                    bool straightHearing = DiscretizedNavigableSpace.RawIsNavigable(transform.position, target.transform.position, 0f);
+                    if (straightHearing)
                     {
                         position = target.transform.position;
                         return true;
@@ -969,8 +970,8 @@ namespace DaggerfallWorkshop.Game
                 else
                 {   
                     // Prefer using Spherecasts to avoid running into opening sides
-                    PathFindingResult straightHearing = DiscretizedNavigableSpace.RawIsNavigable(transform.position, target.transform.position, SpaceHolder.Radius);
-                    if (straightHearing == PathFindingResult.Success)
+                    bool straightHearing = DiscretizedNavigableSpace.RawIsNavigable(transform.position, target.transform.position, SpaceHolder.Radius);
+                    if (straightHearing)
                     {
                         position = target.transform.position;
                         return true;
