@@ -435,7 +435,10 @@ namespace DaggerfallWorkshop.Game
                 if (detectedTarget && !targetInSight)
                     targetInEarshot = CanHearTargetHandler(out positionHeard);
                 else
+                {
                     targetInEarshot = false;
+                    pathFinding?.Stop();
+                }
 
                 // Note: In classic an enemy can continue to track the player as long as their
                 // giveUpTimer is > 0. Since the timer is reset to 200 on every detection this

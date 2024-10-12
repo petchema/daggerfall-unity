@@ -142,7 +142,7 @@ namespace DaggerfallWorkshop.Game.Utility
                     float pathLength = Mathf.Sqrt(minSqrDist) + foundPath[firstForward].remainingDistanceToDestination;
                     if (pathLength <= maxLength)
                     {
-                        Debug.LogFormat("Pathfinding existing path ok, shortened by {0}", firstForward);
+                        // Debug.LogFormat("Pathfinding existing path ok, shortened by {0}", firstForward);
 
                         if (firstForward > 0)
                         {
@@ -152,17 +152,21 @@ namespace DaggerfallWorkshop.Game.Utility
                         return PathFindingResult.Success;
                     }
                     else
-                        Debug.LogFormat("Pathfinding existing path too long");
+                    {
+                        // Debug.LogFormat("Pathfinding existing path too long");
+                    }
                 }
                 else
-                    Debug.LogFormat("Pathfinding strayed too far from existing path");
+                {
+                    // Debug.LogFormat("Pathfinding strayed too far from existing path");
+                }
             }
             else if (status == PathFindingResult.Failure)
             {
                 // Cached answer was that target was unreachable and nobody has moved much (destination checked above): probably still true
                 if (this.maxLength >= maxLength && (start - this.start).sqrMagnitude < 4f)
                 {
-                    Debug.LogFormat("Pathfinding lack of path still valid");
+                    // Debug.LogFormat("Pathfinding lack of path still valid");
                     path = null;
                     return PathFindingResult.Failure;
                 }
@@ -176,7 +180,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
             if (!isResumable)
             {
-                Debug.LogFormat("Pathfinding starting over");
+                // Debug.LogFormat("Pathfinding starting over");
                 Initialization(start, destination, maxLength, weight);
                 // Try to answer synchronously from Update()?
                 FindShortestPath();
@@ -189,7 +193,9 @@ namespace DaggerfallWorkshop.Game.Utility
                 return status;
             }
             else
-                Debug.LogFormat("Pathfinding resuming");
+            {
+                // Debug.LogFormat("Pathfinding resuming");
+            }
 
             inProgress = true;
             path = null;
@@ -206,6 +212,11 @@ namespace DaggerfallWorkshop.Game.Utility
                     inProgress = false;
                 }
             }
+        }
+
+        public void Stop()
+        {
+            inProgress = false;
         }
 
         public void Clear()
