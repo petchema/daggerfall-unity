@@ -9,12 +9,13 @@ namespace DaggerfallWorkshop.Game.Utility
         private DiscretizedNavigableSpace Space = null;
         private DiscretizedSpace.SpaceCubeAllocator<UInt32> NavigableSpaceCubeAllocator = null;
         private DiscretizedSpace.SpaceCubeAllocator<byte> SearchSpaceCubeAllocator = null;
+        private float debugTime;
 
         public readonly Vector3 Origin = Vector3.zero;
         // Use Spherecasts on a grid, should be sufficient to pass thru gridResolution + 2 * Radius openings?
         // At least along axes
-        public static readonly float GridResolution = 0.65f;
-        public static readonly float Radius = 0.2f;
+        public static readonly float GridResolution = 0.4f;
+        public static readonly float Radius = 0.23f;
 
         static SpaceHolder instance = null;
 
@@ -38,7 +39,6 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public void Start()
         {
-
         }
 
         protected DiscretizedNavigableSpace BuildDiscretizedSpace()
@@ -69,6 +69,16 @@ namespace DaggerfallWorkshop.Game.Utility
             StartGameBehaviour.OnNewGame -= OnNewGame;
             SaveLoadManager.OnLoad -= OnLoad;
             StreamingWorld.OnFloatingOriginChange -= OnFloatingOriginChange;
+        }
+
+        public void Update()
+        {
+            debugTime += Time.deltaTime;
+            if (debugTime >= 1f)
+            {
+                debugTime -= 1f;
+                Debug.LogFormat("Nav {0} Search {1}", NavigableSpaceCubeAllocator?.Stats() ?? "null", SearchSpaceCubeAllocator?.Stats() ?? "null");
+            }
         }
 
         public void FixedUpdate()
