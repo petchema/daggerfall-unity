@@ -16,20 +16,27 @@ namespace DaggerfallWorkshop.Game.Utility
         {
             private readonly Stack<T[,,]> freeList = new Stack<T[,,]>();
             private readonly Stack<T[,,]> dirtyFreeList = new Stack<T[,,]>();
+            private int requests = 0;
+            private int realAllocations = 0;
+            private int asyncLaundry = 0;
+            private int syncLaundry = 0;
 
             private T[,,] AllocateNew()
             {
+                realAllocations++;
                 return new T[1 << subdivisionShift, 1 << subdivisionShift, 1 << subdivisionShift];
             }
 
             public T[,,] Borrow()
             {
+                requests++;
                 if (freeList.Count > 0)
                 {
                     return freeList.Pop();
                 }
                 else if (dirtyFreeList.Count > 0)
                 {
+                    syncLaundry++;
                     T[,,] cube = dirtyFreeList.Pop();
                     Clean(cube);
                     return cube;
@@ -51,6 +58,7 @@ namespace DaggerfallWorkshop.Game.Utility
             {
                 if (dirtyFreeList.Count > 0)
                 {
+                    asyncLaundry++;
                     T[,,] cube = dirtyFreeList.Pop();
                     Clean(cube);
                     freeList.Push(cube);
@@ -59,6 +67,11 @@ namespace DaggerfallWorkshop.Game.Utility
                 {
                     freeList.Push(AllocateNew());
                 }
+            }
+
+            public string Stats()
+            {
+                return string.Format("Requests {0} Real Allocations {1} Laundry Async {2} Sync {3}", requests, realAllocations, asyncLaundry, syncLaundry);
             }
         }
 
