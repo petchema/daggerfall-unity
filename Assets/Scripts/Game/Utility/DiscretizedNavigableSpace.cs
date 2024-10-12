@@ -16,7 +16,7 @@ namespace DaggerfallWorkshop.Game.Utility
         private float radius;
         private static int cyclesBudget = 0;
         private static int LayersMask = 0;
-        private static bool opportunisticRaycast = true;
+        private static int opportunisticRaycastMaxLength = 4;
 
         public struct Movement
         {
@@ -259,14 +259,14 @@ namespace DaggerfallWorkshop.Game.Utility
                 entry = 0;
             }
 
-            if (opportunisticRaycast)
+            if (opportunisticRaycastMaxLength > 1)
             {
                 Vector3Int delta = destination - source;
-                int extension = spaceCache.GetOptimalExtension(side, delta);
+                int extension = Math.Min(opportunisticRaycastMaxLength, spaceCache.GetOptimalExtension(side, delta));
                 isNavigable = IsNavigableExtended(Reify(source), Reify(destination), extension, out bool[] collisions);
                 if (isNavigable == PathFindingResult.NotCompleted)
                     return isNavigable;
-                entry = entry | (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
+                entry |= (isNavigable == PathFindingResult.Success ? computedBit | navigableBit : computedBit) << shift;
                 spaceCache.Set(side, entry);
     
                 for (int i = 1; i < collisions.Length; i++)
@@ -274,14 +274,18 @@ namespace DaggerfallWorkshop.Game.Utility
                     side += delta;
                     if (spaceCache.TryGetValue(side, out entry))
                     {
-                        entry = entry & ~((computedBit | navigableBit) << shift);
+                        entry &= ~((computedBit | navigableBit) << shift);
                     }
                     else
                     {
                         entry = 0;
                     }
-                    entry = entry | ((collisions[i] ? computedBit : computedBit | navigableBit ) << shift);
-                    spaceCache.Set(side, entry); 
+                    entry |= (collisions[i] ? computedBit : computedBit | navigableBit ) << shift;
+                    spaceCache.Set(side, entry);
+
+                    // Are results beyond first collider reliable?
+                    if (collisions[i])
+                        break;
                 }
             }
             else
