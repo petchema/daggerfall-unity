@@ -17,6 +17,8 @@ namespace DaggerfallWorkshop.Game.Utility
         private static int cyclesBudget = 0;
         private static int LayersMask = 0;
         private static int opportunisticRaycastMaxLength = 4;
+        private static float epsilon = 0.05f;
+
 
         public struct Movement
         {
@@ -179,7 +181,7 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public static bool RawIsNavigable(Vector3 source, Vector3 destination, float radius)
         {
-            RawRaycast(source, destination, radius);
+            RawRaycast(source, destination - source, radius);
             bool navigable = true;
             for (int i = 0; i < nhits; i++)
             {
@@ -194,30 +196,28 @@ namespace DaggerfallWorkshop.Game.Utility
 
         public static bool[] RawIsNavigableExtended(Vector3 source, Vector3 destination, int extension, float radius)
         {
-            RawRaycast(source, source * (1 - extension) + destination * extension, radius);
-            float sliceLengthInv = 1f / (destination - source).magnitude;
+            Vector3 slice = destination - source;
+            RawRaycast(source, slice * extension, radius);
+            float sliceLengthInv = 1f / slice.magnitude;
             bool[] result = new bool[extension];
             for (int i = 0; i < nhits; i++)
             {
                 if (GameObjectHelper.IsStaticGeometry(hitsBuffer[i].transform.gameObject))
                 {
-                    int index = (int)(hitsBuffer[i].distance * sliceLengthInv);
+                    int index = (int)((hitsBuffer[i].distance - epsilon) * sliceLengthInv);
                     if (index >= 0 && index < extension)
                         result[index] = true;
                     else
-                        Debug.LogFormat("Raycast extension OOB extension {0} dist {1} step {2} 1/step {3}", extension, hitsBuffer[i].distance, (destination - source).magnitude, sliceLengthInv);
+                        Debug.LogFormat("Raycast extension OOB extension {0} dist {1} step {2} 1/step {3}", extension, hitsBuffer[i].distance, slice.magnitude, sliceLengthInv);
                 }
             }
             return result;
         }
 
-        private static void RawRaycast(Vector3 source, Vector3 destination, float radius)
+        private static void RawRaycast(Vector3 source, Vector3 vector, float radius)
         {
-            Vector3 vector = destination - source;
             Vector3 normalized = vector.normalized;
             // Add some overlap, because paths can get thru walls if a node lands exactly on a wall (for raycasts, at least)
-            float epsilon = 0.05f;
-
             Ray ray = new Ray(source - normalized * epsilon, normalized);
             while (true)
             {
