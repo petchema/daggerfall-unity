@@ -171,8 +171,8 @@ TerrainHeightmapPixelError=5
 SmallerDungeons=False
 CustomBooksImport=True
 AssetCacheThreshold = 25
-HearingMaxCycles = 200
-HearingRaycastCost = 20
+HearingMaxCycles = 80
+HearingRaycastCost = 10
 
 [Enhancements]
 LypyL_GameConsole=True
