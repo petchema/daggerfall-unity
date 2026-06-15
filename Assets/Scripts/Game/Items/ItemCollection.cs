@@ -60,6 +60,16 @@ namespace DaggerfallWorkshop.Game.Items
             Back,
         }
 
+        /// <summary>
+        /// Preference when searching for an item in a collection.
+        /// </summary>
+        public enum Priority
+        { DontCare,
+          Conjured,
+          HighestCount,
+          LowestCount
+        }
+
         #endregion
 
         #region Properties
@@ -351,11 +361,11 @@ namespace DaggerfallWorkshop.Game.Items
         /// </summary>
         /// <param name="itemGroup">Item group.</param>
         /// <param name="itemIndex">Template index.</param>
-        /// <param name="priorityToConjured">Prefer (short lived) conjured items.</param>
+        /// <param name="priority">Preference</param>
         /// <returns>An item of this type, or null if none found.</returns>
-        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool priorityToConjured)
+        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, Priority priority)
         {
-            return GetItem(itemGroup, itemIndex, true, true, priorityToConjured);
+            return GetItem(itemGroup, itemIndex, true, true, priority);
         }
 
         /// <summary>
@@ -365,40 +375,58 @@ namespace DaggerfallWorkshop.Game.Items
         /// <param name="itemIndex">Template index.</param>
         /// <param name="allowEnchantedItem">Include enchanted items.</param>
         /// <param name="allowQuestItem">Include quest items.</param>
-        /// <param name="priorityToConjured">Prefer (short lived) conjured items.</param>
+        /// <param name="priority">Prefer (short lived) conjured items.</param>
         /// <returns>An item of this type, or null if none found.</returns>
-        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, bool priorityToConjured = false)
+        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, Priority priority = Priority.DontCare)
         {
             int groupIndex = DaggerfallUnity.Instance.ItemHelper.GetGroupIndex(itemGroup, itemIndex);
-            if (!priorityToConjured)
-            {
-                foreach (DaggerfallUnityItem item in items.Values)
-                {
-                    if (item.ItemGroup == itemGroup && item.GroupIndex == groupIndex && (allowEnchantedItem || !item.IsEnchanted) && (allowQuestItem || !item.IsQuestItem))
-                        return item;
-                }
-                return null;
-            }
-            else
-            {
-                DaggerfallUnityItem selectedItem = null;
 
-                foreach (DaggerfallUnityItem item in items.Values)
-                {
-                    if (item.ItemGroup == itemGroup && item.GroupIndex == groupIndex && (allowEnchantedItem || !item.IsEnchanted) && (allowQuestItem || !item.IsQuestItem))
+            bool IsItemOK(DaggerfallUnityItem item)
+            {
+                return item.ItemGroup == itemGroup &&
+                       item.GroupIndex == groupIndex &&
+                       (allowEnchantedItem || !item.IsEnchanted) &&
+                       (allowQuestItem || !item.IsQuestItem);
+            }
+
+            DaggerfallUnityItem selectedItem = null;
+
+            switch (priority)
+            {
+                case Priority.Conjured: // pick conjured items with shortest life
+                    foreach (DaggerfallUnityItem item in items.Values)
                     {
-                        if (item.IsSummoned)
+                        if (IsItemOK(item) &&
+                            (selectedItem == null ||
+                             item.IsSummoned && (!selectedItem.IsSummoned || item.TimeForItemToDisappear < selectedItem.TimeForItemToDisappear)))
                         {
-                            // pick conjured items with shortest life
-                            if (selectedItem == null || !selectedItem.IsSummoned || selectedItem.TimeForItemToDisappear > item.TimeForItemToDisappear)
-                                selectedItem = item;
+                            selectedItem = item;
                         }
-                        else // real item
-                            if (selectedItem == null)
-                                selectedItem = item;
                     }
-                }
-                return selectedItem;
+                    return selectedItem;
+
+                case Priority.HighestCount:
+                case Priority.LowestCount:
+                    foreach (DaggerfallUnityItem item in items.Values)
+                    {
+                        if (IsItemOK(item) &&
+                            (selectedItem == null ||
+                             priority == Priority.HighestCount && item.stackCount > selectedItem.stackCount ||
+                             priority == Priority.LowestCount  && item.stackCount < selectedItem.stackCount))
+                        {
+                            selectedItem = item;
+                        }
+                    }
+                    return selectedItem;
+
+                case Priority.DontCare:
+                default:
+                    foreach (DaggerfallUnityItem item in items.Values)
+                    {
+                        if (IsItemOK(item))
+                            return item;
+                    }
+                    return null;
             }
         }
 
