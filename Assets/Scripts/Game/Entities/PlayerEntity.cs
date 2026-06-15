@@ -1329,7 +1329,7 @@ namespace DaggerfallWorkshop.Game.Entity
                 while (amount > 0)
                 {
                     // Use smallest letters of credit first to get rid of them
-                    DaggerfallUnityItem loc = items.GetItem(ItemGroups.MiscItems, (int)MiscItems.Letter_of_credit, ItemCollection.Priority.LowestCount);
+                    DaggerfallUnityItem loc = items.GetItem(ItemGroups.MiscItems, (int)MiscItems.Letter_of_credit, ItemCollection.Priority.LowestValue);
                     if (loc == null) {
                         break;
                     } else if (amount < loc.value) {

@@ -64,10 +64,10 @@ namespace DaggerfallWorkshop.Game.Items
         /// Preference when searching for an item in a collection.
         /// </summary>
         public enum Priority
-        { DontCare,
-          Conjured,
-          HighestCount,
-          LowestCount
+        { DontCare = 0, // backward compatibility with priorityToConjured boolean parameter
+          Conjured = 1,
+          HighestValue,
+          LowestValue,
         }
 
         #endregion
@@ -405,14 +405,14 @@ namespace DaggerfallWorkshop.Game.Items
                     }
                     return selectedItem;
 
-                case Priority.HighestCount:
-                case Priority.LowestCount:
+                case Priority.HighestValue:
+                case Priority.LowestValue:
                     foreach (DaggerfallUnityItem item in items.Values)
                     {
                         if (IsItemOK(item) &&
                             (selectedItem == null ||
-                             priority == Priority.HighestCount && item.stackCount > selectedItem.stackCount ||
-                             priority == Priority.LowestCount  && item.stackCount < selectedItem.stackCount))
+                             priority == Priority.HighestValue && item.value > selectedItem.value ||
+                             priority == Priority.LowestValue  && item.value < selectedItem.value))
                         {
                             selectedItem = item;
                         }
