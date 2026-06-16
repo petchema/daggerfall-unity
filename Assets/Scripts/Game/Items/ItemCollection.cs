@@ -64,8 +64,8 @@ namespace DaggerfallWorkshop.Game.Items
         /// Preference when searching for an item in a collection.
         /// </summary>
         public enum Priority
-        { DontCare = 0, // backward compatibility with priorityToConjured boolean parameter
-          Conjured = 1,
+        { DontCare,
+          Conjured,
           HighestValue,
           LowestValue,
         }
@@ -357,18 +357,6 @@ namespace DaggerfallWorkshop.Game.Items
         }
 
         /// <summary>
-        /// Get the first of an item type from this collection.
-        /// </summary>
-        /// <param name="itemGroup">Item group.</param>
-        /// <param name="itemIndex">Template index.</param>
-        /// <param name="priority">Preference</param>
-        /// <returns>An item of this type, or null if none found.</returns>
-        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, Priority priority)
-        {
-            return GetItem(itemGroup, itemIndex, true, true, priority);
-        }
-
-        /// <summary>
         /// Get the first of an item type from this collection that satisfies extra conditions.
         /// </summary>
         /// <param name="itemGroup">Item group.</param>
@@ -377,7 +365,7 @@ namespace DaggerfallWorkshop.Game.Items
         /// <param name="allowQuestItem">Include quest items.</param>
         /// <param name="priority">Preference</param>
         /// <returns>An item of this type, or null if none found.</returns>
-        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, Priority priority = Priority.DontCare)
+        public DaggerfallUnityItem GetItemEx(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, Priority priority = Priority.DontCare)
         {
             int groupIndex = DaggerfallUnity.Instance.ItemHelper.GetGroupIndex(itemGroup, itemIndex);
 
@@ -428,6 +416,32 @@ namespace DaggerfallWorkshop.Game.Items
                     }
                     return null;
             }
+        }
+
+        /// <summary>
+        /// Get the first of an item type from this collection.
+        /// </summary>
+        /// <param name="itemGroup">Item group.</param>
+        /// <param name="itemIndex">Template index.</param>
+        /// <param name="priorityToConjured">Prefer (short lived) conjured items.</param>
+        /// <returns>An item of this type, or null if none found.</returns>
+        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool priorityToConjured)
+        {
+            return GetItemEx(itemGroup, itemIndex, true, true, priorityToConjured ? Priority.Conjured : Priority.DontCare);
+        }
+
+        /// <summary>
+        /// Get the first of an item type from this collection that satisfies extra conditions.
+        /// </summary>
+        /// <param name="itemGroup">Item group.</param>
+        /// <param name="itemIndex">Template index.</param>
+        /// <param name="allowEnchantedItem">Include enchanted items.</param>
+        /// <param name="allowQuestItem">Include quest items.</param>
+        /// <param name="priorityToConjured">Prefer (short lived) conjured items.</param>
+        /// <returns>An item of this type, or null if none found.</returns>
+        public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, bool priorityToConjured = false)
+        {
+            return GetItemEx(itemGroup, itemIndex, allowEnchantedItem, allowQuestItem, priorityToConjured ? Priority.Conjured : Priority.DontCare);
         }
 
         /// <summary>
