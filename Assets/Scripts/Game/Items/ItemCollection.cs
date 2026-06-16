@@ -375,7 +375,7 @@ namespace DaggerfallWorkshop.Game.Items
         /// <param name="itemIndex">Template index.</param>
         /// <param name="allowEnchantedItem">Include enchanted items.</param>
         /// <param name="allowQuestItem">Include quest items.</param>
-        /// <param name="priority">Prefer (short lived) conjured items.</param>
+        /// <param name="priority">Preference</param>
         /// <returns>An item of this type, or null if none found.</returns>
         public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, Priority priority = Priority.DontCare)
         {
