@@ -118,6 +118,22 @@ namespace DaggerfallWorkshop.Game.Items
         }
 
         /// <summary>
+        /// Return the letters of credit in this collection
+        /// </summary>
+        /// <returns>Amount in gp</returns>
+        public List<DaggerfallUnityItem> GetLettersOfCredit()
+        {
+            int locGroupIndex = DaggerfallUnity.Instance.ItemHelper.GetGroupIndex(ItemGroups.MiscItems, (int)MiscItems.Letter_of_credit);
+            List<DaggerfallUnityItem> locs = new List<DaggerfallUnityItem>();
+            foreach (DaggerfallUnityItem item in items.Values)
+            {
+                if (item.ItemGroup == ItemGroups.MiscItems && item.GroupIndex == locGroupIndex)
+                    locs.Add(item);
+            }
+            return locs;
+        }
+
+        /// <summary>
         /// Removes items that have expired. Used for magically-created items. Only for the player.
         /// Note: Reverse-engineering suggests this was intended behavior in classic, but classic
         /// does not correctly set the item flags so magically-created items never disappear.
