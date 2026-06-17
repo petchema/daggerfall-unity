@@ -1326,12 +1326,18 @@ namespace DaggerfallWorkshop.Game.Entity
             if (amount <= goldPieces) {
                 goldPieces -= amount;
             } else {
+                int locGroupIndex = DaggerfallUnity.Instance.ItemHelper.GetGroupIndex(ItemGroups.MiscItems, (int)MiscItems.Letter_of_credit);
+                List<DaggerfallUnityItem> locs = items.SearchItems(ItemGroups.MiscItems, locGroupIndex);
+                // Try small letters of credit first, to get rid of them
+                locs.Sort((x, y) => x.value.CompareTo(y.value));
+                int nextLocIndex = 0;
+
                 while (amount > 0)
                 {
-                    DaggerfallUnityItem loc = items.GetItem(ItemGroups.MiscItems, (int)MiscItems.Letter_of_credit);
-                    if (loc == null) {
+                    if (nextLocIndex >= locs.Count)
                         break;
-                    } else if (amount < loc.value) {
+                    DaggerfallUnityItem loc = locs[nextLocIndex++];
+                    if (amount < loc.value) {
                         loc.value -= amount;
                         amount = 0;
                     } else {
