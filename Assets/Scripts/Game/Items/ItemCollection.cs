@@ -60,6 +60,16 @@ namespace DaggerfallWorkshop.Game.Items
             Back,
         }
 
+        [Flags]
+        public enum Filter : ushort
+        {
+            None = 0,
+            EnchantedDenied = 1,
+            EnchantedOnly = 2,
+            QuestDenied = 4,
+            QuestOnly = 8,
+        }
+
         /// <summary>
         /// Preference when searching for an item in a collection.
         /// </summary>
@@ -68,6 +78,8 @@ namespace DaggerfallWorkshop.Game.Items
           Conjured,
           HighestValue,
           LowestValue,
+          HighestCount,
+          LowestCount,
         }
 
         #endregion
@@ -361,11 +373,10 @@ namespace DaggerfallWorkshop.Game.Items
         /// </summary>
         /// <param name="itemGroup">Item group.</param>
         /// <param name="itemIndex">Template index.</param>
-        /// <param name="allowEnchantedItem">Include enchanted items.</param>
-        /// <param name="allowQuestItem">Include quest items.</param>
+        /// <param name="filter">Require, allow or exclude enchanted or quest items.</param>
         /// <param name="priority">Preference</param>
         /// <returns>An item of this type, or null if none found.</returns>
-        public DaggerfallUnityItem GetItemEx(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, Priority priority = Priority.DontCare)
+        public DaggerfallUnityItem GetItemEx(ItemGroups itemGroup, int itemIndex, Filter filter = Filter.None, Priority priority = Priority.DontCare)
         {
             int groupIndex = DaggerfallUnity.Instance.ItemHelper.GetGroupIndex(itemGroup, itemIndex);
 
@@ -373,39 +384,43 @@ namespace DaggerfallWorkshop.Game.Items
             {
                 return item.ItemGroup == itemGroup &&
                        item.GroupIndex == groupIndex &&
-                       (allowEnchantedItem || !item.IsEnchanted) &&
-                       (allowQuestItem || !item.IsQuestItem);
+                       (filter & (item.IsEnchanted ? Filter.EnchantedDenied : Filter.EnchantedOnly)) == 0 &&
+                       (filter & (item.IsQuestItem ? Filter.QuestDenied : Filter.QuestOnly)) == 0;
             }
 
-            DaggerfallUnityItem selectedItem = null;
+            DaggerfallUnityItem PickBestItem(Func<DaggerfallUnityItem, DaggerfallUnityItem, bool> itemIsBetterThan)
+            {
+                DaggerfallUnityItem selectedItem = null;
+
+                foreach (DaggerfallUnityItem item in items.Values)
+                {
+                    if (IsItemOK(item) && itemIsBetterThan(item, selectedItem))
+                    {
+                        selectedItem = item;
+                    }
+                }
+                return selectedItem;
+            }
 
             switch (priority)
             {
                 case Priority.Conjured: // pick conjured items with shortest life
-                    foreach (DaggerfallUnityItem item in items.Values)
-                    {
-                        if (IsItemOK(item) &&
-                            (selectedItem == null ||
-                             item.IsSummoned && (!selectedItem.IsSummoned || item.TimeForItemToDisappear < selectedItem.TimeForItemToDisappear)))
-                        {
-                            selectedItem = item;
-                        }
-                    }
-                    return selectedItem;
+                    return PickBestItem((item, selectedItem) =>
+                                            selectedItem == null ||
+                                            item.IsSummoned && (!selectedItem.IsSummoned ||
+                                                                item.TimeForItemToDisappear < selectedItem.TimeForItemToDisappear));
 
                 case Priority.HighestValue:
+                    return PickBestItem((item, selectedItem) => selectedItem == null || item.value > selectedItem.value);
+
                 case Priority.LowestValue:
-                    foreach (DaggerfallUnityItem item in items.Values)
-                    {
-                        if (IsItemOK(item) &&
-                            (selectedItem == null ||
-                             priority == Priority.HighestValue && item.value > selectedItem.value ||
-                             priority == Priority.LowestValue  && item.value < selectedItem.value))
-                        {
-                            selectedItem = item;
-                        }
-                    }
-                    return selectedItem;
+                    return PickBestItem((item, selectedItem) => selectedItem == null || item.value < selectedItem.value);
+
+                case Priority.HighestCount:
+                    return PickBestItem((item, selectedItem) => selectedItem == null || item.stackCount > selectedItem.stackCount);
+
+                case Priority.LowestCount:
+                    return PickBestItem((item, selectedItem) => selectedItem == null || item.stackCount < selectedItem.stackCount);
 
                 case Priority.DontCare:
                 default:
@@ -427,7 +442,7 @@ namespace DaggerfallWorkshop.Game.Items
         /// <returns>An item of this type, or null if none found.</returns>
         public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool priorityToConjured)
         {
-            return GetItemEx(itemGroup, itemIndex, true, true, priorityToConjured ? Priority.Conjured : Priority.DontCare);
+            return GetItemEx(itemGroup, itemIndex, Filter.None, priorityToConjured ? Priority.Conjured : Priority.DontCare);
         }
 
         /// <summary>
@@ -441,7 +456,8 @@ namespace DaggerfallWorkshop.Game.Items
         /// <returns>An item of this type, or null if none found.</returns>
         public DaggerfallUnityItem GetItem(ItemGroups itemGroup, int itemIndex, bool allowEnchantedItem = true, bool allowQuestItem = true, bool priorityToConjured = false)
         {
-            return GetItemEx(itemGroup, itemIndex, allowEnchantedItem, allowQuestItem, priorityToConjured ? Priority.Conjured : Priority.DontCare);
+            Filter filter = (allowEnchantedItem ? Filter.None : Filter.EnchantedDenied) | (allowQuestItem ? Filter.None : Filter.QuestDenied);
+            return GetItemEx(itemGroup, itemIndex, filter, priorityToConjured ? Priority.Conjured : Priority.DontCare);
         }
 
         /// <summary>
