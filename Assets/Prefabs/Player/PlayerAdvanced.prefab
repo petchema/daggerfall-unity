@@ -606,7 +606,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slideWhenOverSlopeLimit: 0
-  slideOnTaggedObjects: 0
+  slideOnTaggedObjects: 1
   slideSpeed: 12
 --- !u!114 &114101796857139080
 MonoBehaviour:

@@ -15,7 +15,7 @@ namespace DaggerfallWorkshop.Game
         public bool slideWhenOverSlopeLimit = false;
 
         // If checked and the player is on an object tagged "Slide", he will slide down it regardless of the slope limit
-        public bool slideOnTaggedObjects = false;
+        public bool slideOnTaggedObjects = true;
 
         public float slideSpeed = 12.0f;
 
